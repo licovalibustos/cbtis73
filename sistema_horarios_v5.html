@@ -493,6 +493,27 @@ input::placeholder{color:var(--ink3);}
     <div class="mb">
       <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%"></div>
       <div class="frow">
+        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: TEMA750707L67" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+        <div class="field"><label>Categoría</label>
+          <select id="mte-cat" style="width:100%">
+            <option value="">— Selecciona —</option>
+            <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
+            <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
+            <option value="PROF TIT. &quot;C&quot; T/C">Prof. Tit. "C" T/C (40h)</option>
+            <option value="PROF TIT. &quot;A&quot; 3/4">Prof. Tit. "A" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;B&quot; 3/4">Prof. Tit. "B" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;C&quot; 3/4">Prof. Tit. "C" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
+            <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
+            <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
+            <option value="INTERINO T/C">Interino T/C</option>
+            <option value="INTERINO 3/4">Interino 3/4 Tiempo</option>
+            <option value="INTERINO 1/2">Interino 1/2 Tiempo</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
         <div class="field"><label>Horas de nombramiento</label><input type="number" id="mte-nom" min="1" max="60" style="width:100%"></div>
         <div class="field"><label>Horas carga reglamentaria</label><input type="number" id="mte-carga" min="1" max="50" style="width:100%"></div>
       </div>
@@ -1102,7 +1123,11 @@ function renderMaestroDetail(tid){
       <div class="av" style="background:${ac(tid)};width:48px;height:48px;font-size:.92rem">${ini(t.name)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;line-height:1.2">${t.name}</div>
-        <div style="font-size:.7rem;color:var(--ink2);margin-top:.2rem">${t.obs?`<b style="color:var(--amber)">${t.obs}</b> · `:''} RFC — &nbsp;&nbsp; Categoría —</div>
+        <div style="font-size:.7rem;color:var(--ink2);margin-top:.2rem;display:flex;gap:.75rem;flex-wrap:wrap">
+          ${t.obs?`<span style="color:var(--amber);font-weight:700">${t.obs}</span>`:''}
+          ${t.rfc?`<span><b>RFC:</b> ${t.rfc}</span>`:'<span style="color:var(--ink3)">RFC: —</span>'}
+          ${t.categoria?`<span><b>Cat:</b> ${t.categoria}</span>`:'<span style="color:var(--ink3)">Categoría: —</span>'}
+        </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openEditTeacher('${tid}')">✏ Editar datos</button>
     </div>
@@ -1236,6 +1261,8 @@ function openEditTeacher(tid){
   editTeacherId=tid;
   document.getElementById("mte-sub").textContent=t.name;
   document.getElementById("mte-name").value=t.name;
+  document.getElementById("mte-rfc").value=t.rfc||'';
+  document.getElementById("mte-cat").value=t.categoria||'';
   document.getElementById("mte-nom").value=t.hrs_nom;
   document.getElementById("mte-carga").value=t.hrs_carga;
   document.getElementById("mte-obs").value=t.obs||"";
@@ -1245,11 +1272,13 @@ function openEditTeacher(tid){
 function saveTeacher(){
   const t=T(editTeacherId);if(!t)return;
   const name=document.getElementById("mte-name").value.trim().toUpperCase();
+  const rfc=document.getElementById("mte-rfc").value.trim().toUpperCase()||null;
+  const categoria=document.getElementById("mte-cat").value||null;
   const hrs_nom=parseInt(document.getElementById("mte-nom").value)||t.hrs_nom;
   const hrs_carga=parseInt(document.getElementById("mte-carga").value)||t.hrs_carga;
-  const obs=document.getElementById("mte-obs").value.trim()||undefined;
+  const obs=document.getElementById("mte-obs").value.trim()||null;
   if(!name){toast("El nombre no puede estar vacío","err");return;}
-  Object.assign(t,{name,hrs_nom,hrs_carga,obs});
+  Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
   closeM("modal-teacher");
   renderMaestroDetail(editTeacherId);
   renderMaestrosList();
@@ -2289,7 +2318,7 @@ saveTeacher=async function(){
   if(!nombre){toast('El nombre no puede estar vacío','err');return;}
   showLoading('Guardando…');
   try{
-    await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre,hrs_nom,hrs_carga,obs});
+    await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre,hrs_nom,hrs_carga,obs,rfc:t.rfc||null,categoria:t.categoria||null});
     Object.assign(t,{name:nombre,hrs_nom,hrs_carga,obs});
     closeM('modal-teacher');renderMaestroDetail(editTeacherId);renderMaestrosList();
     toast('Datos actualizados ✓');
