@@ -25,6 +25,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
+body.maestro-mode{overflow:auto!important;height:auto!important;}
+body.maestro-mode .app{display:none!important;}
 body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;}
 
 /* ── SHELL ── */
@@ -401,7 +403,7 @@ input::placeholder{color:var(--ink3);}
      VISTA MAESTRO (link único)
      Visible solo cuando ?maestro=Txx en la URL
      ══════════════════════════════ -->
-<div id="maestro-view" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto">
+<div id="maestro-view" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;height:100vh;width:100vw">
   <div style="max-width:720px;margin:0 auto;padding:1.5rem">
     <!-- Header -->
     <div style="background:var(--ink);color:white;border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
@@ -2608,7 +2610,7 @@ async function checkMaestroMode(){
     return true;
   }
 
-  // Switch already done instantly — just load data
+  // Switch already done instantly via body class — just load data
   showLoading('Cargando tu información…');
   try{
     await loadCiclos();
@@ -2770,8 +2772,8 @@ async function renderMvHorario(tid){
   const tid=params.get('maestro');
   const token=params.get('token');
   if(tid&&token){
-    // Hide main app instantly — no flash
-    document.querySelector('.app').style.display='none';
+    // Add class to body immediately — no flash
+    document.body.classList.add('maestro-mode');
     document.getElementById('maestro-view').style.display='block';
   }
 })();
