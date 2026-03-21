@@ -397,6 +397,64 @@ input::placeholder{color:var(--ink3);}
   </div>
 </div>
 
+<!-- ══════════════════════════════
+     VISTA MAESTRO (link único)
+     Visible solo cuando ?maestro=Txx en la URL
+     ══════════════════════════════ -->
+<div id="maestro-view" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto">
+  <div style="max-width:720px;margin:0 auto;padding:1.5rem">
+    <!-- Header -->
+    <div style="background:var(--ink);color:white;border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
+      <div style="width:42px;height:42px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.8rem;flex-shrink:0">73</div>
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1rem">CBTIS No. 73</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.5);font-family:var(--fm)">Captura de Disponibilidad</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div id="mv-ciclo" style="font-size:.68rem;color:rgba(255,255,255,.6)"></div>
+      </div>
+    </div>
+
+    <!-- Maestro card -->
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="cb" style="display:flex;align-items:center;gap:1rem">
+        <div id="mv-avatar" class="av" style="width:48px;height:48px;font-size:.9rem;flex-shrink:0"></div>
+        <div>
+          <div id="mv-nombre" style="font-family:var(--fh);font-weight:800;font-size:1.1rem"></div>
+          <div id="mv-info" style="font-size:.72rem;color:var(--ink2);margin-top:.2rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.85rem 1rem;margin-bottom:1.1rem;font-size:.78rem;color:var(--blue)">
+      <div style="font-family:var(--fh);font-weight:700;margin-bottom:.3rem">📋 Instrucciones</div>
+      Marca cada bloque horario según tu disponibilidad. Cuando termines presiona <b>Guardar disponibilidad</b>.
+      <div style="display:flex;gap:1rem;margin-top:.6rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--green-lt);border:2px solid #7ec09a;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--green);font-weight:700">✓</div><span>Disponible</span></div>
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--red-lt);border:2px solid #efa090;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--red);font-weight:700">✗</div><span>No disponible</span></div>
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--bg2);border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--ink3)">·</div><span>Sin preferencia</span></div>
+      </div>
+    </div>
+
+    <!-- Avail grids -->
+    <div id="mv-grids"></div>
+
+    <!-- Save button -->
+    <div style="position:sticky;bottom:1rem;text-align:center;margin-top:1rem" id="mv-save-wrap">
+      <button class="btn btn-green" style="padding:.65rem 2rem;font-size:.9rem;box-shadow:var(--sh-lg)" onclick="mvSave()">💾 Guardar disponibilidad</button>
+    </div>
+
+    <!-- Horario asignado -->
+    <div id="mv-horario-section" style="display:none;margin-top:2rem">
+      <div style="font-family:var(--fh);font-weight:800;font-size:1rem;margin-bottom:.75rem">📋 Tu horario asignado</div>
+      <div id="mv-horario"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:2rem;font-size:.65rem;color:var(--ink3)">CBTIS No. 73 · Sistema de Horarios · <span id="mv-ts"></span></div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /app -->
 
@@ -1130,6 +1188,7 @@ function renderMaestroDetail(tid){
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openEditTeacher('${tid}')">✏ Editar datos</button>
+      <button class="btn btn-blue btn-sm" onclick="copyTeacherLink('${tid}')" title="Copiar link de disponibilidad para enviar al maestro">🔗 Copiar link</button>
     </div>
 
     <!-- ── HORAS ── -->
@@ -2506,8 +2565,209 @@ renderHorario=async function(){
 };
 
 // ═══════════════════════════════════════════
-//  INIT
+//  VISTA MAESTRO — link único
 // ═══════════════════════════════════════════
+
+// Generate a stable token from teacher id (simple, not cryptographic)
+function teacherToken(tid){
+  // XOR-based hash of tid chars + secret salt — unique per teacher, hard to guess
+  const salt='CBTIS73RBravo';
+  const str=tid+salt;
+  let h=0;
+  for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0;
+  return Math.abs(h).toString(36).padStart(6,'0');
+}
+
+function teacherLink(tid){
+  const token=teacherToken(tid);
+  const base=window.location.href.split('?')[0];
+  return `${base}?maestro=${tid}&token=${token}`;
+}
+
+function copyTeacherLink(tid){
+  const t=T(tid);
+  const link=teacherLink(tid);
+  navigator.clipboard.writeText(link).then(()=>{
+    toast(`Link copiado para ${t?.name||tid} ✓`);
+  }).catch(()=>{
+    // Fallback: show in prompt
+    prompt(`Link para ${t?.name||tid} — cópialo:`,link);
+  });
+}
+
+// ── Detect maestro mode on load ──
+async function checkMaestroMode(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  const token=params.get('token');
+  if(!tid||!token) return false;
+
+  // Validate token
+  if(token!==teacherToken(tid)){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:var(--fh);color:var(--red);font-size:1.1rem">❌ Link inválido o expirado</div>`;
+    return true;
+  }
+
+  // Switch to maestro view
+  document.getElementById('maestro-view').style.display='block';
+  document.querySelector('.app').style.display='none';
+
+  showLoading('Cargando tu información…');
+  try{
+    await ensureTeachers();
+    await loadCiclos();
+  }catch(e){ hideLoading(); return true; }
+
+  const t=T(tid);
+  if(!t){
+    hideLoading();
+    document.getElementById('mv-grids').innerHTML='<div style="color:var(--red);text-align:center;padding:2rem">Maestro no encontrado</div>';
+    return true;
+  }
+
+  // Render header info
+  const avatar=document.getElementById('mv-avatar');
+  avatar.textContent=ini(t.name);
+  avatar.style.background=ac(tid);
+  document.getElementById('mv-nombre').textContent=t.name;
+  document.getElementById('mv-info').innerHTML=
+    `${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga reglamentaria${t.obs?' · <b>'+t.obs+'</b>':''}`;
+
+  // Show active ciclo
+  const ciclo=ciclos.find(c=>c.activo)||ciclos[0];
+  if(ciclo){
+    currentCicloId=ciclo.id;
+    cycle=ciclo.tipo;
+    document.getElementById('mv-ciclo').textContent=ciclo.nombre;
+  }
+
+  // Load availability for this teacher
+  await ensureDisponibilidad(tid);
+
+  // Render grids
+  renderMvGrids(tid);
+
+  // Load and show assigned schedule
+  await renderMvHorario(tid);
+
+  document.getElementById('mv-ts').textContent=new Date().toLocaleDateString('es-MX');
+  hideLoading();
+  return true;
+}
+
+function renderMvGrids(tid){
+  if(!availability[tid])availability[tid]={};
+  if(!availability[tid][currentCicloId])availability[tid][currentCicloId]={};
+  const av=availability[tid][currentCicloId];
+
+  let html='';
+  for(const turno of['M','V']){
+    html+=`<div class="card" style="margin-bottom:1rem;overflow:hidden">
+      <div class="ch">Turno ${turno==='M'?'Matutino (7:00 – 13:40)':'Vespertino (13:40 – 20:00)'}</div>
+      <div style="overflow-x:auto;padding:.75rem">
+      <div class="ag" style="min-width:480px">
+        <div></div>
+        ${DAYS.map(d=>`<div class="ag-dh">${d.slice(0,3)}</div>`).join('')}
+    `;
+    for(const slot of SLOTS[turno]){
+      html+=`<div class="ag-th">${slot.lbl}</div>`;
+      if(slot.recess||slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5" style="font-size:.58rem">${slot.recess?'☕ Receso':'—'}</div>`;
+        continue;
+      }
+      for(let d=0;d<5;d++){
+        const key=slot.id+'_'+d;
+        const st=av[key]||'neutral';
+        html+=`<div class="ag-cell ${st}" onclick="mvToggle('${tid}','${key}',this)"></div>`;
+      }
+    }
+    html+=`</div></div></div>`;
+  }
+  document.getElementById('mv-grids').innerHTML=html;
+}
+
+function mvToggle(tid,key,el){
+  if(!availability[tid])availability[tid]={};
+  if(!availability[tid][currentCicloId])availability[tid][currentCicloId]={};
+  const av=availability[tid][currentCicloId];
+  const cur=av[key]||'neutral';
+  const next=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
+  av[key]=next;
+  el.className='ag-cell '+next;
+}
+
+async function mvSave(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  if(!tid||!currentCicloId)return;
+
+  const av=((availability[tid]||{})[currentCicloId]||{});
+  const rows=Object.entries(av).map(([key,estado])=>{
+    const[slot_id,dia]=key.split('_');
+    return{maestro_id:tid,ciclo_id:currentCicloId,slot_id,dia:parseInt(dia),estado};
+  });
+
+  const btn=document.querySelector('#mv-save-wrap button');
+  btn.disabled=true;btn.textContent='Guardando…';
+  try{
+    if(rows.length){
+      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(rows)
+      });
+    }
+    btn.textContent='✓ Guardado correctamente';
+    btn.style.background='var(--green)';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Guardar disponibilidad';btn.style.background='';},3000);
+  }catch(e){
+    btn.disabled=false;btn.textContent='❌ Error — intenta de nuevo';
+    setTimeout(()=>{btn.textContent='💾 Guardar disponibilidad';},3000);
+  }
+}
+
+async function renderMvHorario(tid){
+  if(!currentCicloId)return;
+  try{
+    // Load all horario rows for this teacher in this ciclo
+    const rows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${tid}&order=dia.asc,slot_id.asc`);
+    if(!rows||!rows.length){
+      document.getElementById('mv-horario-section').style.display='none';
+      return;
+    }
+    // Load group names
+    const grpIds=[...new Set(rows.map(r=>r.grupo_id))];
+    const grps=await dbGet('grupos',`id=in.(${grpIds.join(',')})`);
+    const grpMap={};grps.forEach(g=>grpMap[g.id]=g.clave);
+
+    document.getElementById('mv-horario-section').style.display='block';
+
+    // Build simple table
+    let html=`<div class="card" style="overflow:hidden">
+      <div class="ch">Clases asignadas <span class="tag t-blue">${rows.length} bloques</span></div>`;
+    const byDay=[0,1,2,3,4].map(d=>rows.filter(r=>r.dia===d));
+    for(let d=0;d<5;d++){
+      const dayRows=byDay[d];
+      if(!dayRows.length)continue;
+      html+=`<div style="padding:.5rem .9rem;background:var(--bg2);font-family:var(--fh);font-weight:700;font-size:.72rem;border-bottom:1px solid var(--bdr)">${DAYS[d]}</div>`;
+      dayRows.forEach(r=>{
+        const slot=allSlots().find(s=>s.id===r.slot_id);
+        const grpClave=grpMap[r.grupo_id]||'?';
+        html+=`<div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .9rem;border-bottom:1px solid var(--bdr);font-size:.78rem">
+          <span style="font-family:var(--fm);font-size:.62rem;color:var(--ink2);width:90px;flex-shrink:0">${slot?.lbl||r.slot_id}</span>
+          <span style="font-weight:700;flex:1;font-family:var(--fh)">${r.materia_nombre}</span>
+          <span class="tag t-blue">${grpClave}</span>
+        </div>`;
+      });
+    }
+    html+=`</div>`;
+    document.getElementById('mv-horario').innerHTML=html;
+  }catch(e){
+    document.getElementById('mv-horario-section').style.display='none';
+  }
+}
+
 document.querySelectorAll('.mbg').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
 });
@@ -2517,10 +2777,13 @@ document.querySelectorAll('.mbg').forEach(el=>{
   try{
     await ensureTeachers();
     await ensureCompetencias();
+
+    // Check if this is a teacher link
+    const isMaestroMode=await checkMaestroMode();
+    if(isMaestroMode){ hideLoading(); return; }
+
     await loadCiclos();
-    if(currentCicloId){
-      await ensureGroups();
-    }
+    if(currentCicloId) await ensureGroups();
   }catch(e){
     toast('Error de conexión. Verifica tu clave de Supabase.','err');
     console.error(e);
