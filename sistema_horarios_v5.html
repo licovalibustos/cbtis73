@@ -2608,13 +2608,9 @@ async function checkMaestroMode(){
     return true;
   }
 
-  // Switch to maestro view
-  document.getElementById('maestro-view').style.display='block';
-  document.querySelector('.app').style.display='none';
-
+  // Switch already done instantly — just load data
   showLoading('Cargando tu información…');
   try{
-    await ensureTeachers();
     await loadCiclos();
   }catch(e){ hideLoading(); return true; }
 
@@ -2767,6 +2763,18 @@ async function renderMvHorario(tid){
     document.getElementById('mv-horario-section').style.display='none';
   }
 }
+
+// ── Detect maestro mode IMMEDIATELY on script load (before any async) ──
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  const token=params.get('token');
+  if(tid&&token){
+    // Hide main app instantly — no flash
+    document.querySelector('.app').style.display='none';
+    document.getElementById('maestro-view').style.display='block';
+  }
+})();
 
 document.querySelectorAll('.mbg').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
