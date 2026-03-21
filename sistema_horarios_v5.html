@@ -233,7 +233,10 @@ input::placeholder{color:var(--ink3);}
 <div class="top">
   <div class="brand">
     <div class="bmark">73</div>
-    <div><div class="btxt">CBTIS 73</div><div class="bsub">Sistema de Horarios</div></div>
+    <div>
+      <div class="btxt">CBTIS 73</div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v5.1</span></div>
+    </div>
   </div>
   <div class="cycle-bar" style="gap:.5rem">
     <span class="cyl">CICLO</span>
@@ -2582,7 +2585,7 @@ function teacherToken(tid){
 
 function teacherLink(tid){
   const token=teacherToken(tid);
-  const base=window.location.href.split('?')[0];
+  const base=window.location.href.split('/').slice(0,-1).join('/')+'/maestro.html';
   return `${base}?maestro=${tid}&token=${token}`;
 }
 

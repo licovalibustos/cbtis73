@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Disponibilidad — CBTIS 73</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Lato:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg:#f3f1ec; --surf:#fff; --bdr:#dedad0; --bdr2:#c4bfb4;
+  --ink:#1c1a16; --ink2:#6a655c; --ink3:#aaa59c;
+  --red:#bf3a18; --red-lt:#fde9e4;
+  --blue:#1a44be; --blue-lt:#e8edf8;
+  --green:#1a7840; --green-lt:#e6f4ec;
+  --amber:#b86810; --amber-lt:#fdf2e0;
+  --fh:'Bricolage Grotesque',sans-serif;
+  --fb:'Lato',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+  --r:10px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;min-height:100vh;}
+
+/* ── HEADER ── */
+.header{background:var(--ink);color:white;padding:1rem 1.2rem;display:flex;align-items:center;gap:.85rem;position:sticky;top:0;z-index:50;}
+.hmark{width:36px;height:36px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.85rem;color:white;flex-shrink:0;}
+.htxt{font-family:var(--fh);font-weight:800;font-size:.95rem;}
+.hsub{font-size:.62rem;color:rgba(255,255,255,.45);font-family:var(--fm);}
+.hciclo{margin-left:auto;font-size:.65rem;color:rgba(255,255,255,.5);font-family:var(--fm);text-align:right;}
+
+/* ── CONTENT ── */
+.content{max-width:700px;margin:0 auto;padding:1.2rem;}
+
+/* ── TEACHER CARD ── */
+.teacher-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:1rem;display:flex;align-items:center;gap:.9rem;box-shadow:var(--sh);}
+.av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.85rem;color:white;flex-shrink:0;}
+.t-name{font-family:var(--fh);font-weight:800;font-size:1rem;line-height:1.2;}
+.t-info{font-size:.7rem;color:var(--ink2);margin-top:.2rem;}
+
+/* ── INSTRUCTIONS ── */
+.instructions{background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:var(--r);padding:.85rem 1rem;margin-bottom:1rem;font-size:.78rem;color:var(--blue);}
+.instructions b{font-family:var(--fh);}
+.legend{display:flex;gap:.9rem;margin-top:.6rem;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:.4rem;font-size:.72rem;}
+.leg-dot{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;}
+
+/* ── TURNO LABEL ── */
+.turno-label{font-family:var(--fh);font-weight:700;font-size:.78rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin:1.1rem 0 .5rem;}
+
+/* ── GRID ── */
+.ag-wrap{overflow-x:auto;background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:.75rem;}
+.ag{display:grid;grid-template-columns:88px repeat(5,1fr);gap:2px;padding:.5rem;min-width:460px;}
+.ag-dh{background:var(--ink);color:white;text-align:center;padding:.4rem .2rem;font-family:var(--fh);font-weight:700;font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;}
+.ag-th{background:var(--bg);padding:.3rem .45rem;font-family:var(--fm);font-size:.56rem;color:var(--ink2);display:flex;align-items:center;border-radius:4px;border:1px solid var(--bdr);}
+.ag-cell{border-radius:4px;min-height:36px;cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;border:2px solid transparent;user-select:none;-webkit-tap-highlight-color:transparent;}
+.ag-cell:active{transform:scale(.92);}
+.ag-cell.avail{background:var(--green-lt);border-color:#7ec09a;color:var(--green);}
+.ag-cell.avail::after{content:'✓';}
+.ag-cell.unavail{background:var(--red-lt);border-color:#efa090;color:var(--red);}
+.ag-cell.unavail::after{content:'✗';}
+.ag-cell.neutral{background:var(--bg);border-color:var(--bdr);color:var(--ink3);}
+.ag-cell.neutral::after{content:'·';font-size:1.1rem;}
+.ag-cell.sp{background:var(--bg);border-color:var(--bdr);cursor:default;color:var(--ink3);font-size:.55rem;font-weight:400;}
+.ag-cell.sp::after{content:none;}
+.ag-span5{grid-column:span 5;}
+
+/* ── HORARIO ── */
+.horario-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:1rem;overflow:hidden;}
+.horario-head{padding:.7rem 1rem;background:var(--ink);color:white;font-family:var(--fh);font-weight:700;font-size:.8rem;}
+.horario-day{padding:.45rem .9rem;background:var(--bg);font-family:var(--fh);font-weight:700;font-size:.7rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bdr);}
+.horario-row{display:flex;align-items:center;gap:.75rem;padding:.5rem .9rem;border-bottom:1px solid var(--bdr);font-size:.78rem;}
+.horario-time{font-family:var(--fm);font-size:.6rem;color:var(--ink2);width:86px;flex-shrink:0;}
+.horario-subj{font-weight:700;flex:1;font-family:var(--fh);font-size:.76rem;}
+.horario-grp{padding:.1rem .45rem;border-radius:5px;background:var(--blue-lt);color:var(--blue);font-family:var(--fm);font-size:.6rem;}
+
+/* ── SAVE BUTTON ── */
+.save-wrap{position:sticky;bottom:1rem;text-align:center;margin:1.2rem 0;}
+.save-btn{background:var(--green);color:white;border:none;border-radius:10px;padding:.8rem 2.5rem;font-family:var(--fh);font-weight:700;font-size:.95rem;cursor:pointer;box-shadow:0 4px 16px rgba(26,120,64,.35);transition:all .15s;width:100%;max-width:320px;}
+.save-btn:hover{opacity:.88;}
+.save-btn:disabled{opacity:.6;cursor:default;}
+.save-btn.success{background:var(--green);}
+
+/* ── STATES ── */
+.screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:2rem;}
+.screen .ico{font-size:3rem;margin-bottom:.75rem;}
+.screen .title{font-family:var(--fh);font-weight:800;font-size:1.2rem;margin-bottom:.4rem;}
+.screen .sub{font-size:.82rem;color:var(--ink2);}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── FOOTER ── */
+.footer{text-align:center;font-size:.62rem;color:var(--ink3);padding:1.5rem;margin-top:1rem;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:white;padding:.65rem 1.2rem;border-radius:var(--r);font-size:.8rem;z-index:200;opacity:0;transition:all .25s;white-space:nowrap;border-left:4px solid var(--green);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.err{border-left-color:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hmark">73</div>
+  <div>
+    <div class="htxt">CBTIS No. 73</div>
+    <div class="hsub">Captura de Disponibilidad &nbsp;·&nbsp; v5.1</div>
+  </div>
+  <div class="hciclo" id="hciclo"></div>
+</div>
+
+<div class="content" id="content">
+  <!-- Loading state -->
+  <div class="screen" id="screen-loading">
+    <div class="spinner"></div>
+    <div class="title">Cargando...</div>
+    <div class="sub">Conectando con el sistema</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════
+//  CONFIG
+// ═══════════════════════════
+const SUPA_URL='https://omhfxwelgtbbkwkfkktl.supabase.co';
+const SUPA_KEY='sb_publishable_WXYXW7jlmrc89TePsudvLg__Mk71If8';
+
+const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const SLOTS={
+  M:[
+    {id:'m1',lbl:'7:00–7:50'},{id:'m2',lbl:'7:50–8:40'},{id:'m3',lbl:'8:40–9:30'},
+    {id:'r2a',lbl:'9:30–9:50',recess:true,rLbl:'☕ Receso'},
+    {id:'m4',lbl:'9:30–10:20'},
+    {id:'mx',lbl:'9:50–10:40',blocked:true},
+    {id:'r46a',lbl:'10:20–10:40',recess:true,rLbl:'☕ Receso'},
+    {id:'m5',lbl:'10:40–11:25'},{id:'m6',lbl:'11:25–12:10'},
+    {id:'m7',lbl:'12:10–12:55'},{id:'m8',lbl:'12:55–13:40'},
+  ],
+  V:[
+    {id:'v1',lbl:'13:40–14:25'},{id:'v2',lbl:'14:25–15:10'},{id:'v3',lbl:'15:10–15:55'},
+    {id:'r2b',lbl:'15:55–16:15',recess:true,rLbl:'☕ Receso'},
+    {id:'v4',lbl:'15:55–16:40'},
+    {id:'vx',lbl:'16:15–17:00',blocked:true},
+    {id:'r46b',lbl:'16:40–17:00',recess:true,rLbl:'☕ Receso'},
+    {id:'v5',lbl:'17:00–17:45'},{id:'v6',lbl:'17:45–18:30'},
+    {id:'v7',lbl:'18:30–19:15'},{id:'v8',lbl:'19:15–20:00'},
+  ]
+};
+
+const COLORS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840','#4a8810'];
+const ac=id=>COLORS[parseInt(id.replace(/\D/g,''))%COLORS.length];
+const ini=n=>n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+
+// ═══════════════════════════
+//  SUPABASE
+// ═══════════════════════════
+async function sb(path,method='GET',body){
+  const r=await fetch(SUPA_URL+'/rest/v1/'+path,{
+    method,
+    headers:{
+      'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':method==='POST'?'return=representation':''
+    },
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!r.ok) throw new Error(await r.text());
+  if(r.status===204)return null;
+  return r.json();
+}
+
+// ═══════════════════════════
+//  STATE
+// ═══════════════════════════
+let teacher=null;
+let cicloId=null;
+let avail={};   // slotId_day -> 'avail'|'unavail'|'neutral'
+
+// ═══════════════════════════
+//  TOKEN VALIDATION
+// ═══════════════════════════
+function teacherToken(tid){
+  const salt='CBTIS73RBravo';
+  const str=tid+salt;
+  let h=0;
+  for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0;
+  return Math.abs(h).toString(36).padStart(6,'0');
+}
+
+// ═══════════════════════════
+//  TOAST
+// ═══════════════════════════
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show '+(type||'');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.className='',3000);
+}
+
+// ═══════════════════════════
+//  RENDER
+// ═══════════════════════════
+function showError(msg){
+  document.getElementById('content').innerHTML=`
+    <div class="screen">
+      <div class="ico">❌</div>
+      <div class="title">Acceso no válido</div>
+      <div class="sub">${msg}</div>
+    </div>`;
+}
+
+function renderPage(){
+  const t=teacher;
+  let html=`
+    <!-- Teacher card -->
+    <div class="teacher-card">
+      <div class="av" style="background:${ac(t.id)}">${ini(t.nombre)}</div>
+      <div>
+        <div class="t-name">${t.nombre}</div>
+        <div class="t-info">${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga reglamentaria${t.obs?' · <b>'+t.obs+'</b>':''}</div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <b>📋 Marca tu disponibilidad</b> para el ciclo escolar.<br>
+      Toca cada bloque para indicar tu preferencia. Al terminar presiona <b>Guardar</b>.
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green-lt);border:2px solid #7ec09a;color:var(--green)">✓</div>Disponible</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--red-lt);border:2px solid #efa090;color:var(--red)">✗</div>No disponible</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--bg);border:2px solid var(--bdr);color:var(--ink3)">·</div>Sin preferencia</div>
+      </div>
+    </div>
+  `;
+
+  // Grids for each turno
+  for(const turno of['M','V']){
+    html+=`<div class="turno-label">Turno ${turno==='M'?'Matutino':'Vespertino'}</div>
+    <div class="ag-wrap"><div class="ag">
+      <div></div>
+      ${DAYS.map(d=>`<div class="ag-dh">${d.slice(0,3)}</div>`).join('')}
+    `;
+    for(const slot of SLOTS[turno]){
+      html+=`<div class="ag-th">${slot.lbl}</div>`;
+      if(slot.recess||slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5">${slot.recess?(slot.rLbl||'☕'):'—'}</div>`;
+        continue;
+      }
+      for(let d=0;d<5;d++){
+        const key=slot.id+'_'+d;
+        const st=avail[key]||'neutral';
+        html+=`<div class="ag-cell ${st}" onclick="toggle('${key}',this)"></div>`;
+      }
+    }
+    html+=`</div></div>`;
+  }
+
+  // Save button
+  html+=`<div class="save-wrap">
+    <button class="save-btn" id="save-btn" onclick="save()">💾 Guardar disponibilidad</button>
+  </div>`;
+
+  document.getElementById('content').innerHTML=html;
+  renderHorario();
+}
+
+function toggle(key,el){
+  const cur=avail[key]||'neutral';
+  const next=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
+  avail[key]=next;
+  el.className='ag-cell '+next;
+}
+
+async function renderHorario(){
+  if(!cicloId||!teacher)return;
+  try{
+    const rows=await sb(`horario?ciclo_id=eq.${cicloId}&maestro_id=eq.${teacher.id}&order=dia.asc,slot_id.asc`);
+    if(!rows||!rows.length)return;
+
+    // Load group names
+    const grpIds=[...new Set(rows.map(r=>r.grupo_id))];
+    const grps=await sb(`grupos?id=in.(${grpIds.join(',')})`);
+    const grpMap={};grps.forEach(g=>grpMap[g.id]=g.clave);
+
+    const allSlots=[...SLOTS.M,...SLOTS.V];
+
+    // Group by day
+    let html=`<div class="horario-card">
+      <div class="horario-head">📋 Tu horario asignado</div>`;
+
+    for(let d=0;d<5;d++){
+      const dayRows=rows.filter(r=>r.dia===d);
+      if(!dayRows.length)continue;
+      html+=`<div class="horario-day">${DAYS[d]}</div>`;
+      dayRows.forEach(r=>{
+        const slot=allSlots.find(s=>s.id===r.slot_id);
+        html+=`<div class="horario-row">
+          <div class="horario-time">${slot?.lbl||r.slot_id}</div>
+          <div class="horario-subj">${r.materia_nombre}</div>
+          <span class="horario-grp">${grpMap[r.grupo_id]||'?'}</span>
+        </div>`;
+      });
+    }
+    html+=`</div>`;
+
+    // Append after save button
+    const saveWrap=document.getElementById('save-btn')?.closest('.save-wrap');
+    if(saveWrap) saveWrap.insertAdjacentHTML('afterend',html);
+  }catch(e){
+    // Horario not available yet — that's ok
+  }
+}
+
+async function save(){
+  const btn=document.getElementById('save-btn');
+  if(!btn||!teacher||!cicloId)return;
+  btn.disabled=true; btn.textContent='Guardando…';
+
+  const rows=Object.entries(avail).map(([key,estado])=>{
+    const[slot_id,dia]=key.split('_');
+    return{maestro_id:teacher.id,ciclo_id:cicloId,slot_id,dia:parseInt(dia),estado};
+  });
+
+  try{
+    if(rows.length){
+      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+        method:'POST',
+        headers:{
+          'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates'
+        },
+        body:JSON.stringify(rows)
+      });
+    }
+    btn.textContent='✅ Guardado correctamente';
+    btn.style.background='var(--green)';
+    toast('Disponibilidad guardada ✓');
+    setTimeout(()=>{
+      btn.disabled=false;
+      btn.textContent='💾 Guardar disponibilidad';
+    },4000);
+  }catch(e){
+    btn.disabled=false;
+    btn.textContent='❌ Error — intenta de nuevo';
+    toast('Error al guardar','err');
+    setTimeout(()=>{ btn.textContent='💾 Guardar disponibilidad'; },3000);
+  }
+}
+
+// ═══════════════════════════
+//  INIT
+// ═══════════════════════════
+(async()=>{
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  const token=params.get('token');
+
+  // Validate params
+  if(!tid||!token){
+    showError('Este link no es válido. Solicita tu link personal al administrador.');
+    return;
+  }
+  if(token!==teacherToken(tid)){
+    showError('Link inválido o expirado. Solicita un nuevo link al administrador.');
+    return;
+  }
+
+  try{
+    // Load teacher
+    const teachers=await sb(`maestros?id=eq.${tid}`);
+    if(!teachers||!teachers.length){
+      showError('Maestro no encontrado en el sistema.');
+      return;
+    }
+    teacher=teachers[0];
+    teacher.id=tid;
+
+    // Load active ciclo
+    const ciclos=await sb('ciclos?activo=eq.true&order=fecha_inicio.desc&limit=1');
+    const ciclo=ciclos&&ciclos.length?ciclos[0]:null;
+    if(ciclo){
+      cicloId=ciclo.id;
+      document.getElementById('hciclo').textContent=ciclo.nombre;
+    }
+
+    // Load existing availability
+    if(cicloId){
+      const rows=await sb(`disponibilidad?maestro_id=eq.${tid}&ciclo_id=eq.${cicloId}`);
+      (rows||[]).forEach(r=>{ avail[r.slot_id+'_'+r.dia]=r.estado; });
+    }
+
+    // Render
+    renderPage();
+
+  }catch(e){
+    showError('Error de conexión. Intenta recargar la página.');
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
