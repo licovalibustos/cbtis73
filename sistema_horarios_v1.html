@@ -640,53 +640,8 @@ const SLOTS={
 };
 
 // Teachers from the real distribution file
-const TEACHERS=[
-  {id:'T01',name:'ACOSTA TERRAZAS MA. LUISA',hrs_nom:40,hrs_carga:30},
-  {id:'T02',name:'ALVAREZ SOLIS JUAN ALBERTO',hrs_nom:30,hrs_carga:24},
-  {id:'T03',name:'ANA LAURA ROSAS VILLARREAL',hrs_nom:30,hrs_carga:22},
-  {id:'T04',name:'ARCOS VELÁZQUEZ GABRIELA',hrs_nom:30,hrs_carga:24,obs:'JEFE ESC. TM'},
-  {id:'T05',name:'AVILA GONZALEZ GRASIELA',hrs_nom:40,hrs_carga:30},
-  {id:'T06',name:'BEATRIZ GARZA GARZA',hrs_nom:30,hrs_carga:22},
-  {id:'T07',name:'BOLAÑOS CARMONA MA. GUADALUPE',hrs_nom:30,hrs_carga:22},
-  {id:'T08',name:'BRENDA ELENA PÉREZ LIMAS',hrs_nom:30,hrs_carga:22},
-  {id:'T09',name:'CARRASCO GARCIA ESPERANZA',hrs_nom:30,hrs_carga:24},
-  {id:'T10',name:'DANTE A. LÓPEZ LÓPEZ',hrs_nom:20,hrs_carga:16},
-  {id:'T11',name:'DANIEL HERNANDEZ PONCE',hrs_nom:20,hrs_carga:16},
-  {id:'T12',name:'EDGAR ISAAC AYALA MORALES',hrs_nom:7,hrs_carga:7},
-  {id:'T13',name:'ELVA MOLANO AGADO',hrs_nom:30,hrs_carga:22},
-  {id:'T14',name:'ESPERANZA CARRASCO GARCÍA',hrs_nom:30,hrs_carga:24},
-  {id:'T15',name:'FELICIANO MARTINEZ GAUDENCIO',hrs_nom:18,hrs_carga:18},
-  {id:'T16',name:'FLORES ZÁRATE MARÍA DEL CARMEN',hrs_nom:30,hrs_carga:22},
-  {id:'T17',name:'GALVAN PEÑA PAMELA',hrs_nom:20,hrs_carga:16},
-  {id:'T18',name:'GLADYS GONZALEZ PAZ',hrs_nom:30,hrs_carga:24},
-  {id:'T19',name:'GLENDA MENDIOLA TEJADA',hrs_nom:30,hrs_carga:24},
-  {id:'T20',name:'GONZALEZ MTZ. ARNULFO H.',hrs_nom:40,hrs_carga:30},
-  {id:'T21',name:'HECTOR RODELA ROJAS',hrs_nom:40,hrs_carga:30},
-  {id:'T22',name:'IBARRA BELMARES KARINA LEONOR',hrs_nom:30,hrs_carga:24},
-  {id:'T23',name:'J. ISABEL HERNÁNDEZ ORTEGA',hrs_nom:30,hrs_carga:22},
-  {id:'T24',name:'JANETH LUNA RODRÍGUEZ',hrs_nom:30,hrs_carga:22},
-  {id:'T25',name:'JORGE OMAR HERNÁNDEZ DORIA',hrs_nom:40,hrs_carga:30},
-  {id:'T26',name:'JOSE ANGEL SEGURA CASTILLA',hrs_nom:30,hrs_carga:24},
-  {id:'T27',name:'JOSE SIFUENTES CERVANTES',hrs_nom:40,hrs_carga:30},
-  {id:'T28',name:'JUAN ANDRES SANCHEZ PESQUEDA',hrs_nom:40,hrs_carga:30},
-  {id:'T29',name:'JUVENTINO PEREZ FLORES',hrs_nom:36,hrs_carga:28},
-  {id:'T30',name:'KARLA PERALES TREJO',hrs_nom:40,hrs_carga:30},
-  {id:'T31',name:'KERIME SANCHEZ LOPEZ',hrs_nom:30,hrs_carga:22},
-  {id:'T32',name:'LUZ ELENA GARZA HERNÁNDEZ',hrs_nom:30,hrs_carga:24},
-  {id:'T33',name:'MARCO ANTONIO MEDINA DELGADO',hrs_nom:30,hrs_carga:24},
-  {id:'T34',name:'MARITZA PEREZ GARZA',hrs_nom:30,hrs_carga:22},
-  {id:'T35',name:'MAYRA VERBER WALLE',hrs_nom:20,hrs_carga:16},
-  {id:'T36',name:'NORMA IRAIDA LUNA TORRES',hrs_nom:30,hrs_carga:24},
-  {id:'T37',name:'ORTEGA GUERRERO ELVIA LIZETH',hrs_nom:30,hrs_carga:22},
-  {id:'T38',name:'RODRIGUEZ GAUCIN ALFREDO',hrs_nom:40,hrs_carga:30},
-  {id:'T39',name:'ROSA ELIA PECINA MORENO',hrs_nom:30,hrs_carga:22},
-  {id:'T40',name:'SALINAS DIAZ ALFREDO JOEL',hrs_nom:40,hrs_carga:30},
-  {id:'T41',name:'TREVIÑO MERCADO ALBERTO',hrs_nom:30,hrs_carga:22},
-  {id:'T42',name:'TRUJILLO GARCIA MYRIAM LIZETH',hrs_nom:20,hrs_carga:16},
-  {id:'T43',name:'VAZQUEZ HERRERA JAZMIN LIZETH',hrs_nom:20,hrs_carga:16},
-  {id:'T44',name:'VAZQUEZ ROBLES ESTEBAN',hrs_nom:40,hrs_carga:30,obs:'JEFE ESC. TV'},
-  {id:'T45',name:'VERBER WALLE MAYRA ALEJANDRA',hrs_nom:20,hrs_carga:16},
-];
+const TEACHERS=[];
+// Maestros se cargan desde Supabase
 
 // ═══════════════════════════════════════════
 //  STATE
@@ -734,28 +689,13 @@ let currentCicloId=null;
 let cycle='par';      // kept for legacy helpers, derived from currentCiclo.tipo
 
 // groups[cycle] = [{id,sem,turno,especialidad}]
-let groups={
-  par:[
-    {id:'2AMA',sem:2,turno:'M',especialidad:'Recursos Humanos'},
-    {id:'2AMC',sem:2,turno:'M',especialidad:'Contabilidad'},
-    {id:'2AML',sem:2,turno:'M',especialidad:'Logística'},
-    {id:'2BML',sem:2,turno:'M',especialidad:'Logística'},
-    {id:'2AMM',sem:2,turno:'M',especialidad:'Mantenimiento'},
-    {id:'2AMP',sem:2,turno:'M',especialidad:'Programación'},
-    {id:'4AMA',sem:4,turno:'M',especialidad:'Recursos Humanos'},
-    {id:'4AMC',sem:4,turno:'M',especialidad:'Contabilidad'},
-    {id:'4AVA',sem:4,turno:'V',especialidad:'Administración'},
-    {id:'4AVL',sem:4,turno:'V',especialidad:'Logística'},
-    {id:'6AMA',sem:6,turno:'M',especialidad:'Recursos Humanos'},
-    {id:'6AMP',sem:6,turno:'M',especialidad:'Programación'},
-    {id:'6AVP',sem:6,turno:'V',especialidad:'Programación'},
-  ],
-  impar:[]
+let groups={};
+// Grupos se cargan desde Supabase por ciclo
 };
 
 // subjects[cycle][groupId] = [{id,name,hrs,lab,labTeacherId}]
 // NO teacher for regular hours — motor decides
-let subjects={par:{},impar:{}};
+let subjects={};
 
 // competencias[teacherId] = Set of subject names (strings, normalized uppercase)
 let competencias={};
@@ -764,7 +704,7 @@ let competencias={};
 let availability={};
 
 // schedule[cycle][groupId][slotId_day] = {subjectName,teacherId,status,isLab}
-let schedule={par:{},impar:{}};
+let schedule={};
 
 // suggestions list
 let suggestions=[];
