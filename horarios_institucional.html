@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HorariosCBTIS · Modo Institucional</title>
+<title>Sistema de Horarios</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
 
@@ -232,10 +232,10 @@ input::placeholder{color:var(--ink3);}
 <!-- TOPBAR -->
 <div class="top">
   <div class="brand">
-    <div class="bmark">73</div>
+    <div class="bmark">🏫</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Modo Institucional &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.1</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.1</span></div>
     </div>
   </div>
   <div class="cycle-bar" style="gap:.5rem">
@@ -307,6 +307,7 @@ input::placeholder{color:var(--ink3);}
   <div class="vbar">
     <div class="vtit">👨‍🏫 Maestros y Competencias</div><div class="vsep"></div>
     <input type="text" id="maest-search" placeholder="Buscar maestro…" oninput="renderMaestrosList()" style="width:220px">
+    <button class="btn btn-green btn-sm" onclick="openNewTeacher()">+ Nuevo maestro</button>
   </div>
   <div style="display:flex;flex:1;overflow:hidden">
     <div class="sb">
@@ -410,7 +411,7 @@ input::placeholder{color:var(--ink3);}
   <div style="max-width:720px;margin:0 auto;padding:1.5rem">
     <!-- Header -->
     <div style="background:var(--ink);color:white;border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
-      <div style="width:42px;height:42px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.8rem;flex-shrink:0">73</div>
+      <div style="width:42px;height:42px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.8rem;flex-shrink:0">🏫</div>
       <div>
         <div style="font-family:var(--fh);font-weight:800;font-size:1rem">CBTIS</div>
         <div style="font-size:.65rem;color:rgba(255,255,255,.5);font-family:var(--fm)">Captura de Disponibilidad</div>
@@ -550,15 +551,15 @@ input::placeholder{color:var(--ink3);}
 <div class="mbg" id="modal-teacher">
   <div class="modal">
     <div class="mh">
-      <div><div class="mt">Editar datos del maestro</div><div class="ms" id="mte-sub"></div></div>
+      <div><div class="mt" id="mte-title">Nuevo maestro</div><div class="ms" id="mte-sub"></div></div>
       <button class="mx" onclick="closeM('modal-teacher')">✕</button>
     </div>
     <div class="mb">
-      <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%"></div>
+      <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%;text-transform:uppercase" placeholder="Ej: GARCÍA LÓPEZ JUAN CARLOS"></div>
       <div class="frow">
-        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: TEMA750707L67" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: GALJ850101AB1" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
         <div class="field"><label>Categoría</label>
-          <select id="mte-cat" style="width:100%">
+          <select id="mte-cat" style="width:100%" onchange="mteAutoHrs()">
             <option value="">— Selecciona —</option>
             <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
             <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
@@ -569,9 +570,9 @@ input::placeholder{color:var(--ink3);}
             <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
             <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
             <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
-            <option value="INTERINO T/C">Interino T/C</option>
-            <option value="INTERINO 3/4">Interino 3/4 Tiempo</option>
-            <option value="INTERINO 1/2">Interino 1/2 Tiempo</option>
+            <option value="INTERINO T/C">Interino T/C (40h)</option>
+            <option value="INTERINO 3/4">Interino 3/4 Tiempo (30h)</option>
+            <option value="INTERINO 1/2">Interino 1/2 Tiempo (20h)</option>
             <option value="OTRO">Otro</option>
           </select>
         </div>
@@ -587,7 +588,8 @@ input::placeholder{color:var(--ink3);}
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-teacher')">Cancelar</button>
-      <button class="btn btn-green" onclick="saveTeacher()">Guardar cambios</button>
+      <button class="btn btn-red btn-sm" id="mte-del-btn" style="display:none" onclick="deleteTeacher()">Eliminar maestro</button>
+      <button class="btn btn-green" onclick="saveTeacher()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1319,33 +1321,101 @@ function delComp(tid,enc){
 }
 
 let editTeacherId=null;
+
+function openNewTeacher(){
+  editTeacherId=null;
+  document.getElementById('mte-title').textContent='Nuevo maestro';
+  document.getElementById('mte-sub').textContent='';
+  document.getElementById('mte-name').value='';
+  document.getElementById('mte-rfc').value='';
+  document.getElementById('mte-cat').value='';
+  document.getElementById('mte-nom').value='';
+  document.getElementById('mte-carga').value='';
+  document.getElementById('mte-obs').value='';
+  document.getElementById('mte-del-btn').style.display='none';
+  document.getElementById('modal-teacher').classList.add('open');
+}
+
 function openEditTeacher(tid){
   const t=T(tid);if(!t)return;
   editTeacherId=tid;
-  document.getElementById("mte-sub").textContent=t.name;
-  document.getElementById("mte-name").value=t.name;
-  document.getElementById("mte-rfc").value=t.rfc||'';
-  document.getElementById("mte-cat").value=t.categoria||'';
-  document.getElementById("mte-nom").value=t.hrs_nom;
-  document.getElementById("mte-carga").value=t.hrs_carga;
-  document.getElementById("mte-obs").value=t.obs||"";
-  document.getElementById("modal-teacher").classList.add("open");
+  document.getElementById('mte-title').textContent='Editar maestro';
+  document.getElementById('mte-sub').textContent=t.name;
+  document.getElementById('mte-name').value=t.name;
+  document.getElementById('mte-rfc').value=t.rfc||'';
+  document.getElementById('mte-cat').value=t.categoria||'';
+  document.getElementById('mte-nom').value=t.hrs_nom;
+  document.getElementById('mte-carga').value=t.hrs_carga;
+  document.getElementById('mte-obs').value=t.obs||'';
+  document.getElementById('mte-del-btn').style.display='inline-flex';
+  document.getElementById('modal-teacher').classList.add('open');
+}
+
+// Auto-fill hours when category is selected
+function mteAutoHrs(){
+  const cat=document.getElementById('mte-cat').value;
+  if(cat.includes('T/C')){
+    document.getElementById('mte-nom').value=40;
+    document.getElementById('mte-carga').value=30;
+  } else if(cat.includes('3/4')){
+    document.getElementById('mte-nom').value=30;
+    document.getElementById('mte-carga').value=22;
+  } else if(cat.includes('1/2')){
+    document.getElementById('mte-nom').value=20;
+    document.getElementById('mte-carga').value=16;
+  }
 }
 
 function saveTeacher(){
-  const t=T(editTeacherId);if(!t)return;
-  const name=document.getElementById("mte-name").value.trim().toUpperCase();
-  const rfc=document.getElementById("mte-rfc").value.trim().toUpperCase()||null;
-  const categoria=document.getElementById("mte-cat").value||null;
-  const hrs_nom=parseInt(document.getElementById("mte-nom").value)||t.hrs_nom;
-  const hrs_carga=parseInt(document.getElementById("mte-carga").value)||t.hrs_carga;
-  const obs=document.getElementById("mte-obs").value.trim()||null;
-  if(!name){toast("El nombre no puede estar vacío","err");return;}
-  Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
-  closeM("modal-teacher");
-  renderMaestroDetail(editTeacherId);
-  renderMaestrosList();
-  toast("Datos del maestro actualizados");
+  const name=document.getElementById('mte-name').value.trim().toUpperCase();
+  const rfc=document.getElementById('mte-rfc').value.trim().toUpperCase()||null;
+  const categoria=document.getElementById('mte-cat').value||null;
+  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
+  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
+  const obs=document.getElementById('mte-obs').value.trim()||null;
+  if(!name){toast('El nombre no puede estar vacío','err');return;}
+  if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
+
+  if(editTeacherId){
+    // Edit existing
+    const t=T(editTeacherId);
+    if(t) Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+    closeM('modal-teacher');
+    renderMaestroDetail(editTeacherId);
+    renderMaestrosList();
+    toast('Maestro actualizado ✓');
+  } else {
+    // New teacher — generate next ID
+    const maxId=TEACHERS.reduce((max,t)=>{
+      const n=parseInt(t.id.replace(/\D/g,''))||0;
+      return n>max?n:max;
+    },0);
+    const newId='T'+(String(maxId+1).padStart(2,'0'));
+    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
+    selTeacher=newId;
+    closeM('modal-teacher');
+    renderMaestrosList();
+    renderMaestroDetail(newId);
+    toast('Maestro agregado ✓');
+  }
+}
+
+async function deleteTeacher(){
+  if(!editTeacherId)return;
+  const t=T(editTeacherId);
+  if(!confirm(`¿Eliminar a ${t?.name}? Esta acción no se puede deshacer.`))return;
+  showLoading('Eliminando…');
+  try{
+    await dbDel('maestros',`id=eq.${editTeacherId}`);
+    const idx=TEACHERS.findIndex(x=>x.id===editTeacherId);
+    if(idx>-1)TEACHERS.splice(idx,1);
+    closeM('modal-teacher');
+    selTeacher=null;
+    renderMaestrosList();
+    document.getElementById('maest-detail').innerHTML='<div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>';
+    toast('Maestro eliminado','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
 }
 
 // ═══════════════════════════════════════════
@@ -2353,21 +2423,43 @@ saveDisp=async function(){
   hideLoading();
 };
 
-// ── Save teacher edits to DB ──
+// ── Save/create teacher to DB ──
 const _origSaveTeacher=saveTeacher;
 saveTeacher=async function(){
-  const t=T(editTeacherId);if(!t)return;
-  const nombre=document.getElementById('mte-name').value.trim().toUpperCase();
-  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||t.hrs_nom;
-  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||t.hrs_carga;
+  const name=document.getElementById('mte-name').value.trim().toUpperCase();
+  const rfc=document.getElementById('mte-rfc').value.trim().toUpperCase()||null;
+  const categoria=document.getElementById('mte-cat').value||null;
+  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
+  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
   const obs=document.getElementById('mte-obs').value.trim()||null;
-  if(!nombre){toast('El nombre no puede estar vacío','err');return;}
+  if(!name){toast('El nombre no puede estar vacío','err');return;}
+  if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
   showLoading('Guardando…');
   try{
-    await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre,hrs_nom,hrs_carga,obs,rfc:t.rfc||null,categoria:t.categoria||null});
-    Object.assign(t,{name:nombre,hrs_nom,hrs_carga,obs});
-    closeM('modal-teacher');renderMaestroDetail(editTeacherId);renderMaestrosList();
-    toast('Datos actualizados ✓');
+    if(editTeacherId){
+      // Update existing
+      await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
+      const t=T(editTeacherId);
+      if(t)Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+      closeM('modal-teacher');
+      renderMaestroDetail(editTeacherId);
+      renderMaestrosList();
+      toast('Maestro actualizado ✓');
+    } else {
+      // New teacher — generate next ID
+      const maxId=TEACHERS.reduce((max,t)=>{
+        const n=parseInt(t.id.replace(/\D/g,''))||0;
+        return n>max?n:max;
+      },0);
+      const newId='T'+(String(maxId+1).padStart(2,'0'));
+      await dbPost('maestros',{id:newId,nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
+      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
+      selTeacher=newId;
+      closeM('modal-teacher');
+      renderMaestrosList();
+      renderMaestroDetail(newId);
+      toast('Maestro agregado ✓');
+    }
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
 };
