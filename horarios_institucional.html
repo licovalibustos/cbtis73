@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HorariosCBTIS · Modo Institucional</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+  --bg:#f3f1ec; --bg2:#e8e5dd; --surf:#fff;
+  --bdr:#dedad0; --bdr2:#c4bfb4;
+  --ink:#1c1a16; --ink2:#6a655c; --ink3:#aaa59c;
+  --red:#bf3a18; --red-lt:#fde9e4;
+  --blue:#1a44be; --blue-lt:#e8edf8;
+  --green:#1a7840; --green-lt:#e6f4ec;
+  --amber:#b86810; --amber-lt:#fdf2e0;
+  --purple:#6218be; --purple-lt:#f0e8fc;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 3px 10px rgba(0,0,0,.04);
+  --sh-lg:0 4px 20px rgba(0,0,0,.10),0 12px 40px rgba(0,0,0,.06);
+  --r:10px;
+  --fh:'Bricolage Grotesque',sans-serif;
+  --fb:'Lato',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body.maestro-mode{overflow:auto!important;height:auto!important;}
+body.maestro-mode .app{display:none!important;}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;}
+
+/* ── SHELL ── */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh;}
+
+/* ── TOPBAR ── */
+.top{background:var(--ink);color:#fff;display:flex;align-items:stretch;border-bottom:3px solid var(--red);z-index:200;}
+.brand{padding:0 1.3rem;display:flex;align-items:center;gap:.6rem;border-right:1px solid rgba(255,255,255,.1);flex-shrink:0;}
+.bmark{width:28px;height:28px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.72rem;color:#fff;}
+.btxt{font-family:var(--fh);font-weight:800;font-size:.95rem;}
+.bsub{font-size:.58rem;color:rgba(255,255,255,.38);font-family:var(--fm);}
+
+.cycle-bar{display:flex;align-items:center;gap:.4rem;padding:0 1rem;border-right:1px solid rgba(255,255,255,.1);}
+.cyl{font-size:.58rem;color:rgba(255,255,255,.32);font-family:var(--fm);margin-right:.2rem;}
+.cbtn{padding:.28rem .75rem;border-radius:6px;border:1.5px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.48);font-family:var(--fh);font-weight:700;font-size:.7rem;cursor:pointer;transition:all .15s;}
+.cbtn.on{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.5);color:#fff;}
+
+.nav{display:flex;height:52px;}
+.ni{padding:0 .95rem;display:flex;align-items:center;gap:.4rem;font-family:var(--fh);font-weight:700;font-size:.73rem;color:rgba(255,255,255,.42);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .15s;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+.ni:hover{color:rgba(255,255,255,.78);}
+.ni.on{color:#fff;border-bottom-color:var(--red);}
+.ni .ic{font-size:.9rem;}
+
+.top-end{margin-left:auto;display:flex;align-items:center;gap:.6rem;padding:0 1rem;}
+.cpill{background:var(--red);color:#fff;padding:.12rem .55rem;border-radius:99px;font-family:var(--fm);font-size:.6rem;}
+
+/* ── MAIN ── */
+.main{display:flex;overflow:hidden;}
+.view{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.view.on{display:flex;}
+
+/* ── VBAR ── */
+.vbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:.58rem 1.2rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0;flex-wrap:wrap;}
+.vtit{font-family:var(--fh);font-weight:800;font-size:.95rem;}
+.vsep{width:1px;height:18px;background:var(--bdr2);}
+
+/* ── SCROLLABLE BODY ── */
+.vbody{flex:1;overflow-y:auto;padding:1.2rem 1.4rem;}
+
+/* ── SIDEBAR ── */
+.sb{width:265px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;}
+.sb-head{padding:.65rem .9rem;border-bottom:1px solid var(--bdr);font-family:var(--fh);font-weight:700;font-size:.7rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between;}
+.sb-search{padding:.55rem .75rem;border-bottom:1px solid var(--bdr);}
+.sb-scroll{flex:1;overflow-y:auto;}
+
+/* ── LIST ITEMS ── */
+.li{display:flex;align-items:center;gap:.6rem;padding:.52rem .85rem;cursor:pointer;border-bottom:1px solid var(--bdr);transition:background .1s;}
+.li:hover{background:var(--bg);}
+.li.sel{background:var(--blue-lt);border-right:3px solid var(--blue);}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.63rem;color:#fff;flex-shrink:0;}
+.ln{font-size:.73rem;font-weight:700;line-height:1.2;flex:1;min-width:0;}
+.ls{font-size:.6rem;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── CARD ── */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);}
+.ch{padding:.65rem 1rem;border-bottom:1px solid var(--bdr);font-family:var(--fh);font-weight:700;font-size:.72rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+.cb{padding:.9rem 1rem;}
+
+/* ── STATS ── */
+.stats{display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.1rem;}
+.stat{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:.65rem .9rem;box-shadow:var(--sh);}
+.sv{font-family:var(--fh);font-weight:800;font-size:1.45rem;line-height:1;}
+.sl{font-size:.62rem;color:var(--ink2);margin-top:.22rem;}
+.c-blue{color:var(--blue)} .c-green{color:var(--green)} .c-amber{color:var(--amber)} .c-red{color:var(--red)}
+
+/* ── TAGS ── */
+.tag{display:inline-flex;align-items:center;padding:.1rem .42rem;border-radius:5px;font-family:var(--fm);font-size:.58rem;font-weight:500;}
+.t-blue{background:var(--blue-lt);color:var(--blue);}
+.t-green{background:var(--green-lt);color:var(--green);}
+.t-amber{background:var(--amber-lt);color:var(--amber);}
+.t-red{background:var(--red-lt);color:var(--red);}
+.t-gray{background:var(--bg2);color:var(--ink2);}
+.t-purple{background:var(--purple-lt);color:var(--purple);}
+
+/* ── SCORE ── */
+.score{padding:.1rem .42rem;border-radius:99px;font-family:var(--fm);font-size:.58rem;}
+.sc-hi{background:var(--green-lt);color:var(--green);}
+.sc-md{background:var(--amber-lt);color:var(--amber);}
+.sc-lo{background:var(--red-lt);color:var(--red);}
+
+/* ── AVAIL GRID ── */
+.ag{display:grid;grid-template-columns:86px repeat(5,1fr);gap:2px;min-width:520px;}
+.ag-dh{background:var(--ink);color:#fff;text-align:center;padding:.38rem .2rem;font-family:var(--fh);font-weight:700;font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;}
+.ag-th{background:var(--bg2);padding:.28rem .45rem;font-family:var(--fm);font-size:.56rem;color:var(--ink2);display:flex;align-items:center;border-radius:4px;border:1px solid var(--bdr);}
+.ag-cell{border-radius:4px;min-height:32px;cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-family:var(--fm);border:2px solid transparent;user-select:none;}
+.ag-cell.avail{background:var(--green-lt);border-color:#7ec09a;color:var(--green);}
+.ag-cell.avail::after{content:'✓';font-weight:700;}
+.ag-cell.unavail{background:var(--red-lt);border-color:#efa090;color:var(--red);}
+.ag-cell.unavail::after{content:'✗';font-weight:700;}
+.ag-cell.neutral{background:var(--bg2);border-color:var(--bdr);color:var(--ink3);}
+.ag-cell.neutral::after{content:'·';font-size:1.1rem;}
+.ag-cell.sp{background:var(--bg);border-color:var(--bdr);cursor:default;color:var(--ink3);font-size:.56rem;text-align:center;}
+.ag-cell.sp::after{content:none;}
+.ag-cell:not(.sp):hover{transform:scale(1.05);box-shadow:var(--sh);}
+.ag-span5{grid-column:span 5;}
+
+/* ── SCHED GRID ── */
+.sg{display:grid;grid-template-columns:86px repeat(5,1fr);gap:2px;min-width:520px;}
+.sg-dh{background:var(--ink);color:#fff;text-align:center;padding:.38rem .2rem;font-family:var(--fh);font-weight:700;font-size:.62rem;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;}
+.sg-th{background:var(--bg2);padding:.28rem .45rem;font-family:var(--fm);font-size:.56rem;color:var(--ink2);display:flex;align-items:center;border-radius:4px;border:1px solid var(--bdr);}
+.sg-cell{border-radius:4px;padding:.26rem .32rem;min-height:44px;background:var(--bg2);border:1.5px solid var(--bdr);cursor:pointer;transition:all .1s;display:flex;flex-direction:column;justify-content:center;}
+.sg-cell:hover{border-color:var(--blue);background:var(--blue-lt);}
+.sg-cell.filled{background:var(--blue-lt);border-color:#6888d8;}
+.sg-cell.filled.ves{background:var(--purple-lt);border-color:#9860d8;}
+.sg-cell.conflict{background:var(--red-lt)!important;border-color:var(--red)!important;animation:blink 1.4s infinite;}
+.sg-cell.warn{background:var(--amber-lt)!important;border-color:#c88840!important;}
+.sg-cell.recess{background:var(--bg);border-color:var(--bdr);cursor:default;}
+.sg-cell.recess:hover{background:var(--bg);border-color:var(--bdr);}
+@keyframes blink{0%,100%{border-color:var(--red);}50%{border-color:#f09080;}}
+.cs{font-family:var(--fh);font-weight:700;font-size:.63rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--blue);}
+.cs.ves{color:var(--purple);}
+.ct{font-size:.57rem;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.cf{font-size:.52rem;margin-top:1px;}
+.rc-lbl{font-size:.56rem;color:var(--ink3);text-align:center;}
+.cp{color:var(--ink3);font-size:.7rem;text-align:center;}
+
+/* ── ADMIN QUEUE ── */
+.aq{width:295px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;}
+.aq-scroll{flex:1;overflow-y:auto;}
+.sug-item{padding:.68rem .85rem;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .1s;}
+.sug-item:hover{background:var(--bg);}
+.sug-item.sel{background:var(--blue-lt);border-left:3px solid var(--blue);}
+.sug-item.done{opacity:.5;}
+
+/* ── SUBJECT ROW ── */
+.subj-row{display:flex;align-items:center;gap:.5rem;padding:.48rem .85rem;border-bottom:1px solid var(--bdr);font-size:.76rem;transition:background .1s;}
+.subj-row:hover{background:var(--bg);}
+
+/* ── TEACHER COMPETENCY ── */
+.comp-wrap{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;}
+.comp-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:6px;background:var(--blue-lt);border:1px solid #b0c4f0;color:var(--blue);font-size:.65rem;font-family:var(--fm);}
+.comp-tag .del{cursor:pointer;opacity:.5;font-size:.75rem;line-height:1;}
+.comp-tag .del:hover{opacity:1;color:var(--red);}
+
+/* ── BUTTONS ── */
+.btn{padding:.36rem .82rem;border-radius:7px;border:none;cursor:pointer;font-family:var(--fh);font-weight:700;font-size:.73rem;letter-spacing:.02em;transition:all .15s;display:inline-flex;align-items:center;gap:.32rem;white-space:nowrap;}
+.btn-ink{background:var(--ink);color:#fff;}.btn-ink:hover{background:#2e2a22;}
+.btn-red{background:var(--red);color:#fff;}.btn-red:hover{opacity:.85;}
+.btn-blue{background:var(--blue);color:#fff;}.btn-blue:hover{opacity:.85;}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{opacity:.85;}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr2);color:var(--ink);}.btn-ghost:hover{border-color:var(--ink);}
+.btn-sm{padding:.26rem .62rem;font-size:.68rem;}
+.btn-xs{padding:.16rem .42rem;font-size:.62rem;}
+
+/* ── INPUTS ── */
+select,input[type=text],input[type=number]{background:var(--surf);border:1.5px solid var(--bdr2);color:var(--ink);padding:.36rem .62rem;border-radius:7px;font-family:var(--fb);font-size:.78rem;outline:none;transition:border-color .15s;}
+select:focus,input:focus{border-color:var(--blue);}
+input::placeholder{color:var(--ink3);}
+
+/* ── MODAL ── */
+.mbg{position:fixed;inset:0;background:rgba(28,26,22,.52);backdrop-filter:blur(3px);z-index:900;display:none;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:var(--surf);border-radius:14px;box-shadow:var(--sh-lg);width:540px;max-width:96vw;max-height:92vh;overflow-y:auto;animation:pop .2s ease-out;}
+@keyframes pop{from{transform:translateY(10px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mh{padding:1rem 1.3rem .85rem;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;justify-content:space-between;}
+.mt{font-family:var(--fh);font-weight:800;font-size:1rem;}
+.ms{font-size:.7rem;color:var(--ink2);margin-top:.18rem;}
+.mx{background:none;border:none;cursor:pointer;font-size:1.05rem;color:var(--ink2);}
+.mb{padding:1rem 1.3rem;}
+.mf{padding:.85rem 1.3rem;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:.45rem;}
+.field{margin-bottom:.85rem;}
+.field label{display:block;font-size:.65rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.28rem;}
+.field select,.field input{width:100%;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+
+/* ── PROGRESS BAR ── */
+.pbar{height:3px;background:var(--bdr);border-radius:2px;overflow:hidden;margin-top:4px;}
+.pfill{height:100%;border-radius:2px;transition:width .3s;}
+
+/* ── MISC ── */
+.sep{height:1px;background:var(--bdr);margin:.85rem 0;}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--ink3);}
+.empty .ico{font-size:2rem;margin-bottom:.4rem;}
+.legend{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.85rem;font-size:.68rem;color:var(--ink2);align-items:center;}
+.ldot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px;}
+.ovr-x{overflow-x:auto;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.1rem;right:1.1rem;background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:var(--r);font-size:.78rem;box-shadow:var(--sh-lg);z-index:1000;opacity:0;transform:translateY(6px);transition:all .25s;max-width:300px;border-left:4px solid var(--green);}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.warn{border-left-color:var(--amber);}
+#toast.err{border-left-color:var(--red);}
+
+/* ── CYCLE BADGE ── */
+.cy-badge{padding:.1rem .48rem;border-radius:5px;font-family:var(--fm);font-size:.58rem;}
+.cy-par{background:var(--blue-lt);color:var(--blue);}
+.cy-imp{background:var(--purple-lt);color:var(--purple);}
+
+/* PRINT */
+@media print{
+  .top,.vbar,.sb,.aq,.no-print{display:none!important;}
+  .vbody,.admin-main{padding:0;overflow:visible;}
+  .app,.main,.view.on{display:block;height:auto;overflow:visible;}
+  body{background:#fff;font-size:11px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="top">
+  <div class="brand">
+    <div class="bmark">73</div>
+    <div>
+      <div class="btxt">CBTIS</div>
+      <div class="bsub">Modo Institucional &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.1</span></div>
+    </div>
+  </div>
+  <div class="cycle-bar" style="gap:.5rem">
+    <span class="cyl">CICLO</span>
+    <select id="ciclo-sel" onchange="onCicloChange()" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:#fff;font-family:var(--fh);font-weight:700;font-size:.7rem;padding:.25rem .6rem;border-radius:6px;min-width:180px">
+      <option value="">Cargando…</option>
+    </select>
+    <button class="cbtn" onclick="openNuevoCiclo()" style="padding:.25rem .6rem;font-size:.68rem">+ Ciclo</button>
+  </div>
+  <nav class="nav">
+    <div class="ni on" data-v="grupos" onclick="go('grupos')"><span class="ic">🏫</span>Grupos</div>
+    <div class="ni" data-v="materias" onclick="go('materias')"><span class="ic">📚</span>Materias</div>
+    <div class="ni" data-v="maestros" onclick="go('maestros')"><span class="ic">👨‍🏫</span>Maestros</div>
+    
+    <div class="ni" data-v="asignacion" onclick="go('asignacion')"><span class="ic">⚙</span>Asignación</div>
+    <div class="ni" data-v="horarios" onclick="go('horarios')"><span class="ic">📋</span>Horarios</div>
+    <div class="ni" data-v="impresion" onclick="go('impresion')"><span class="ic">🖨</span>Imprimir</div>
+  </nav>
+  <div class="top-end">
+    <span id="cpill" class="cpill" style="display:none">⚠ <span id="cn">0</span> conflictos</span>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════
+     1. GRUPOS
+     ══════════════════════════════ -->
+<div class="view on" id="view-grupos">
+  <div class="vbar">
+    <div class="vtit">🏫 Grupos</div><div class="vsep"></div>
+    <span id="cy-grupos" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <select id="g-sem-f" onchange="renderGrupos()"><option value="">Todos</option></select>
+    <select id="g-tur-f" onchange="renderGrupos()"><option value="">Todos los turnos</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
+    <button class="btn btn-green btn-sm" onclick="openGrupoModal()">+ Nuevo grupo</button>
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="sb">
+      <div class="sb-head">Grupos <span id="g-count" class="tag t-gray">0</span></div>
+      <div class="sb-scroll" id="g-list"></div>
+    </div>
+    <div class="vbody" id="g-detail">
+      <div class="empty"><div class="ico">🏫</div><div>Selecciona un grupo</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     2. MATERIAS (por grupo)
+     ══════════════════════════════ -->
+<div class="view" id="view-materias">
+  <div class="vbar">
+    <div class="vtit">📚 Materias por Grupo</div><div class="vsep"></div>
+    <span id="cy-materias" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <select id="m-grp-sel" onchange="renderMaterias()" style="min-width:150px"><option value="">— Grupo —</option></select>
+    <button class="btn btn-green btn-sm" id="m-add-btn" onclick="openMateriaModal()" style="display:none">+ Agregar materia</button>
+  </div>
+  <div class="vbody" id="m-body">
+    <div class="empty"><div class="ico">📚</div><div>Selecciona un grupo para gestionar sus materias</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     3. MAESTROS + COMPETENCIAS
+     ══════════════════════════════ -->
+<div class="view" id="view-maestros">
+  <div class="vbar">
+    <div class="vtit">👨‍🏫 Maestros y Competencias</div><div class="vsep"></div>
+    <input type="text" id="maest-search" placeholder="Buscar maestro…" oninput="renderMaestrosList()" style="width:220px">
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="sb">
+      <div class="sb-head">Docentes <span id="maest-count" class="tag t-gray">0</span></div>
+      <div class="sb-scroll" id="maest-list"></div>
+    </div>
+    <div class="vbody" id="maest-detail">
+      <div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro para ver y editar sus competencias</div><div style="font-size:.72rem;margin-top:.4rem;color:var(--ink3)">Las competencias definen qué materias puede impartir — el motor de asignación las usa para hacer el match</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     4. DISPONIBILIDAD
+     ══════════════════════════════ -->
+<div class="view" id="view-disponibilidad" style="display:none!important">
+  <div class="vbar">
+    <div class="vtit">🗓 Disponibilidad</div><div class="vsep"></div>
+    <span id="cy-disp" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <button class="btn btn-green btn-sm" onclick="saveDisp()">💾 Guardar</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearDisp()">Limpiar</button>
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="sb">
+      <div class="sb-search"><input type="text" id="disp-q" placeholder="Buscar…" oninput="renderMaestrosSb()" style="width:100%"></div>
+      <div class="sb-scroll" id="disp-sb"></div>
+    </div>
+    <div class="vbody" id="disp-body">
+      <div class="empty"><div class="ico">🗓</div><div>Selecciona un maestro</div><div style="font-size:.72rem;margin-top:.35rem;color:var(--ink3)">Clic para alternar · Arrastra para selección múltiple</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     5. ASIGNACIÓN AUTOMÁTICA
+     ══════════════════════════════ -->
+<div class="view" id="view-asignacion">
+  <div class="vbar">
+    <div class="vtit">⚙ Asignación Automática</div><div class="vsep"></div>
+    <span id="cy-asig" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <select id="asig-sem" onchange="renderAsigStats()"><option value="">Todos</option></select>
+    <select id="asig-tur" onchange="renderAsigStats()"><option value="">Todos turnos</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
+    <button class="btn btn-blue btn-sm" onclick="runEngine()">🤖 Generar sugerencias</button>
+    <button class="btn btn-green btn-sm" onclick="approveAll()">✓ Aprobar todo</button>
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="aq">
+      <div class="ch" style="padding:.65rem .9rem">Sugerencias <span id="pend-pill" class="tag t-amber">0</span></div>
+      <div class="aq-scroll" id="sug-list">
+        <div class="empty"><div class="ico">🤖</div><div style="font-size:.75rem">Presiona "Generar sugerencias"</div></div>
+      </div>
+    </div>
+    <div class="vbody" id="asig-body" style="flex:1">
+      <div class="stats" id="asig-stats"></div>
+      <div id="asig-assignments"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     6. HORARIOS
+     ══════════════════════════════ -->
+<div class="view" id="view-horarios">
+  <div class="vbar">
+    <div class="vtit">📋 Horario por Grupo</div><div class="vsep"></div>
+    <span id="cy-hor" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <select id="h-sem" onchange="filterHorGrp()"><option value="">— Semestre —</option></select>
+    <select id="h-tur" onchange="filterHorGrp()"><option value="">— Turno —</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
+    <select id="h-grp" onchange="renderHorario()"><option value="">— Grupo —</option></select>
+    <button class="btn btn-ghost btn-sm no-print" onclick="openCellManual()">+ Manual</button>
+  </div>
+  <div class="vbody" id="h-body">
+    <div class="empty"><div class="ico">📋</div><div>Selecciona un grupo</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     7. IMPRESIÓN
+     ══════════════════════════════ -->
+<div class="view" id="view-impresion">
+  <div class="vbar no-print">
+    <div class="vtit">🖨 Imprimir</div><div class="vsep"></div>
+    <select id="pr-type" onchange="fillPrSel()"><option value="group">Por grupo</option><option value="teacher">Por maestro</option></select>
+    <select id="pr-which" style="min-width:200px"></select>
+    <button class="btn btn-ink btn-sm" onclick="buildPrint()">Vista previa</button>
+    <button class="btn btn-red btn-sm" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+  <div class="vbody" id="pr-area">
+    <div class="empty"><div class="ico">🖨</div><div>Selecciona qué imprimir</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     VISTA MAESTRO (link único)
+     Visible solo cuando ?maestro=Txx en la URL
+     ══════════════════════════════ -->
+<div id="maestro-view" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;height:100vh;width:100vw">
+  <div style="max-width:720px;margin:0 auto;padding:1.5rem">
+    <!-- Header -->
+    <div style="background:var(--ink);color:white;border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
+      <div style="width:42px;height:42px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.8rem;flex-shrink:0">73</div>
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1rem">CBTIS</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.5);font-family:var(--fm)">Captura de Disponibilidad</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div id="mv-ciclo" style="font-size:.68rem;color:rgba(255,255,255,.6)"></div>
+      </div>
+    </div>
+
+    <!-- Maestro card -->
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="cb" style="display:flex;align-items:center;gap:1rem">
+        <div id="mv-avatar" class="av" style="width:48px;height:48px;font-size:.9rem;flex-shrink:0"></div>
+        <div>
+          <div id="mv-nombre" style="font-family:var(--fh);font-weight:800;font-size:1.1rem"></div>
+          <div id="mv-info" style="font-size:.72rem;color:var(--ink2);margin-top:.2rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.85rem 1rem;margin-bottom:1.1rem;font-size:.78rem;color:var(--blue)">
+      <div style="font-family:var(--fh);font-weight:700;margin-bottom:.3rem">📋 Instrucciones</div>
+      Marca cada bloque horario según tu disponibilidad. Cuando termines presiona <b>Guardar disponibilidad</b>.
+      <div style="display:flex;gap:1rem;margin-top:.6rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--green-lt);border:2px solid #7ec09a;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--green);font-weight:700">✓</div><span>Disponible</span></div>
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--red-lt);border:2px solid #efa090;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--red);font-weight:700">✗</div><span>No disponible</span></div>
+        <div style="display:flex;align-items:center;gap:.4rem"><div style="width:18px;height:18px;border-radius:4px;background:var(--bg2);border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--ink3)">·</div><span>Sin preferencia</span></div>
+      </div>
+    </div>
+
+    <!-- Avail grids -->
+    <div id="mv-grids"></div>
+
+    <!-- Save button -->
+    <div style="position:sticky;bottom:1rem;text-align:center;margin-top:1rem" id="mv-save-wrap">
+      <button class="btn btn-green" style="padding:.65rem 2rem;font-size:.9rem;box-shadow:var(--sh-lg)" onclick="mvSave()">💾 Guardar disponibilidad</button>
+    </div>
+
+    <!-- Horario asignado -->
+    <div id="mv-horario-section" style="display:none;margin-top:2rem">
+      <div style="font-family:var(--fh);font-weight:800;font-size:1rem;margin-bottom:.75rem">📋 Tu horario asignado</div>
+      <div id="mv-horario"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:2rem;font-size:.65rem;color:var(--ink3)">CBTIS · Sistema de Horarios · <span id="mv-ts"></span></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODAL GRUPO ══ -->
+<div class="mbg" id="modal-grupo">
+  <div class="modal">
+    <div class="mh"><div><div class="mt" id="mg-t">Nuevo grupo</div></div><button class="mx" onclick="closeM('modal-grupo')">✕</button></div>
+    <div class="mb">
+      <div class="frow">
+        <div class="field"><label>Semestre</label><select id="mg-sem" style="width:100%" onchange="autoGrpId()"></select></div>
+        <div class="field"><label>Turno</label><select id="mg-tur" style="width:100%" onchange="autoGrpId()"><option value="M">Matutino</option><option value="V">Vespertino</option></select></div>
+      </div>
+      <div class="field"><label>ID del grupo</label><input type="text" id="mg-id" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+      <div class="field"><label>Especialidad / Carrera</label><input type="text" id="mg-esp" placeholder="Ej: Recursos Humanos, Programación…" style="width:100%"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-grupo')">Cancelar</button>
+      <button class="btn btn-red btn-sm" id="mg-del" style="display:none" onclick="delGrupo()">Eliminar</button>
+      <button class="btn btn-green" onclick="saveGrupo()">Guardar grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL MATERIA ══ -->
+<div class="mbg" id="modal-materia">
+  <div class="modal">
+    <div class="mh"><div><div class="mt" id="mm-t">Agregar materia</div><div class="ms" id="mm-s"></div></div><button class="mx" onclick="closeM('modal-materia')">✕</button></div>
+    <div class="mb">
+      <div class="field"><label>Nombre de la materia</label><input type="text" id="mm-name" placeholder="Ej: INGLÉS IV" style="width:100%;text-transform:uppercase"></div>
+      <div class="frow">
+        <div class="field"><label>Horas/semana (aula)</label><input type="number" id="mm-hrs" min="1" max="20" value="3" style="width:100%"></div>
+        <div class="field"><label>Horas de laboratorio</label><input type="number" id="mm-lab" min="0" max="12" value="0" style="width:100%"></div>
+      </div>
+      <div class="field" id="mm-lab-teacher-wrap" style="display:none">
+        <label>Maestro de laboratorio (puede ser diferente)</label>
+        <select id="mm-lab-teacher" style="width:100%"></select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-materia')">Cancelar</button>
+      <button class="btn btn-red btn-sm" id="mm-del" style="display:none" onclick="delMateria()">Quitar</button>
+      <button class="btn btn-green" onclick="saveMateria()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL COMPETENCIA ══ -->
+<div class="mbg" id="modal-comp">
+  <div class="modal" style="width:480px">
+    <div class="mh"><div><div class="mt" id="mc-t">Agregar competencia</div><div class="ms" id="mc-s"></div></div><button class="mx" onclick="closeM('modal-comp')">✕</button></div>
+    <div class="mb">
+      <div class="field">
+        <label>Materia que puede impartir</label>
+        <input type="text" id="mc-name" placeholder="Ej: INGLÉS IV, MATEMÁTICAS II…" style="width:100%;text-transform:uppercase" oninput="compSuggest()">
+        <div id="comp-suggestions" style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem"></div>
+      </div>
+      <div style="font-size:.72rem;color:var(--ink2)">💡 Las materias ya definidas en los grupos aparecen como sugerencias</div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-comp')">Cancelar</button>
+      <button class="btn btn-green" onclick="saveComp()">Agregar competencia</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CELL ══ -->
+<div class="mbg" id="modal-cell">
+  <div class="modal">
+    <div class="mh"><div><div class="mt" id="mcell-t">Asignar clase</div><div class="ms" id="mcell-s"></div></div><button class="mx" onclick="closeM('modal-cell')">✕</button></div>
+    <div class="mb">
+      <div class="frow">
+        <div class="field"><label>Día</label><select id="mcell-day" style="width:100%" onchange="cellCheck()"><option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option></select></div>
+        <div class="field"><label>Bloque</label><select id="mcell-slot" style="width:100%" onchange="cellCheck()"></select></div>
+      </div>
+      <div class="field"><label>Materia</label><select id="mcell-subj" style="width:100%" onchange="cellAutoTeacher()"></select></div>
+      <div class="field"><label>Maestro</label><select id="mcell-teacher" style="width:100%" onchange="cellCheck()"></select></div>
+      <div id="mcell-warns"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-cell')">Cancelar</button>
+      <button class="btn btn-red btn-sm" id="mcell-rem" style="display:none" onclick="cellRemove()">Quitar clase</button>
+      <button class="btn btn-blue" onclick="cellSave()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL EDITAR MAESTRO ══ -->
+<div class="mbg" id="modal-teacher">
+  <div class="modal">
+    <div class="mh">
+      <div><div class="mt">Editar datos del maestro</div><div class="ms" id="mte-sub"></div></div>
+      <button class="mx" onclick="closeM('modal-teacher')">✕</button>
+    </div>
+    <div class="mb">
+      <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%"></div>
+      <div class="frow">
+        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: TEMA750707L67" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+        <div class="field"><label>Categoría</label>
+          <select id="mte-cat" style="width:100%">
+            <option value="">— Selecciona —</option>
+            <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
+            <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
+            <option value="PROF TIT. &quot;C&quot; T/C">Prof. Tit. "C" T/C (40h)</option>
+            <option value="PROF TIT. &quot;A&quot; 3/4">Prof. Tit. "A" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;B&quot; 3/4">Prof. Tit. "B" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;C&quot; 3/4">Prof. Tit. "C" 3/4 Tiempo (30h)</option>
+            <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
+            <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
+            <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
+            <option value="INTERINO T/C">Interino T/C</option>
+            <option value="INTERINO 3/4">Interino 3/4 Tiempo</option>
+            <option value="INTERINO 1/2">Interino 1/2 Tiempo</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Horas de nombramiento</label><input type="number" id="mte-nom" min="1" max="60" style="width:100%"></div>
+        <div class="field"><label>Horas carga reglamentaria</label><input type="number" id="mte-carga" min="1" max="50" style="width:100%"></div>
+      </div>
+      <div class="field"><label>Observaciones / Cargo especial</label><input type="text" id="mte-obs" placeholder="Ej: JEFE ESCOLARES TM, LICENCIA SINDICAL…" style="width:100%"></div>
+      <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.65rem .85rem;font-size:.72rem;color:var(--blue)">
+        ℹ La <b>carga reglamentaria</b> es el máximo de horas frente a grupo. El motor no asignará más allá de ese límite.
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-teacher')">Cancelar</button>
+      <button class="btn btn-green" onclick="saveTeacher()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL APPROVE ══ -->
+<div class="mbg" id="modal-approve">
+  <div class="modal">
+    <div class="mh"><div><div class="mt">Revisar sugerencia</div><div class="ms" id="apr-s"></div></div><button class="mx" onclick="closeM('modal-approve')">✕</button></div>
+    <div class="mb" id="apr-body"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-approve')">Cancelar</button>
+      <button class="btn btn-red btn-sm" onclick="rejectSug()">✗ Rechazar</button>
+      <button class="btn btn-green" onclick="approveSug()">✓ Aprobar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════
+const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const CYCLE_SEMS={par:[2,4,6],impar:[1,3,5]};
+const CYCLE_LBL={par:'Feb–Jul · Pares',impar:'Ago–Ene · Impares'};
+
+const SLOTS={
+  M:[
+    {id:'m1',lbl:'7:00–7:50'},{id:'m2',lbl:'7:50–8:40'},{id:'m3',lbl:'8:40–9:30'},
+    {id:'r2a',lbl:'9:30–9:50',recess:true,forSem:[1,2]},
+    {id:'m4',lbl:'9:30–10:20'},
+    {id:'mx',lbl:'9:50–10:40',blocked:true},
+    {id:'r46a',lbl:'10:20–10:40',recess:true,forSem:[3,4,5,6]},
+    {id:'m5',lbl:'10:40–11:25'},{id:'m6',lbl:'11:25–12:10'},
+    {id:'m7',lbl:'12:10–12:55'},{id:'m8',lbl:'12:55–13:40'},
+  ],
+  V:[
+    {id:'v1',lbl:'13:40–14:25'},{id:'v2',lbl:'14:25–15:10'},{id:'v3',lbl:'15:10–15:55'},
+    {id:'r2b',lbl:'15:55–16:15',recess:true,forSem:[1,2]},
+    {id:'v4',lbl:'15:55–16:40'},
+    {id:'vx',lbl:'16:15–17:00',blocked:true},
+    {id:'r46b',lbl:'16:40–17:00',recess:true,forSem:[3,4,5,6]},
+    {id:'v5',lbl:'17:00–17:45'},{id:'v6',lbl:'17:45–18:30'},
+    {id:'v7',lbl:'18:30–19:15'},{id:'v8',lbl:'19:15–20:00'},
+  ]
+};
+
+// Teachers from the real distribution file
+const TEACHERS=[
+  {id:'T01',name:'ACOSTA TERRAZAS MA. LUISA',hrs_nom:40,hrs_carga:30},
+  {id:'T02',name:'ALVAREZ SOLIS JUAN ALBERTO',hrs_nom:30,hrs_carga:24},
+  {id:'T03',name:'ANA LAURA ROSAS VILLARREAL',hrs_nom:30,hrs_carga:22},
+  {id:'T04',name:'ARCOS VELÁZQUEZ GABRIELA',hrs_nom:30,hrs_carga:24,obs:'JEFE ESC. TM'},
+  {id:'T05',name:'AVILA GONZALEZ GRASIELA',hrs_nom:40,hrs_carga:30},
+  {id:'T06',name:'BEATRIZ GARZA GARZA',hrs_nom:30,hrs_carga:22},
+  {id:'T07',name:'BOLAÑOS CARMONA MA. GUADALUPE',hrs_nom:30,hrs_carga:22},
+  {id:'T08',name:'BRENDA ELENA PÉREZ LIMAS',hrs_nom:30,hrs_carga:22},
+  {id:'T09',name:'CARRASCO GARCIA ESPERANZA',hrs_nom:30,hrs_carga:24},
+  {id:'T10',name:'DANTE A. LÓPEZ LÓPEZ',hrs_nom:20,hrs_carga:16},
+  {id:'T11',name:'DANIEL HERNANDEZ PONCE',hrs_nom:20,hrs_carga:16},
+  {id:'T12',name:'EDGAR ISAAC AYALA MORALES',hrs_nom:7,hrs_carga:7},
+  {id:'T13',name:'ELVA MOLANO AGADO',hrs_nom:30,hrs_carga:22},
+  {id:'T14',name:'ESPERANZA CARRASCO GARCÍA',hrs_nom:30,hrs_carga:24},
+  {id:'T15',name:'FELICIANO MARTINEZ GAUDENCIO',hrs_nom:18,hrs_carga:18},
+  {id:'T16',name:'FLORES ZÁRATE MARÍA DEL CARMEN',hrs_nom:30,hrs_carga:22},
+  {id:'T17',name:'GALVAN PEÑA PAMELA',hrs_nom:20,hrs_carga:16},
+  {id:'T18',name:'GLADYS GONZALEZ PAZ',hrs_nom:30,hrs_carga:24},
+  {id:'T19',name:'GLENDA MENDIOLA TEJADA',hrs_nom:30,hrs_carga:24},
+  {id:'T20',name:'GONZALEZ MTZ. ARNULFO H.',hrs_nom:40,hrs_carga:30},
+  {id:'T21',name:'HECTOR RODELA ROJAS',hrs_nom:40,hrs_carga:30},
+  {id:'T22',name:'IBARRA BELMARES KARINA LEONOR',hrs_nom:30,hrs_carga:24},
+  {id:'T23',name:'J. ISABEL HERNÁNDEZ ORTEGA',hrs_nom:30,hrs_carga:22},
+  {id:'T24',name:'JANETH LUNA RODRÍGUEZ',hrs_nom:30,hrs_carga:22},
+  {id:'T25',name:'JORGE OMAR HERNÁNDEZ DORIA',hrs_nom:40,hrs_carga:30},
+  {id:'T26',name:'JOSE ANGEL SEGURA CASTILLA',hrs_nom:30,hrs_carga:24},
+  {id:'T27',name:'JOSE SIFUENTES CERVANTES',hrs_nom:40,hrs_carga:30},
+  {id:'T28',name:'JUAN ANDRES SANCHEZ PESQUEDA',hrs_nom:40,hrs_carga:30},
+  {id:'T29',name:'JUVENTINO PEREZ FLORES',hrs_nom:36,hrs_carga:28},
+  {id:'T30',name:'KARLA PERALES TREJO',hrs_nom:40,hrs_carga:30},
+  {id:'T31',name:'KERIME SANCHEZ LOPEZ',hrs_nom:30,hrs_carga:22},
+  {id:'T32',name:'LUZ ELENA GARZA HERNÁNDEZ',hrs_nom:30,hrs_carga:24},
+  {id:'T33',name:'MARCO ANTONIO MEDINA DELGADO',hrs_nom:30,hrs_carga:24},
+  {id:'T34',name:'MARITZA PEREZ GARZA',hrs_nom:30,hrs_carga:22},
+  {id:'T35',name:'MAYRA VERBER WALLE',hrs_nom:20,hrs_carga:16},
+  {id:'T36',name:'NORMA IRAIDA LUNA TORRES',hrs_nom:30,hrs_carga:24},
+  {id:'T37',name:'ORTEGA GUERRERO ELVIA LIZETH',hrs_nom:30,hrs_carga:22},
+  {id:'T38',name:'RODRIGUEZ GAUCIN ALFREDO',hrs_nom:40,hrs_carga:30},
+  {id:'T39',name:'ROSA ELIA PECINA MORENO',hrs_nom:30,hrs_carga:22},
+  {id:'T40',name:'SALINAS DIAZ ALFREDO JOEL',hrs_nom:40,hrs_carga:30},
+  {id:'T41',name:'TREVIÑO MERCADO ALBERTO',hrs_nom:30,hrs_carga:22},
+  {id:'T42',name:'TRUJILLO GARCIA MYRIAM LIZETH',hrs_nom:20,hrs_carga:16},
+  {id:'T43',name:'VAZQUEZ HERRERA JAZMIN LIZETH',hrs_nom:20,hrs_carga:16},
+  {id:'T44',name:'VAZQUEZ ROBLES ESTEBAN',hrs_nom:40,hrs_carga:30,obs:'JEFE ESC. TV'},
+  {id:'T45',name:'VERBER WALLE MAYRA ALEJANDRA',hrs_nom:20,hrs_carga:16},
+];
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  SUPABASE CONFIG
+// ═══════════════════════════════════════════
+const SUPA_URL='https://htdfidrpojnfujxwotnz.supabase.co';
+const SUPA_KEY='sb_publishable_3sGqWSIYvNaohG-xOSoiYQ_89s5OJwi';
+
+async function sb(path,method='GET',body){
+  const r=await fetch(SUPA_URL+'/rest/v1/'+path,{
+    method,
+    headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer': method==='POST'?'return=representation':'',
+    },
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!r.ok){const e=await r.text();console.error('Supabase error:',e);throw new Error(e);}
+  if(r.status===204)return null;
+  return r.json();
+}
+
+// Helpers for common operations
+const dbGet  =(t,q='')=>sb(t+(q?'?'+q:''));
+const dbPost =(t,b)=>sb(t,  'POST',b);
+const dbPatch=(t,q,b)=>sb(t+'?'+q,'PATCH',b);
+const dbDel  =(t,q)=>sb(t+'?'+q,'DELETE');
+const dbUpsert=(t,b,onConflict)=>fetch(SUPA_URL+'/rest/v1/'+t,{
+  method:'POST',
+  headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+    'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation',
+    'x-upsert':onConflict||''},
+  body:JSON.stringify(b)
+}).then(r=>r.json());
+
+// ═══════════════════════════════════════════
+//  CICLOS STATE  (replaces old 'par/impar')
+// ═══════════════════════════════════════════
+let ciclos=[];        // [{id,nombre,tipo,fecha_inicio,fecha_fin,activo}]
+let currentCicloId=null;
+let cycle='par';      // kept for legacy helpers, derived from currentCiclo.tipo
+
+// groups[cycle] = [{id,sem,turno,especialidad}]
+let groups={
+  par:[
+    {id:'2AMA',sem:2,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'2AMC',sem:2,turno:'M',especialidad:'Contabilidad'},
+    {id:'2AML',sem:2,turno:'M',especialidad:'Logística'},
+    {id:'2BML',sem:2,turno:'M',especialidad:'Logística'},
+    {id:'2AMM',sem:2,turno:'M',especialidad:'Mantenimiento'},
+    {id:'2AMP',sem:2,turno:'M',especialidad:'Programación'},
+    {id:'4AMA',sem:4,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'4AMC',sem:4,turno:'M',especialidad:'Contabilidad'},
+    {id:'4AVA',sem:4,turno:'V',especialidad:'Administración'},
+    {id:'4AVL',sem:4,turno:'V',especialidad:'Logística'},
+    {id:'6AMA',sem:6,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'6AMP',sem:6,turno:'M',especialidad:'Programación'},
+    {id:'6AVP',sem:6,turno:'V',especialidad:'Programación'},
+  ],
+  impar:[]
+};
+
+// subjects[cycle][groupId] = [{id,name,hrs,lab,labTeacherId}]
+// NO teacher for regular hours — motor decides
+let subjects={par:{},impar:{}};
+
+// competencias[teacherId] = Set of subject names (strings, normalized uppercase)
+let competencias={};
+
+// availability[tid][cycle][slotId_day] = 'avail'|'unavail'|'neutral'
+let availability={};
+
+// schedule[cycle][groupId][slotId_day] = {subjectName,teacherId,status,isLab}
+let schedule={par:{},impar:{}};
+
+// suggestions list
+let suggestions=[];
+
+// UI state
+let selGroup=null, selTeacher=null, selSugIdx=null, editCell=null;
+let editGrupoId=null, editMateriaIdx=null, editMateriaGid=null;
+
+// ═══════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════
+let G=id=>(groups[currentCicloId]||[]).find(g=>g.clave===id||g.id===id);
+const T=id=>TEACHERS.find(t=>t.id===id);
+const ini=n=>n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+const COLS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840','#4a8810'];
+const ac=id=>COLS[parseInt(id.replace(/\D/g,''))%COLS.length];
+const allSlots=()=>[...SLOTS.M,...SLOTS.V];
+const assignable=t=>SLOTS[t].filter(s=>!s.recess&&!s.blocked);
+const normSubj=s=>s.trim().toUpperCase();
+
+// All unique subject names across current cycle groups
+function allSubjectNames(){
+  const names=new Set();
+  for(const [,subjs] of Object.entries(subjects[cycle]||{}))
+    subjs.forEach(s=>names.add(normSubj(s.name)));
+  return [...names].sort();
+}
+
+// Teachers who can teach a given subject
+function competentTeachers(subjName){
+  const n=normSubj(subjName);
+  return TEACHERS.filter(t=>{
+    const c=competencias[t.id];
+    return c&&c.has(n);
+  });
+}
+
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show '+(type||'');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3000);
+}
+function closeM(id){document.getElementById(id).classList.remove('open');editCell=null;}
+
+function go(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.getElementById('view-'+name).classList.add('on');
+  document.querySelector(`[data-v="${name}"]`).classList.add('on');
+  if(name==='grupos') renderGrupos();
+  if(name==='materias'){fillGrpSel();renderMaterias();}
+  if(name==='maestros') renderMaestrosList();
+  if(name==='disponibilidad') renderMaestrosSb();
+  if(name==='asignacion'){fillSemSels();renderAsigStats();}
+  if(name==='horarios'){fillSemSels();filterHorGrp();}
+  if(name==='impresion') fillPrSel();
+  updConflict();
+}
+
+function setCycle(c){
+  cycle=c;
+  document.getElementById('c-par').classList.toggle('on',c==='par');
+  document.getElementById('c-imp').classList.toggle('on',c==='impar');
+  const lbl=CYCLE_LBL[c];
+  const cls=c==='par'?'cy-par':'cy-imp';
+  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.textContent=lbl;el.className='cy-badge '+cls;}
+  });
+  selGroup=null;suggestions=[];
+  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();fillPrSel();
+  toast('Ciclo: '+lbl);
+}
+
+function fillSemSels(){
+  const sems=CYCLE_SEMS[cycle];
+  ['g-sem-f','asig-sem','h-sem'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const v=el.value;
+    while(el.options.length>1)el.remove(1);
+    sems.forEach(s=>{const o=new Option(s+'° Semestre',s);el.appendChild(o);});
+    if([...el.options].some(o=>o.value==v))el.value=v;
+  });
+}
+
+function fillGrpSel(){
+  const sel=document.getElementById('m-grp-sel');
+  const v=sel.value;
+  while(sel.options.length>1)sel.remove(1);
+  groups[cycle].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
+  if([...sel.options].some(o=>o.value===v))sel.value=v;
+}
+
+// Conflict detection
+function detectConflicts(){
+  const map={};
+  for(const [gid,cells] of Object.entries(schedule[cycle]||{}))
+    for(const [key,d] of Object.entries(cells)){
+      if(!d.teacherId)continue;
+      if(!map[d.teacherId])map[d.teacherId]={};
+      if(!map[d.teacherId][key])map[d.teacherId][key]=[];
+      map[d.teacherId][key].push(gid);
+    }
+  return Object.entries(map).flatMap(([tid,slots])=>
+    Object.entries(slots).filter(([,gs])=>gs.length>1).map(([key,gs])=>({tid,key,gs}))
+  );
+}
+
+function isConflict(tid,slotId,day,exGroup){
+  if(!tid)return false;
+  const key=slotId+'_'+day;
+  for(const [gid,cells] of Object.entries(schedule[cycle]||{})){
+    if(gid===exGroup)continue;
+    if(cells[key]&&cells[key].teacherId===tid)return true;
+  }
+  return false;
+}
+
+// Modo institucional: sin restricción de disponibilidad
+function isUnavail(){ return false; }
+
+function assignedHrs(tid){
+  let n=0;
+  for(const cells of Object.values(schedule[cycle]||{}))
+    for(const d of Object.values(cells))
+      if(d.teacherId===tid)n++;
+  return n;
+}
+
+function updConflict(){
+  const c=detectConflicts();
+  const p=document.getElementById('cpill');
+  document.getElementById('cn').textContent=c.length;
+  p.style.display=c.length?'inline-flex':'none';
+}
+
+// ═══════════════════════════════════════════
+//  1. GRUPOS
+// ═══════════════════════════════════════════
+function renderGrupos(){
+  const semF=document.getElementById('g-sem-f').value;
+  const turF=document.getElementById('g-tur-f').value;
+  const gs=groups[cycle].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF));
+  document.getElementById('g-count').textContent=gs.length;
+
+  document.getElementById('g-list').innerHTML=gs.map(g=>{
+    const sc=(subjects[cycle][g.id]||[]).length;
+    const hasComp=sc>0;
+    return `<div class="li ${selGroup===g.id?'sel':''}" onclick="selGrp('${g.id}')">
+      <div class="av" style="background:${g.turno==='M'?'#1a44be':'#6218be'};border-radius:5px;font-size:.58rem">${g.id.slice(0,3)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="ln">${g.id}</div>
+        <div class="ls">${g.sem}° · ${g.turno==='M'?'Mat':'Ves'} · ${g.especialidad||'—'}</div>
+      </div>
+      <span class="tag ${hasComp?'t-green':'t-gray'}">${sc}m</span>
+    </div>`;
+  }).join('');
+
+  if(selGroup) renderGrupoDetail(selGroup);
+}
+
+function selGrp(id){selGroup=id;renderGrupos();}
+
+function renderGrupoDetail(gid){
+  const g=G(gid); if(!g){document.getElementById('g-detail').innerHTML='';return;}
+  const subjs=subjects[cycle][gid]||[];
+  const totalHrs=subjs.reduce((a,s)=>a+(s.hrs+(s.lab||0)),0);
+  document.getElementById('g-detail').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${gid}</div>
+        <div style="font-size:.75rem;color:var(--ink2)">${g.sem}° Semestre · ${g.turno==='M'?'Matutino':'Vespertino'} · ${g.especialidad||''}</div>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-ghost btn-sm" onclick="openGrupoModal('${gid}')">✏ Editar</button>
+        <button class="btn btn-green btn-sm" onclick="go('materias');setTimeout(()=>{document.getElementById('m-grp-sel').value='${gid}';renderMaterias();openMateriaModal();},50)">+ Materia</button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="sv c-blue">${subjs.length}</div><div class="sl">Materias</div></div>
+      <div class="stat"><div class="sv c-blue">${totalHrs}</div><div class="sl">Horas/semana</div></div>
+      <div class="stat"><div class="sv c-green">${Object.keys((schedule[cycle]||{})[gid]||{}).length}</div><div class="sl">Bloques asignados</div></div>
+    </div>
+    ${subjs.length?`<div class="card">
+      ${subjs.map(s=>{
+        const used=Object.values((schedule[cycle]||{})[gid]||{}).filter(c=>c.subjectName===s.name&&!c.isLab).length;
+        return `<div class="subj-row">
+          <div style="flex:1">
+            <span style="font-family:var(--fh);font-weight:700;font-size:.78rem">${s.name}</span>
+            ${s.lab?`<span class="tag t-purple" style="margin-left:.4rem">${s.lab}h lab</span>`:''}
+          </div>
+          <span class="tag t-blue">${s.hrs}h</span>
+          <div style="width:80px"><div class="pbar"><div class="pfill" style="width:${Math.min(100,Math.round(used/s.hrs*100))}%;background:${used>=s.hrs?'var(--green)':'var(--amber)'}"></div></div><div style="font-size:.55rem;color:var(--ink2);text-align:right">${used}/${s.hrs}</div></div>
+        </div>`;
+      }).join('')}
+    </div>`:`<div class="empty"><div class="ico">📚</div><div>Sin materias — ve a la pestaña Materias para agregarlas</div></div>`}
+  `;
+}
+
+function openGrupoModal(gid){
+  const sems=CYCLE_SEMS[cycle];
+  const sel=document.getElementById('mg-sem');
+  sel.innerHTML=sems.map(s=>`<option value="${s}">${s}° Semestre</option>`).join('');
+  if(gid){
+    const g=G(gid);
+    document.getElementById('mg-t').textContent='Editar grupo '+gid;
+    sel.value=g.sem;
+    document.getElementById('mg-tur').value=g.turno;
+    document.getElementById('mg-id').value=g.id;
+    document.getElementById('mg-esp').value=g.especialidad||'';
+    document.getElementById('mg-del').style.display='inline-flex';
+    editGrupoId=gid;
+  } else {
+    document.getElementById('mg-t').textContent='Nuevo grupo';
+    document.getElementById('mg-id').value='';
+    document.getElementById('mg-esp').value='';
+    document.getElementById('mg-del').style.display='none';
+    editGrupoId=null;
+    autoGrpId();
+  }
+  document.getElementById('modal-grupo').classList.add('open');
+}
+
+function autoGrpId(){
+  if(editGrupoId)return;
+  const sem=document.getElementById('mg-sem').value;
+  const tur=document.getElementById('mg-tur').value;
+  const pre=sem+(tur==='M'?'AM':'AV');
+  const cnt=groups[cycle].filter(g=>g.id.startsWith(sem+(tur==='M'?'AM':'AV'))).length;
+  document.getElementById('mg-id').value=pre+'ABCDEFGH'[cnt]||'X';
+}
+
+function saveGrupo(){
+  const id=document.getElementById('mg-id').value.trim().toUpperCase();
+  const sem=parseInt(document.getElementById('mg-sem').value);
+  const turno=document.getElementById('mg-tur').value;
+  const especialidad=document.getElementById('mg-esp').value.trim();
+  if(!id){toast('Escribe el ID del grupo','err');return;}
+  if(editGrupoId){
+    const g=G(editGrupoId);
+    if(g)Object.assign(g,{id,sem,turno,especialidad});
+  } else {
+    if(groups[cycle].find(g=>g.id===id)){toast('ID ya existe','err');return;}
+    groups[cycle].push({id,sem,turno,especialidad});
+  }
+  selGroup=id;
+  closeM('modal-grupo');
+  fillSemSels();fillGrpSel();renderGrupos();
+  toast('Grupo guardado ✓');
+}
+
+function delGrupo(){
+  groups[cycle]=groups[cycle].filter(g=>g.id!==editGrupoId);
+  delete subjects[cycle][editGrupoId];
+  if(schedule[cycle])delete schedule[cycle][editGrupoId];
+  selGroup=null;
+  closeM('modal-grupo');
+  fillSemSels();fillGrpSel();renderGrupos();
+  document.getElementById('g-detail').innerHTML='<div class="empty"><div class="ico">🏫</div><div>Selecciona un grupo</div></div>';
+  toast('Grupo eliminado','warn');
+}
+
+// ═══════════════════════════════════════════
+//  2. MATERIAS
+// ═══════════════════════════════════════════
+function renderMaterias(){
+  const gid=document.getElementById('m-grp-sel').value;
+  document.getElementById('m-add-btn').style.display=gid?'inline-flex':'none';
+  const body=document.getElementById('m-body');
+  if(!gid){body.innerHTML='<div class="empty"><div class="ico">📚</div><div>Selecciona un grupo</div></div>';return;}
+  const g=G(gid);if(!g)return;
+  const subjs=subjects[cycle][gid]||[];
+
+  // Populate lab teacher select options ready
+  let html=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Materias — Grupo ${gid}</div>
+        <div style="font-size:.75rem;color:var(--ink2)">${g.sem}° Semestre · ${g.turno==='M'?'Matutino':'Vespertino'} · ${g.especialidad||''}</div>
+      </div>
+    </div>
+    <div style="font-size:.75rem;color:var(--ink2);background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem">
+      ℹ️ <b>Sin maestro asignado aquí</b> — el motor de asignación decidirá qué maestro da cada materia basándose en sus competencias y carga horaria disponible. Solo define el nombre de la materia y las horas.
+    </div>
+  `;
+
+  if(!subjs.length){
+    html+=`<div class="empty"><div class="ico">📚</div><div>Sin materias. Agrega la primera.</div></div>`;
+  } else {
+    html+=`<div class="card">
+      <div class="ch">Materias <span class="tag t-gray">${subjs.length}</span><span style="font-size:.68rem;color:var(--ink2)">${subjs.reduce((a,s)=>a+s.hrs,0)}h aula + ${subjs.reduce((a,s)=>a+(s.lab||0),0)}h lab</span></div>
+      ${subjs.map((s,i)=>{
+        const labT=s.labTeacherId?T(s.labTeacherId):null;
+        return `<div class="subj-row">
+          <div style="flex:1">
+            <span style="font-family:var(--fh);font-weight:700;font-size:.8rem">${s.name}</span>
+          </div>
+          <span class="tag t-blue">${s.hrs}h aula</span>
+          ${s.lab?`<span class="tag t-purple">${s.lab}h lab${labT?' · '+labT.name.split(' ')[0]:''}</span>`:''}
+          <button class="btn btn-ghost btn-xs" onclick="openEditMateria('${gid}',${i})">✏</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  body.innerHTML=html;
+}
+
+function openMateriaModal(gid){
+  const currentGid=gid||document.getElementById('m-grp-sel').value;
+  if(!currentGid){toast('Selecciona un grupo','err');return;}
+  document.getElementById('mm-t').textContent='Agregar materia';
+  document.getElementById('mm-s').textContent='Grupo '+currentGid;
+  document.getElementById('mm-name').value='';
+  document.getElementById('mm-hrs').value='3';
+  document.getElementById('mm-lab').value='0';
+  document.getElementById('mm-del').style.display='none';
+  document.getElementById('mm-lab-teacher-wrap').style.display='none';
+  fillLabTeacherSel('');
+  editMateriaGid=currentGid;editMateriaIdx=null;
+  document.getElementById('modal-materia').classList.add('open');
+}
+
+function openEditMateria(gid,idx){
+  const s=(subjects[cycle][gid]||[])[idx];
+  if(!s)return;
+  document.getElementById('mm-t').textContent='Editar materia';
+  document.getElementById('mm-s').textContent='Grupo '+gid;
+  document.getElementById('mm-name').value=s.name;
+  document.getElementById('mm-hrs').value=s.hrs;
+  document.getElementById('mm-lab').value=s.lab||0;
+  document.getElementById('mm-del').style.display='inline-flex';
+  const hasLab=(s.lab||0)>0;
+  document.getElementById('mm-lab-teacher-wrap').style.display=hasLab?'block':'none';
+  fillLabTeacherSel(s.labTeacherId||'');
+  editMateriaGid=gid;editMateriaIdx=idx;
+  document.getElementById('modal-materia').classList.add('open');
+}
+
+function fillLabTeacherSel(cur){
+  const sel=document.getElementById('mm-lab-teacher');
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+
+    TEACHERS.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${t.name}</option>`).join('');
+}
+
+document.getElementById('mm-lab').addEventListener('input',function(){
+  document.getElementById('mm-lab-teacher-wrap').style.display=parseInt(this.value)>0?'block':'none';
+});
+
+function saveMateria(){
+  const name=document.getElementById('mm-name').value.trim().toUpperCase();
+  const hrs=parseInt(document.getElementById('mm-hrs').value)||1;
+  const lab=parseInt(document.getElementById('mm-lab').value)||0;
+  const labTeacherId=document.getElementById('mm-lab-teacher').value;
+  if(!name){toast('Escribe el nombre de la materia','err');return;}
+  if(!subjects[cycle][editMateriaGid])subjects[cycle][editMateriaGid]=[];
+  const obj={id:'m'+Date.now(),name,hrs,lab,labTeacherId};
+  const arr=subjects[cycle][editMateriaGid];
+  if(editMateriaIdx!==null)arr[editMateriaIdx]=obj;
+  else arr.push(obj);
+  closeM('modal-materia');
+  renderMaterias();renderGrupos();
+  toast('Materia guardada ✓');
+}
+
+function delMateria(){
+  subjects[cycle][editMateriaGid].splice(editMateriaIdx,1);
+  closeM('modal-materia');
+  renderMaterias();renderGrupos();
+  toast('Materia eliminada','warn');
+}
+
+// ═══════════════════════════════════════════
+//  3. MAESTROS + COMPETENCIAS
+// ═══════════════════════════════════════════
+function renderMaestrosList(){
+  const q=(document.getElementById('maest-search')?.value||'').toLowerCase();
+  const filtered=TEACHERS.filter(t=>t.name.toLowerCase().includes(q));
+  document.getElementById('maest-count').textContent=filtered.length;
+  document.getElementById('maest-list').innerHTML=filtered.map(t=>{
+    const c=competencias[t.id];
+    const cnt=c?c.size:0;
+    return `<div class="li ${selTeacher===t.id?'sel':''}" onclick="selMaestro('${t.id}')">
+      <div class="av" style="background:${ac(t.id)}">${ini(t.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="ln" style="font-size:.72rem">${t.name}</div>
+        <div class="ls">${t.hrs_carga}h carga${t.obs?' · '+t.obs:''}</div>
+      </div>
+      <span class="tag ${cnt?'t-green':'t-red'}">${cnt} comp.</span>
+    </div>`;
+  }).join('');
+}
+
+function selMaestro(tid){
+  selTeacher=tid;
+  renderMaestrosList();
+  renderMaestroDetail(tid);
+}
+
+function renderMaestroDetail(tid){
+  const t=T(tid);if(!t)return;
+  if(!competencias[tid])competencias[tid]=new Set();
+  const comps=[...competencias[tid]].sort();
+  const assigned=assignedHrs(tid);
+  const libre=t.hrs_carga-assigned;
+  const pct=Math.min(100,Math.round(assigned/t.hrs_carga*100));
+  const col=assigned>t.hrs_carga?'var(--red)':pct>=90?'var(--amber)':'var(--green)';
+
+  // Build assignment rows for this cycle
+  const asgRows=Object.entries(schedule[cycle]||{}).flatMap(([gid,cells])=>
+    Object.entries(cells).filter(([,d])=>d.teacherId===tid).map(([key,d])=>{
+      const [sl,dy]=key.split('_');
+      const slot=allSlots().find(s=>s.id===sl);
+      return {gid,subjectName:d.subjectName||'',day:DAYS[parseInt(dy)],lbl:slot?.lbl||sl,status:d.status};
+    })
+  ).sort((a,b)=>a.gid.localeCompare(b.gid));
+
+  document.getElementById('maest-detail').innerHTML=`
+    <!-- ── HEADER ── -->
+    <div style="display:flex;align-items:center;gap:.9rem;margin-bottom:1.1rem;flex-wrap:wrap">
+      <div class="av" style="background:${ac(tid)};width:48px;height:48px;font-size:.92rem">${ini(t.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;line-height:1.2">${t.name}</div>
+        <div style="font-size:.7rem;color:var(--ink2);margin-top:.2rem;display:flex;gap:.75rem;flex-wrap:wrap">
+          ${t.obs?`<span style="color:var(--amber);font-weight:700">${t.obs}</span>`:''}
+          ${t.rfc?`<span><b>RFC:</b> ${t.rfc}</span>`:'<span style="color:var(--ink3)">RFC: —</span>'}
+          ${t.categoria?`<span><b>Cat:</b> ${t.categoria}</span>`:'<span style="color:var(--ink3)">Categoría: —</span>'}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openEditTeacher('${tid}')">✏ Editar datos</button>
+
+    </div>
+
+    <!-- ── HORAS ── -->
+    <div class="card" style="margin-bottom:.75rem">
+      <div class="ch">Horas</div>
+      <div class="cb" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem">
+        <div>
+          <div style="font-size:.62rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Nombramiento</div>
+          <div style="font-family:var(--fh);font-weight:800;font-size:1.5rem;color:var(--ink)">${t.hrs_nom}</div>
+          <div style="font-size:.6rem;color:var(--ink3)">hrs totales</div>
+        </div>
+        <div>
+          <div style="font-size:.62rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Carga regla.</div>
+          <div style="font-family:var(--fh);font-weight:800;font-size:1.5rem;color:var(--blue)">${t.hrs_carga}</div>
+          <div style="font-size:.6rem;color:var(--ink3)">hrs frente grupo</div>
+        </div>
+        <div>
+          <div style="font-size:.62rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Asignadas</div>
+          <div style="font-family:var(--fh);font-weight:800;font-size:1.5rem;color:${col}">${assigned}</div>
+          <div style="font-size:.6rem;color:var(--ink3)">en este ciclo</div>
+        </div>
+        <div>
+          <div style="font-size:.62rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Disponibles</div>
+          <div style="font-family:var(--fh);font-weight:800;font-size:1.5rem;color:${libre<0?'var(--red)':'var(--green)'}">${libre}</div>
+          <div style="font-size:.6rem;color:var(--ink3)">hrs por asignar</div>
+        </div>
+      </div>
+      <div style="padding:.2rem 1rem .85rem">
+        <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--ink3);margin-bottom:.35rem">
+          <span>Carga utilizada</span><span>${pct}%</span>
+        </div>
+        <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .4s"></div>
+        </div>
+        ${assigned>t.hrs_carga?`<div style="font-size:.65rem;color:var(--red);margin-top:.35rem">⚠ Excede la carga reglamentaria por ${assigned-t.hrs_carga}h</div>`:''}
+      </div>
+    </div>
+
+    <!-- ── COMPETENCIAS ── -->
+    <div class="card" style="margin-bottom:.75rem">
+      <div class="ch">
+        Materias que puede impartir
+        <span class="tag ${comps.length?'t-green':'t-red'}">${comps.length} materias</span>
+        <button class="btn btn-green btn-xs" onclick="openCompModal('${tid}')">+ Agregar</button>
+      </div>
+      <div class="cb">
+        ${comps.length
+          ? `<div class="comp-wrap">${comps.map(c=>`
+              <div class="comp-tag">
+                ${c}
+                <span class="del" onclick="delComp('${tid}','${encodeURIComponent(c)}')">✕</span>
+              </div>`).join('')}
+            </div>
+            <div style="font-size:.65rem;color:var(--ink3);margin-top:.65rem">
+              💡 Estas materias aparecen con ★ al asignar manualmente en horarios
+            </div>`
+          : `<div style="color:var(--ink3);font-size:.78rem;text-align:center;padding:.5rem 0">
+              Sin competencias definidas.<br>
+              <span style="font-size:.7rem">El motor no podrá asignar a este maestro hasta que agregues sus materias.</span>
+              <div style="margin-top:.75rem">
+                <button class="btn btn-green btn-sm" onclick="openCompModal('${tid}')">+ Agregar primera materia</button>
+              </div>
+            </div>`}
+      </div>
+    </div>
+
+    <!-- ── ASIGNACIONES DEL CICLO ── -->
+    <div class="card">
+      <div class="ch">
+        Asignaciones — ${cycle==='par'?'Feb–Jul':'Ago–Ene'}
+        <span class="tag t-blue">${asgRows.length} clases</span>
+      </div>
+      ${asgRows.length
+        ? asgRows.map(r=>{
+            const stTag=r.status==='conflict'?'<span class="tag t-red">⚠</span>':r.status==='warn'?'<span class="tag t-amber">⚡</span>':'';
+            return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
+              <span class="tag t-blue" style="flex-shrink:0;min-width:46px;text-align:center">${r.gid}</span>
+              <span style="font-weight:700;flex:1;font-family:var(--fh);font-size:.72rem">${r.subjectName}</span>
+              <span style="font-family:var(--fm);font-size:.6rem;color:var(--ink2);white-space:nowrap">${r.day.slice(0,3)} · ${r.lbl}</span>
+              ${stTag}
+            </div>`;
+          }).join('')
+        : `<div class="cb" style="color:var(--ink3);font-size:.75rem">Sin asignaciones en este ciclo</div>`}
+    </div>
+  `;
+}
+
+function openCompModal(tid){
+  document.getElementById('mc-t').textContent='Agregar competencia';
+  document.getElementById('mc-s').textContent=T(tid)?.name||tid;
+  document.getElementById('mc-name').value='';
+  document.getElementById('comp-suggestions').innerHTML='';
+  editMateriaGid=tid; // reuse variable for teacher id
+  document.getElementById('modal-comp').classList.add('open');
+  compSuggest();
+}
+
+function compSuggest(){
+  const q=(document.getElementById('mc-name').value||'').toUpperCase();
+  const names=allSubjectNames().filter(n=>!q||n.includes(q));
+  document.getElementById('comp-suggestions').innerHTML=names.slice(0,12).map(n=>
+    `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="document.getElementById('mc-name').value='${n}';compSuggest()">${n}</span>`
+  ).join('');
+}
+
+function saveComp(){
+  const name=normSubj(document.getElementById('mc-name').value);
+  if(!name){toast('Escribe una materia','err');return;}
+  const tid=editMateriaGid;
+  if(!competencias[tid])competencias[tid]=new Set();
+  competencias[tid].add(name);
+  closeM('modal-comp');
+  renderMaestroDetail(tid);
+  renderMaestrosList();
+  toast('Competencia agregada ✓');
+}
+
+function delComp(tid,enc){
+  const name=decodeURIComponent(enc);
+  if(competencias[tid])competencias[tid].delete(name);
+  renderMaestroDetail(tid);
+  renderMaestrosList();
+  toast('Competencia eliminada','warn');
+}
+
+let editTeacherId=null;
+function openEditTeacher(tid){
+  const t=T(tid);if(!t)return;
+  editTeacherId=tid;
+  document.getElementById("mte-sub").textContent=t.name;
+  document.getElementById("mte-name").value=t.name;
+  document.getElementById("mte-rfc").value=t.rfc||'';
+  document.getElementById("mte-cat").value=t.categoria||'';
+  document.getElementById("mte-nom").value=t.hrs_nom;
+  document.getElementById("mte-carga").value=t.hrs_carga;
+  document.getElementById("mte-obs").value=t.obs||"";
+  document.getElementById("modal-teacher").classList.add("open");
+}
+
+function saveTeacher(){
+  const t=T(editTeacherId);if(!t)return;
+  const name=document.getElementById("mte-name").value.trim().toUpperCase();
+  const rfc=document.getElementById("mte-rfc").value.trim().toUpperCase()||null;
+  const categoria=document.getElementById("mte-cat").value||null;
+  const hrs_nom=parseInt(document.getElementById("mte-nom").value)||t.hrs_nom;
+  const hrs_carga=parseInt(document.getElementById("mte-carga").value)||t.hrs_carga;
+  const obs=document.getElementById("mte-obs").value.trim()||null;
+  if(!name){toast("El nombre no puede estar vacío","err");return;}
+  Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+  closeM("modal-teacher");
+  renderMaestroDetail(editTeacherId);
+  renderMaestrosList();
+  toast("Datos del maestro actualizados");
+}
+
+// ═══════════════════════════════════════════
+//  4. DISPONIBILIDAD
+// ═══════════════════════════════════════════
+let isDrag=false,dVal=null;
+
+function renderMaestrosSb(){
+  const q=(document.getElementById('disp-q')?.value||'').toLowerCase();
+  document.getElementById('disp-sb').innerHTML=TEACHERS.filter(t=>t.name.toLowerCase().includes(q)).map(t=>{
+    const av=((availability[t.id]||{})[cycle]||{});
+    const cnt=Object.values(av).filter(v=>v!=='neutral').length;
+    return `<div class="li ${selTeacher===t.id?'sel':''}" onclick="selDispTeacher('${t.id}')">
+      <div class="av" style="background:${ac(t.id)}">${ini(t.name)}</div>
+      <div style="flex:1;min-width:0"><div class="ln" style="font-size:.7rem">${t.name}</div><div class="ls">${t.hrs_carga}h</div></div>
+      <span class="tag ${cnt?'t-green':'t-gray'}">${cnt?cnt+'✓':'—'}</span>
+    </div>`;
+  }).join('');
+}
+
+function selDispTeacher(tid){selTeacher=tid;renderMaestrosSb();renderDispGrid(tid);}
+
+function renderDispGrid(tid){
+  const t=T(tid);if(!t)return;
+  if(!availability[tid])availability[tid]={};
+  if(!availability[tid][cycle])availability[tid][cycle]={};
+  const av=availability[tid][cycle];
+
+  let html=`
+    <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.9rem;flex-wrap:wrap">
+      <div class="av" style="background:${ac(tid)};width:40px;height:40px;font-size:.82rem">${ini(t.name)}</div>
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.05rem">${t.name}</div>
+        <div style="font-size:.7rem;color:var(--ink2)">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · <b>'+t.obs+'</b>':''}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:.35rem;flex-wrap:wrap">
+        <button class="btn btn-sm" style="background:var(--green-lt);color:var(--green);border:1.5px solid #7ec09a" onclick="setAll('${tid}','avail')">✓ Todo disponible</button>
+        <button class="btn btn-sm" style="background:var(--red-lt);color:var(--red);border:1.5px solid #efa090" onclick="setAll('${tid}','unavail')">✗ No disponible</button>
+        <button class="btn btn-ghost btn-sm" onclick="setAll('${tid}','neutral')">Limpiar</button>
+      </div>
+    </div>
+    <div class="legend">
+      <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--green-lt);border:1.5px solid #7ec09a"></div>Disponible</div>
+      <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--red-lt);border:1.5px solid #efa090"></div>No disponible</div>
+      <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--bg2);border:1.5px solid var(--bdr)"></div>Sin preferencia (puede asignarse)</div>
+    </div>
+  `;
+
+  for(const tur of ['M','V']){
+    html+=`<div style="margin-bottom:1.2rem">
+      <div style="font-family:var(--fh);font-weight:700;font-size:.75rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+      <div class="ovr-x"><div class="ag">
+        <div></div>${DAYS.map(d=>`<div class="ag-dh">${d.slice(0,3)}</div>`).join('')}
+    `;
+    for(const slot of SLOTS[tur]){
+      html+=`<div class="ag-th">${slot.lbl}</div>`;
+      if(slot.recess||slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5">${slot.recess?'☕ Receso':'— Transición —'}</div>`;
+        continue;
+      }
+      for(let d=0;d<5;d++){
+        const key=slot.id+'_'+d;
+        const st=av[key]||'neutral';
+        html+=`<div class="ag-cell ${st}"
+          onmousedown="dStart('${tid}','${key}','${st}')"
+          onmouseenter="dMove('${tid}','${key}')"
+          onclick="tglAv('${tid}','${key}')"></div>`;
+      }
+    }
+    html+=`</div></div></div>`;
+  }
+  document.getElementById('disp-body').innerHTML=html;
+}
+
+function tglAv(tid,key){
+  const av=availability[tid][cycle];
+  const cur=av[key]||'neutral';
+  av[key]=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
+  refreshAg(key,av[key]);
+}
+function dStart(tid,key,cur){isDrag=true;dVal=cur==='avail'?'unavail':'avail';}
+function dMove(tid,key){
+  if(!isDrag||!selTeacher)return;
+  availability[selTeacher][cycle][key]=dVal;
+  refreshAg(key,dVal);
+}
+document.addEventListener('mouseup',()=>{isDrag=false;dVal=null;});
+
+function refreshAg(key,st){
+  document.querySelectorAll(`[onmouseenter*="${key}"]`).forEach(el=>el.className='ag-cell '+st);
+}
+function setAll(tid,st){
+  for(const tur of['M','V'])for(const s of SLOTS[tur]){
+    if(s.recess||s.blocked)continue;
+    for(let d=0;d<5;d++)availability[tid][cycle][s.id+'_'+d]=st;
+  }
+  renderDispGrid(tid);
+}
+function saveDisp(){if(!selTeacher){toast('Selecciona un maestro','warn');return;}renderMaestrosSb();toast('Disponibilidad guardada ✓');}
+function clearDisp(){if(!selTeacher)return;availability[selTeacher][cycle]={};renderDispGrid(selTeacher);renderMaestrosSb();toast('Limpiado','warn');}
+
+// ═══════════════════════════════════════════
+//  5. MOTOR DE ASIGNACIÓN
+// ═══════════════════════════════════════════
+function runEngine(){
+  suggestions=[];
+  const semF=document.getElementById('asig-sem').value;
+  const turF=document.getElementById('asig-tur').value;
+  const sched=schedule[cycle]||{};
+
+  // Track teacher hours already used in this suggestion run
+  const tmpHrs={};// tid -> hrs suggested
+
+  for(const g of groups[cycle]){
+    if(semF&&g.sem!=semF)continue;
+    if(turF&&g.turno!==turF)continue;
+    const subjs=subjects[cycle][g.id]||[];
+    if(!subjs.length)continue;
+
+    for(const subj of subjs){
+      // Find all teachers competent for this subject
+      const candidates=competentTeachers(subj.name);
+      if(!candidates.length){
+        // No competent teacher — add warning suggestion
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotId:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
+        continue;
+      }
+
+      let hrsLeft=subj.hrs;
+      const slots=assignable(g.turno);
+
+      for(const slot of slots){
+        if(hrsLeft<=0)break;
+        for(let d=0;d<5;d++){
+          if(hrsLeft<=0)break;
+          const key=slot.id+'_'+d;
+          if((sched[g.id]||{})[key])continue;
+          // Already suggested for this group+key?
+          if(suggestions.some(s=>s.groupId===g.id&&s.slotId===slot.id&&s.dayIdx===d&&s.status==='pending'))continue;
+
+          // Score each candidate teacher
+          let bestT=null,bestScore=-1;
+          for(const cand of candidates){
+            const av=((availability[cand.id]||{})[cycle]||{})[key]||'neutral';
+            if(av==='unavail')continue; // skip hard unavailable unless no choice
+            if(isConflict(cand.id,slot.id,d,g.id))continue;
+            const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
+            if(usedHrs>=cand.hrs_carga)continue; // carga llena
+            const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
+            if(score>bestScore){bestScore=score;bestT=cand;}
+          }
+
+
+
+          if(!bestT)continue;
+
+          const avState=((availability[bestT.id]||{})[cycle]||{})[key]||'neutral';
+          if(!tmpHrs[bestT.id])tmpHrs[bestT.id]=0;
+          tmpHrs[bestT.id]++;
+
+          suggestions.push({
+            groupId:g.id,subjectName:subj.name,
+            slotId:slot.id,dayIdx:d,
+            teacherId:bestT.id,
+            score:Math.round(Math.max(0,bestScore)),
+            availState:'neutral',status:'pending'
+          });
+          hrsLeft--;
+        }
+      }
+      if(hrsLeft>0){
+        // Some hours couldn't be placed
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotId:null,dayIdx:null,teacherId:null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
+      }
+    }
+  }
+  suggestions.sort((a,b)=>{
+    if(a.status==='no_teacher'||a.status==='unplaceable')return 1;
+    if(b.status==='no_teacher'||b.status==='unplaceable')return -1;
+    return b.score-a.score;
+  });
+  renderSugList();renderAsigStats();
+  toast(`Motor completado: ${suggestions.filter(s=>s.status==='pending').length} sugerencias`);
+}
+
+function renderSugList(){
+  const pend=suggestions.filter(s=>s.status==='pending').length;
+  document.getElementById('pend-pill').textContent=pend;
+  if(!suggestions.length){
+    document.getElementById('sug-list').innerHTML='<div class="empty"><div class="ico">🤖</div><div style="font-size:.75rem">Presiona "Generar sugerencias"</div></div>';
+    return;
+  }
+  document.getElementById('sug-list').innerHTML=suggestions.map((s,i)=>{
+    const t=T(s.teacherId);
+    const sc=s.score>=80?'sc-hi':s.score>=50?'sc-md':'sc-lo';
+    const stTag=s.status==='approved'?'<span class="tag t-green">✓</span>':s.status==='rejected'?'<span class="tag t-red">✗</span>':s.status==='no_teacher'?'<span class="tag t-red">Sin maestro competente</span>':s.status==='unplaceable'?'<span class="tag t-amber">Sin hueco</span>':'';
+    const isProblem=s.status==='no_teacher'||s.status==='unplaceable';
+    return `<div class="sug-item ${selSugIdx===i?'sel':''} ${s.status!=='pending'?'done':''}" onclick="selSug(${i})" style="${isProblem?'background:var(--red-lt)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.35rem">
+        <div>
+          <div style="font-family:var(--fh);font-weight:700;font-size:.74rem">${s.groupId}${s.dayIdx!==null?' · '+DAYS[s.dayIdx].slice(0,3):''}</div>
+          <div style="font-size:.62rem;color:var(--ink2);margin-top:1px">${s.subjectName}</div>
+          ${t?`<div style="font-size:.58rem;color:var(--ink3);margin-top:1px">${t.name.split(' ').slice(0,3).join(' ')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          ${!isProblem?`<span class="score ${sc}">${s.score}%</span>`:''}
+          ${stTag}
+
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selSug(i){
+  selSugIdx=i;renderSugList();
+  const s=suggestions[i];
+  if(!s||s.status!=='pending')return;
+  const t=T(s.teacherId);
+  const slot=allSlots().find(sl=>sl.id===s.slotId);
+  const conflict=s.teacherId?isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId):false;
+  document.getElementById('apr-s').textContent=`${s.groupId} · ${s.slotId?DAYS[s.dayIdx]+' · '+slot?.lbl:''}`;
+  document.getElementById('apr-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem">
+      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Grupo</div><div style="font-family:var(--fh);font-weight:800;font-size:1.05rem">${s.groupId}</div></div>
+      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Horario</div><div style="font-family:var(--fh);font-weight:700;font-size:.9rem">${s.slotId?DAYS[s.dayIdx]:'—'}</div><div style="font-size:.7rem;color:var(--ink2)">${slot?.lbl||''}</div></div>
+    </div>
+    <div class="card cb" style="margin-bottom:.75rem">
+      <div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Materia</div>
+      <div style="font-family:var(--fh);font-weight:700;font-size:.92rem">${s.subjectName}</div>
+    </div>
+    ${t?`<div class="card cb" style="margin-bottom:.75rem">
+      <div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Maestro asignado por el motor</div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <div class="av" style="background:${ac(t.id)}">${ini(t.name)}</div>
+        <div><div style="font-weight:700;font-size:.8rem">${t.name}</div><div style="font-size:.62rem;color:var(--ink2)">${t.hrs_carga}h carga · ${assignedHrs(t.id)} asignadas</div></div>
+        <span class="score ${s.score>=80?'sc-hi':s.score>=50?'sc-md':'sc-lo'}" style="margin-left:auto">${s.score}%</span>
+      </div>
+    </div>`:'<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:8px;padding:.65rem .8rem;font-size:.75rem;color:var(--red);margin-bottom:.75rem">⚠ No se encontró un maestro con competencia en esta materia. Agrega competencias en la sección Maestros.</div>'}
+
+    ${conflict?`<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:8px;padding:.62rem .8rem;font-size:.73rem;color:var(--red);margin-top:.5rem">🚨 Conflicto: el maestro ya tiene clase en otro grupo en este horario.</div>`:''}
+  `;
+  document.getElementById('modal-approve').classList.add('open');
+}
+
+function approveSug(){
+  if(selSugIdx===null)return;
+  const s=suggestions[selSugIdx];
+  if(!s.slotId||!s.teacherId){toast('No se puede aprobar esta sugerencia','err');return;}
+  s.status='approved';
+  if(!schedule[cycle])schedule[cycle]={};
+  if(!schedule[cycle][s.groupId])schedule[cycle][s.groupId]={};
+  const key=s.slotId+'_'+s.dayIdx;
+  const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
+  const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
+  schedule[cycle][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
+  if(selTeacher)renderMaestroDetail(selTeacher);
+  toast('Aprobada ✓');
+}
+
+function rejectSug(){
+  if(selSugIdx===null)return;
+  suggestions[selSugIdx].status='rejected';
+  closeM('modal-approve');renderSugList();toast('Rechazada','warn');
+}
+
+function approveAll(){
+  const pend=suggestions.filter(s=>s.status==='pending'&&s.slotId&&s.teacherId);
+  if(!pend.length){toast('Sin sugerencias válidas pendientes','warn');return;}
+  if(!schedule[cycle])schedule[cycle]={};
+  for(const s of pend){
+    s.status='approved';
+    if(!schedule[cycle][s.groupId])schedule[cycle][s.groupId]={};
+    const key=s.slotId+'_'+s.dayIdx;
+    const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
+    const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
+    schedule[cycle][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  }
+  renderSugList();renderAsigStats();updConflict();
+  toast(`${pend.length} aprobadas ✓`);
+}
+
+function renderAsigStats(){
+  const sched=schedule[cycle]||{};
+  const total=Object.values(sched).reduce((a,g)=>a+Object.keys(g).length,0);
+  const conflicts=detectConflicts().length;
+  const warns=Object.values(sched).reduce((a,g)=>a+Object.values(g).filter(c=>c.status==='warn').length,0);
+  const pend=suggestions.filter(s=>s.status==='pending').length;
+  const noT=suggestions.filter(s=>s.status==='no_teacher').length;
+  document.getElementById('asig-stats').innerHTML=`
+    <div class="stat"><div class="sv c-blue">${total}</div><div class="sl">Asignaciones</div></div>
+    <div class="stat"><div class="sv ${conflicts?'c-red':'c-green'}">${conflicts}</div><div class="sl">Conflictos</div></div>
+
+    <div class="stat"><div class="sv c-amber">${pend}</div><div class="sl">Pendientes</div></div>
+    ${noT?`<div class="stat" style="border-color:var(--red)"><div class="sv c-red">${noT}</div><div class="sl">Sin maestro</div></div>`:''}
+  `;
+
+  // List
+  const semF=document.getElementById('asig-sem').value;
+  const turF=document.getElementById('asig-tur').value;
+  const entries=[];
+  for(const [gid,cells] of Object.entries(sched)){
+    const g=G(gid);if(!g)continue;
+    if(semF&&g.sem!=semF)continue;
+    if(turF&&g.turno!==turF)continue;
+    for(const [key,d] of Object.entries(cells)){
+      const [sl,dy]=key.split('_');
+      const slot=allSlots().find(s=>s.id===sl);
+      const t=T(d.teacherId);
+      entries.push({gid,key,sl,dy:parseInt(dy),slot,d,t});
+    }
+  }
+  entries.sort((a,b)=>a.gid.localeCompare(b.gid)||a.dy-b.dy);
+  document.getElementById('asig-assignments').innerHTML=entries.length?`
+    <div class="card">
+      <div class="ch">Asignaciones aprobadas <span class="tag t-blue">${entries.length}</span></div>
+      ${entries.map(e=>{
+        const stTag=e.d.status==='conflict'?'<span class="tag t-red">⚠ Conflicto</span>':'<span class="tag t-green">✓</span>';
+        return `<div style="display:flex;align-items:center;gap:.65rem;padding:.5rem .85rem;border-bottom:1px solid var(--bdr);font-size:.76rem;${e.d.status==='conflict'?'background:var(--red-lt)':''}">
+          <span class="tag t-blue" style="flex-shrink:0">${e.gid}</span>
+          <div style="flex:1;min-width:0"><div style="font-weight:700;font-family:var(--fh);font-size:.74rem">${e.d.subjectName||''}</div><div style="font-size:.62rem;color:var(--ink2)">${e.t?e.t.name:''}</div></div>
+          <span style="font-family:var(--fm);font-size:.6rem;color:var(--ink2);white-space:nowrap;text-align:right">${DAYS[e.dy].slice(0,3)}<br>${e.slot?.lbl||e.sl}</span>
+          ${stTag}
+          <button class="btn btn-ghost btn-xs" onclick="removeAsig('${e.gid}','${e.key}')">✕</button>
+        </div>`;
+      }).join('')}
+    </div>
+  `:'<div class="empty"><div class="ico">📋</div><div>Sin asignaciones aprobadas</div></div>';
+}
+
+function removeAsig(gid,key){
+  if(schedule[cycle]?.[gid])delete schedule[cycle][gid][key];
+  renderAsigStats();updConflict();toast('Eliminada','warn');
+}
+
+// ═══════════════════════════════════════════
+//  6. HORARIO POR GRUPO
+// ═══════════════════════════════════════════
+function filterHorGrp(){
+  const sem=document.getElementById('h-sem').value;
+  const tur=document.getElementById('h-tur').value;
+  const sel=document.getElementById('h-grp');
+  const prev=sel.value;
+  while(sel.options.length>1)sel.remove(1);
+  groups[cycle].filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
+    .forEach(g=>sel.appendChild(new Option(g.id,g.id)));
+  if([...sel.options].some(o=>o.value===prev))sel.value=prev;
+  renderHorario();
+}
+
+function renderHorario(){
+  const gid=document.getElementById('h-grp').value;
+  const body=document.getElementById('h-body');
+  if(!gid){body.innerHTML='<div class="empty"><div class="ico">📋</div><div>Selecciona un grupo</div></div>';return;}
+  const g=G(gid);
+  const cells=(schedule[cycle]||{})[gid]||{};
+  const slots=SLOTS[g.turno];
+  const isVes=g.turno==='V';
+  const subjs=subjects[cycle][gid]||[];
+
+  let html=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${gid}</div>
+        <div style="font-size:.74rem;color:var(--ink2)">${g.sem}° · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${Object.keys(cells).length} bloques asignados</div>
+      </div>
+      <div class="legend">
+        <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:${isVes?'var(--purple-lt)':'var(--blue-lt)'};border:1.5px solid ${isVes?'#9860d8':'#6888d8'}"></div>Asignado</div>
+        <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--red-lt);border:1.5px solid var(--red)"></div>Conflicto</div>
+
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1rem;overflow:hidden">
+      <div class="ovr-x"><div class="sg">
+        <div style="background:var(--bg2);border-radius:4px"></div>
+        ${DAYS.map(d=>`<div class="sg-dh">${d}</div>`).join('')}
+  `;
+
+  for(const slot of slots){
+    html+=`<div class="sg-th">${slot.lbl}</div>`;
+    if(slot.recess&&slot.forSem?.includes(g.sem)){
+      html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl">☕ Receso · ${slot.lbl}</div></div>`;continue;
+    }
+    if(slot.blocked){html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl">— Transición de recesos —</div></div>`;continue;}
+    if(slot.recess){html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl"></div></div>`;continue;}
+
+    for(let d=0;d<5;d++){
+      const key=slot.id+'_'+d;
+      const cell=cells[key];
+      const t=cell?.teacherId?T(cell.teacherId):null;
+      let cls='sg-cell';
+      if(cell?.subjectName)cls+=cell.status==='conflict'?' conflict':isVes?' filled ves':' filled';
+      html+=`<div class="${cls}" onclick="openCellEdit('${gid}','${slot.id}',${d})">
+        ${cell?.subjectName?`
+          <div class="cs${isVes?' ves':''}">${cell.subjectName}</div>
+          <div class="ct">${t?t.name.split(' ').slice(0,3).join(' '):'<span style="color:var(--red)">Sin maestro</span>'}</div>
+          ${cell.status==='conflict'?'<div class="cf" style="color:var(--red)">⚠ Conflicto</div>':''}
+
+        `:`<div class="cp">+</div>`}
+      </div>`;
+    }
+  }
+  html+=`</div></div></div>`;
+
+  // Progress by subject
+  if(subjs.length){
+    const usedMap={};
+    Object.values(cells).forEach(c=>{if(c.subjectName)usedMap[c.subjectName]=(usedMap[c.subjectName]||0)+1;});
+    html+=`<div class="card">
+      <div class="ch">Progreso de materias</div>
+      <div style="padding:.75rem;display:flex;flex-wrap:wrap;gap:.5rem">
+        ${subjs.map(s=>{
+          const used=usedMap[s.name]||0;
+          const pct=Math.min(100,Math.round(used/s.hrs*100));
+          const col=used>=s.hrs?'var(--green)':used>0?'var(--amber)':'var(--bdr2)';
+          // Find who's teaching it
+          const teacherIds=[...new Set(Object.values(cells).filter(c=>c.subjectName===s.name&&c.teacherId).map(c=>c.teacherId))];
+          return `<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:.5rem .75rem;min-width:150px">
+            <div style="font-family:var(--fh);font-weight:700;font-size:.75rem">${s.name}</div>
+            <div style="font-size:.6rem;color:var(--ink2);margin-top:2px">${used}/${s.hrs}h · ${teacherIds.map(id=>{const t=T(id);return t?t.name.split(' ')[0]:'?';}).join(', ')||'sin maestro'}</div>
+            <div style="height:3px;background:var(--bdr);border-radius:2px;margin-top:4px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  body.innerHTML=html;
+}
+
+function openCellEdit(gid,slotId,dayIdx){
+  editCell={gid,slotId,dayIdx};
+  const g=G(gid);
+  const slot=allSlots().find(s=>s.id===slotId);
+  const cell=((schedule[cycle]||{})[gid]||{})[slotId+'_'+dayIdx];
+  const subjs=subjects[cycle][gid]||[];
+
+  document.getElementById('mcell-t').textContent=`${gid} — ${DAYS[dayIdx]}`;
+  document.getElementById('mcell-s').textContent=slot?.lbl||slotId;
+  document.getElementById('mcell-day').value=dayIdx;
+
+  const slotSel=document.getElementById('mcell-slot');
+  slotSel.innerHTML=assignable(g.turno).map(s=>`<option value="${s.id}" ${s.id===slotId?'selected':''}>${s.lbl}</option>`).join('');
+
+  const subjSel=document.getElementById('mcell-subj');
+  subjSel.innerHTML='<option value="">— Materia —</option>'+
+    subjs.map(s=>`<option value="${s.name}" ${cell?.subjectName===s.name?'selected':''}>${s.name}</option>`).join('');
+  if(cell&&!subjs.find(s=>s.name===cell.subjectName))
+    subjSel.innerHTML+=`<option value="${cell.subjectName}" selected>${cell.subjectName}</option>`;
+
+  const teachSel=document.getElementById('mcell-teacher');
+  teachSel.innerHTML='<option value="">— Maestro —</option>'+
+    TEACHERS.map(t=>`<option value="${t.id}" ${t.id===cell?.teacherId?'selected':''}>${t.name}</option>`).join('');
+
+  document.getElementById('mcell-rem').style.display=cell?'inline-flex':'none';
+  document.getElementById('mcell-warns').innerHTML='';
+  document.getElementById('modal-cell').classList.add('open');
+}
+
+function openCellManual(){
+  const gid=document.getElementById('h-grp').value;
+  if(!gid){toast('Selecciona un grupo','warn');return;}
+  const g=G(gid);
+  openCellEdit(gid,assignable(g.turno)[0]?.id||'m1',0);
+}
+
+function cellAutoTeacher(){
+  // When subject is chosen, suggest competent teachers
+  const subjName=document.getElementById('mcell-subj').value;
+  if(!subjName)return;
+  const candidates=competentTeachers(subjName);
+  const sel=document.getElementById('mcell-teacher');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Maestro —</option>'+
+    TEACHERS.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${t.name}${candidates.find(c=>c.id===t.id)?' ★':''}</option>`).join('');
+  // Auto-select first competent if none selected
+  if(!cur&&candidates.length)sel.value=candidates[0].id;
+  cellCheck();
+}
+
+function cellCheck(){
+  if(!editCell)return;
+  const tid=document.getElementById('mcell-teacher').value;
+  const slotId=document.getElementById('mcell-slot').value;
+  const dayIdx=parseInt(document.getElementById('mcell-day').value);
+  const w=document.getElementById('mcell-warns');
+  const msgs=[];
+  if(tid&&slotId&&!isNaN(dayIdx)){
+    if(isConflict(tid,slotId,dayIdx,editCell.gid))
+      msgs.push(`<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--red);margin-top:.45rem">🚨 Conflicto: este maestro ya tiene clase en otro grupo en ese horario.</div>`);
+
+    const subjName=document.getElementById('mcell-subj').value;
+    if(subjName&&tid&&!competentTeachers(subjName).find(c=>c.id===tid))
+      msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ Este maestro no tiene esta materia como competencia.</div>`);
+  }
+  w.innerHTML=msgs.join('');
+}
+
+function cellSave(){
+  if(!editCell)return;
+  const {gid}=editCell;
+  const slotId=document.getElementById('mcell-slot').value;
+  const dayIdx=parseInt(document.getElementById('mcell-day').value);
+  const subjectName=document.getElementById('mcell-subj').value;
+  const teacherId=document.getElementById('mcell-teacher').value;
+  if(!subjectName){toast('Selecciona una materia','err');return;}
+  const {slotId:oldSl,dayIdx:oldDy}=editCell;
+  if(!schedule[cycle])schedule[cycle]={};
+  if(!schedule[cycle][gid])schedule[cycle][gid]={};
+  const oldKey=oldSl+'_'+oldDy;
+  const newKey=slotId+'_'+dayIdx;
+  if(oldKey!==newKey)delete schedule[cycle][gid][oldKey];
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid);
+  const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
+  schedule[cycle][gid][newKey]={subjectName,teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  closeM('modal-cell');renderHorario();updConflict();toast('Guardado ✓');
+}
+
+function cellRemove(){
+  if(!editCell)return;
+  const {gid,slotId,dayIdx}=editCell;
+  if(schedule[cycle]?.[gid])delete schedule[cycle][gid][slotId+'_'+dayIdx];
+  closeM('modal-cell');renderHorario();updConflict();toast('Eliminada','warn');
+}
+
+// ═══════════════════════════════════════════
+//  7. IMPRESIÓN
+// ═══════════════════════════════════════════
+function fillPrSel(){
+  const type=document.getElementById('pr-type').value;
+  const sel=document.getElementById('pr-which');
+  sel.innerHTML='';
+  if(type==='group') groups[cycle].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
+  else TEACHERS.forEach(t=>sel.appendChild(new Option(t.name,t.id)));
+}
+
+function buildPrint(){
+  const type=document.getElementById('pr-type').value;
+  const which=document.getElementById('pr-which').value;
+  const area=document.getElementById('pr-area');
+
+  if(type==='group'){
+    const g=G(which);if(!g)return;
+    const cells=(schedule[cycle]||{})[which]||{};
+    const isVes=g.turno==='V';
+    let html=`
+      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">DIRECCIÓN GENERAL DE EDUCACIÓN TECNOLÓGICA INDUSTRIAL · CBTIS</div>
+      <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;margin:.18rem 0">Horario — Grupo ${which}</div>
+      <div style="font-size:.72rem;color:var(--ink2);margin-bottom:1.1rem">${g.sem}° Semestre · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${CYCLE_LBL[cycle]}</div>
+      <div class="ovr-x"><div class="sg" style="gap:1px">
+        <div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">HORA</div>
+        ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
+    `;
+    for(const slot of SLOTS[g.turno]){
+      html+=`<div style="background:var(--bg2);padding:.28rem .42rem;font-family:var(--fm);font-size:.52rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center">${slot.lbl}</div>`;
+      if(slot.recess&&slot.forSem?.includes(g.sem)){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.52rem;color:var(--ink3);padding:.2rem">☕ RECESO</div>`;continue;}
+      if(slot.blocked||slot.recess){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:14px"></div>`;continue;}
+      for(let d=0;d<5;d++){
+        const cell=cells[slot.id+'_'+d];
+        const t=cell?.teacherId?T(cell.teacherId):null;
+        html+=`<div style="background:${cell?.subjectName?(isVes?'var(--purple-lt)':'var(--blue-lt)'):'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.28rem;min-height:42px;display:flex;flex-direction:column;justify-content:center">
+          ${cell?.subjectName?`<div style="font-family:var(--fh);font-weight:700;font-size:.6rem;color:${isVes?'var(--purple)':'var(--blue)'}">${cell.subjectName}</div>
+          ${t?`<div style="font-size:.5rem;color:var(--ink2);margin-top:1px">${t.name.split(' ').slice(0,3).join(' ')}</div>`:''}`:''}
+        </div>`;
+      }
+    }
+    html+=`</div></div><div style="margin-top:1.2rem;font-size:.6rem;color:var(--ink3);border-top:1px solid var(--bdr);padding-top:.45rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+    area.innerHTML=html;
+
+  } else {
+    const t=T(which);if(!t)return;
+    const asgns=[];
+    for(const [gid,cells] of Object.entries(schedule[cycle]||{}))
+      for(const [key,d] of Object.entries(cells)){
+        if(d.teacherId!==which)continue;
+        const [sl,dy]=key.split('_');
+        const g=G(gid);
+        asgns.push({gid,sl,dy:parseInt(dy),slot:allSlots().find(s=>s.id===sl),d,turno:g?.turno||'M'});
+      }
+
+    let html=`
+      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-family:var(--fh);font-weight:800;font-size:1.05rem;margin:.18rem 0">${t.name}</div>
+      <div style="font-size:.7rem;color:var(--ink2);margin-bottom:1.1rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
+    `;
+    for(const tur of['M','V']){
+      const ta=asgns.filter(a=>a.turno===tur);if(!ta.length)continue;
+      html+=`<div style="font-family:var(--fh);font-weight:700;font-size:.7rem;color:var(--ink2);margin-bottom:.38rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+        <div class="ovr-x" style="margin-bottom:1.1rem"><div class="sg" style="gap:1px">
+          <div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">HORA</div>
+          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
+      `;
+      for(const slot of SLOTS[tur]){
+        html+=`<div style="background:var(--bg2);padding:.28rem .42rem;font-family:var(--fm);font-size:.52rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center">${slot.lbl}</div>`;
+        if(slot.recess||slot.blocked){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:12px"></div>`;continue;}
+        for(let d=0;d<5;d++){
+          const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
+          html+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.28rem;min-height:38px;display:flex;flex-direction:column;justify-content:center">
+            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.6rem;color:var(--blue)">${a.d.subjectName}</div>
+            <div style="font-size:.5rem;color:var(--ink2)">${a.gid}</div>`:''}</div>`;
+        }
+      }
+      html+=`</div></div>`;
+    }
+    html+=`<div style="margin-top:1rem;font-size:.6rem;color:var(--ink3);border-top:1px solid var(--bdr);padding-top:.45rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+    area.innerHTML=html;
+  }
+  toast('Vista previa lista');
+}
+document.getElementById('pr-type').onchange=fillPrSel;
+
+// ═══════════════════════════════════════════
+//  CICLO MANAGEMENT
+// ═══════════════════════════════════════════
+async function loadCiclos(){
+  showLoading('Cargando ciclos…');
+  try{
+    ciclos=await dbGet('ciclos','order=fecha_inicio.desc');
+    renderCicloSel();
+    if(ciclos.length){
+      const activo=ciclos.find(c=>c.activo)||ciclos[0];
+      currentCicloId=activo.id;
+      cycle=activo.tipo;
+      document.getElementById('ciclo-sel').value=currentCicloId;
+      updateCycleBadges();
+    }
+  }catch(e){toast('Error cargando ciclos: '+e.message,'err');}
+  hideLoading();
+}
+
+function renderCicloSel(){
+  const sel=document.getElementById('ciclo-sel');
+  sel.innerHTML=ciclos.length
+    ? ciclos.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')
+    : '<option value="">Sin ciclos — crea el primero</option>';
+}
+
+function onCicloChange(){
+  const id=document.getElementById('ciclo-sel').value;
+  if(!id)return;
+  currentCicloId=id;
+  const c=ciclos.find(x=>x.id===id);
+  cycle=c?.tipo||'par';
+  updateCycleBadges();
+  // Reload all data for this ciclo
+  groups[currentCicloId]=null; subjects[currentCicloId]=null; schedule[currentCicloId]=null;
+  selGroup=null;suggestions=[];
+  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();fillPrSel();
+  toast('Ciclo: '+(c?.nombre||''));
+}
+
+function updateCycleBadges(){
+  const c=ciclos.find(x=>x.id===currentCicloId);
+  const lbl=c?c.nombre:CYCLE_LBL[cycle];
+  const cls=cycle==='par'?'cy-par':'cy-imp';
+  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.textContent=lbl;el.className='cy-badge '+cls;}
+  });
+}
+
+// Modal nuevo ciclo
+let _nuevoCicloModal=null;
+function openNuevoCiclo(){
+  // Build modal dynamically if not exists
+  if(!document.getElementById('modal-ciclo')){
+    const div=document.createElement('div');
+    div.className='mbg'; div.id='modal-ciclo';
+    div.innerHTML=`<div class="modal" style="width:460px">
+      <div class="mh"><div><div class="mt">Nuevo ciclo escolar</div></div><button class="mx" onclick="closeM('modal-ciclo')">✕</button></div>
+      <div class="mb">
+        <div class="field"><label>Nombre del ciclo</label>
+          <input type="text" id="nc-nombre" placeholder="Ej: Feb 2027 – Jul 2027" style="width:100%"></div>
+        <div class="frow">
+          <div class="field"><label>Tipo</label>
+            <select id="nc-tipo" style="width:100%"><option value="par">Pares (Feb–Jul)</option><option value="impar">Impares (Ago–Ene)</option></select></div>
+          <div class="field"><label>Copiar grupos de</label>
+            <select id="nc-copy" style="width:100%"><option value="">— No copiar —</option></select></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Fecha inicio</label><input type="date" id="nc-ini" style="width:100%"></div>
+          <div class="field"><label>Fecha fin</label><input type="date" id="nc-fin" style="width:100%"></div>
+        </div>
+        <div style="font-size:.72rem;color:var(--ink2);background:var(--green-lt);border:1px solid #80c8a0;border-radius:8px;padding:.65rem .85rem">
+          ✓ Si copias grupos de un ciclo anterior, se duplican los grupos y sus materias. Los horarios y disponibilidad empiezan limpios.
+        </div>
+      </div>
+      <div class="mf">
+        <button class="btn btn-ghost" onclick="closeM('modal-ciclo')">Cancelar</button>
+        <button class="btn btn-green" onclick="saveNuevoCiclo()">Crear ciclo</button>
+      </div>
+    </div>`;
+    div.addEventListener('click',e=>{if(e.target===div)div.classList.remove('open');});
+    document.body.appendChild(div);
+  }
+  // Fill copy-from select
+  const copySel=document.getElementById('nc-copy');
+  copySel.innerHTML='<option value="">— No copiar —</option>'+
+    ciclos.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  // Auto-suggest next cycle name
+  const now=new Date();
+  const mo=now.getMonth();
+  const yr=now.getFullYear();
+  const tipo=mo<7?'impar':'par';
+  const nombre=tipo==='par'?`Feb ${yr+1} – Jul ${yr+1}`:`Ago ${yr} – Ene ${yr+1}`;
+  document.getElementById('nc-nombre').value=nombre;
+  document.getElementById('nc-tipo').value=tipo;
+  document.getElementById('nc-ini').value=tipo==='par'?`${yr+1}-02-01`:`${yr}-08-01`;
+  document.getElementById('nc-fin').value=tipo==='par'?`${yr+1}-07-31`:`${yr+1}-01-31`;
+  document.getElementById('modal-ciclo').classList.add('open');
+}
+
+async function saveNuevoCiclo(){
+  const nombre=document.getElementById('nc-nombre').value.trim();
+  const tipo=document.getElementById('nc-tipo').value;
+  const copyFrom=document.getElementById('nc-copy').value;
+  const fi=document.getElementById('nc-ini').value;
+  const ff=document.getElementById('nc-fin').value;
+  if(!nombre||!fi||!ff){toast('Llena todos los campos','err');return;}
+
+  showLoading('Creando ciclo…');
+  try{
+    // Create ciclo
+    const [newCiclo]=await dbPost('ciclos',{nombre,tipo,fecha_inicio:fi,fecha_fin:ff,activo:true});
+
+    // If copying from another ciclo, duplicate groups+materias
+    if(copyFrom){
+      showLoading('Copiando grupos y materias…');
+      const oldGrupos=await dbGet('grupos',`ciclo_id=eq.${copyFrom}`);
+      for(const g of oldGrupos){
+        const [newG]=await dbPost('grupos',{ciclo_id:newCiclo.id,clave:g.clave,semestre:g.semestre,turno:g.turno,especialidad:g.especialidad});
+        const oldMaterias=await dbGet('materias',`grupo_id=eq.${g.id}`);
+        for(const m of oldMaterias){
+          await dbPost('materias',{grupo_id:newG.id,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab,maestro_lab_id:m.maestro_lab_id});
+        }
+      }
+    }
+
+    ciclos.unshift(newCiclo);
+    renderCicloSel();
+    currentCicloId=newCiclo.id;
+    cycle=tipo;
+    document.getElementById('ciclo-sel').value=newCiclo.id;
+    updateCycleBadges();
+    closeM('modal-ciclo');
+    // Reset local cache
+    groups[currentCicloId]=null;subjects[currentCicloId]=null;schedule[currentCicloId]=null;
+    selGroup=null;suggestions=[];
+    fillSemSels();renderGrupos();fillGrpSel();renderAsigStats();filterHorGrp();fillPrSel();
+    toast(`Ciclo "${nombre}" creado ✓`);
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+}
+
+// ═══════════════════════════════════════════
+//  DB-BACKED DATA LOADERS
+//  (cache in memory, load on demand)
+// ═══════════════════════════════════════════
+
+// Override groups[] to be keyed by cicloId
+// groups[cicloId] = [{id(uuid), clave, semestre, turno, especialidad}]
+// We keep the same G() helper but update it:
+
+// G() is already defined above and uses currentCicloId
+
+async function ensureGroups(){
+  if(groups[currentCicloId])return;
+  showLoading('Cargando grupos…');
+  try{
+    const rows=await dbGet('grupos',`ciclo_id=eq.${currentCicloId}&order=clave.asc`);
+    groups[currentCicloId]=rows.map(r=>({id:r.id,clave:r.clave,sem:r.semestre,turno:r.turno,especialidad:r.especialidad}));
+  }catch(e){toast('Error cargando grupos','err');groups[currentCicloId]=[];}
+  hideLoading();
+}
+
+async function ensureSubjects(groupDbId){
+  if(!subjects[currentCicloId])subjects[currentCicloId]={};
+  if(subjects[currentCicloId][groupDbId]!==undefined)return;
+  try{
+    const rows=await dbGet('materias',`grupo_id=eq.${groupDbId}&order=nombre.asc`);
+    subjects[currentCicloId][groupDbId]=rows.map(r=>({id:r.id,name:r.nombre,hrs:r.hrs,lab:r.hrs_lab,labTeacherId:r.maestro_lab_id}));
+  }catch(e){subjects[currentCicloId][groupDbId]=[];}
+}
+
+async function ensureSchedule(groupDbId){
+  if(!schedule[currentCicloId])schedule[currentCicloId]={};
+  if(schedule[currentCicloId][groupDbId]!==undefined)return;
+  try{
+    const rows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&grupo_id=eq.${groupDbId}`);
+    schedule[currentCicloId][groupDbId]={};
+    rows.forEach(r=>{
+      schedule[currentCicloId][groupDbId][r.slot_id+'_'+r.dia]={
+        subjectName:r.materia_nombre,teacherId:r.maestro_id,
+        status:r.status,isLab:r.is_lab,horarioId:r.id
+      };
+    });
+  }catch(e){schedule[currentCicloId][groupDbId]={};}
+}
+
+async function ensureTeachers(){
+  if(TEACHERS.length>0&&TEACHERS[0]._loaded)return;
+  try{
+    const rows=await dbGet('maestros','order=nombre.asc');
+    TEACHERS.length=0;
+    rows.forEach(r=>TEACHERS.push({id:r.id,name:r.nombre,hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,_loaded:true}));
+  }catch(e){console.warn('Using local TEACHERS fallback');}
+}
+
+async function ensureCompetencias(){
+  if(Object.keys(competencias).length>0)return;
+  try{
+    const rows=await dbGet('competencias');
+    rows.forEach(r=>{
+      if(!competencias[r.maestro_id])competencias[r.maestro_id]=new Set();
+      competencias[r.maestro_id].add(r.materia);
+    });
+  }catch(e){console.warn('Competencias not loaded');}
+}
+
+// Modo institucional: sin disponibilidad
+async function ensureDisponibilidad(){ return; }
+
+// ── Loading overlay ──
+function showLoading(msg){
+  let el=document.getElementById('loading-overlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='loading-overlay';
+    el.style.cssText='position:fixed;inset:0;background:rgba(28,26,22,.45);backdrop-filter:blur(2px);z-index:800;display:flex;align-items:center;justify-content:center;';
+    el.innerHTML='<div style="background:var(--surf);border-radius:12px;padding:1.2rem 2rem;box-shadow:var(--sh-lg);font-family:var(--fh);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:.75rem"><span style="font-size:1.2rem">⏳</span><span id="loading-msg">Cargando…</span></div>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('loading-msg').textContent=msg||'Cargando…';
+  el.style.display='flex';
+}
+function hideLoading(){ const el=document.getElementById('loading-overlay'); if(el)el.style.display='none'; }
+
+// ═══════════════════════════════════════════
+//  OVERRIDE SAVE FUNCTIONS TO HIT SUPABASE
+// ═══════════════════════════════════════════
+
+// ── Save grupo to DB ──
+const _origSaveGrupo=saveGrupo;
+saveGrupo=async function(){
+  const id_input=document.getElementById('mg-id').value.trim().toUpperCase();
+  const sem=parseInt(document.getElementById('mg-sem').value);
+  const turno=document.getElementById('mg-tur').value;
+  const especialidad=document.getElementById('mg-esp').value.trim();
+  if(!id_input){toast('Escribe el ID del grupo','err');return;}
+  showLoading('Guardando grupo…');
+  try{
+    if(editGrupoId){
+      // editGrupoId is the clave (e.g. "2AMA"), find DB uuid
+      const g=(groups[currentCicloId]||[]).find(x=>x.clave===editGrupoId);
+      if(g){
+        await dbPatch('grupos',`id=eq.${g.id}`,{clave:id_input,semestre:sem,turno,especialidad});
+        g.clave=id_input;g.sem=sem;g.turno=turno;g.especialidad=especialidad;
+      }
+    } else {
+      if((groups[currentCicloId]||[]).find(g=>g.clave===id_input)){toast('ID ya existe','err');hideLoading();return;}
+      const [row]=await dbPost('grupos',{ciclo_id:currentCicloId,clave:id_input,semestre:sem,turno,especialidad});
+      if(!groups[currentCicloId])groups[currentCicloId]=[];
+      groups[currentCicloId].push({id:row.id,clave:row.clave,sem:row.semestre,turno:row.turno,especialidad:row.especialidad});
+    }
+    selGroup=id_input;
+    closeM('modal-grupo');
+    fillSemSels();fillGrpSel();renderGrupos();
+    toast('Grupo guardado ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Delete grupo from DB ──
+const _origDelGrupo=delGrupo;
+delGrupo=async function(){
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===editGrupoId);
+  if(!g)return;
+  showLoading('Eliminando…');
+  try{
+    await dbDel('grupos',`id=eq.${g.id}`);
+    groups[currentCicloId]=groups[currentCicloId].filter(x=>x.id!==g.id);
+    delete (subjects[currentCicloId]||{})[g.id];
+    delete (schedule[currentCicloId]||{})[g.id];
+    selGroup=null;
+    closeM('modal-grupo');
+    fillSemSels();fillGrpSel();renderGrupos();
+    document.getElementById('g-detail').innerHTML='<div class="empty"><div class="ico">🏫</div><div>Selecciona un grupo</div></div>';
+    toast('Grupo eliminado','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Save materia to DB ──
+const _origSaveMateria=saveMateria;
+saveMateria=async function(){
+  const nombre=document.getElementById('mm-name').value.trim().toUpperCase();
+  const hrs=parseInt(document.getElementById('mm-hrs').value)||1;
+  const hrs_lab=parseInt(document.getElementById('mm-lab').value)||0;
+  const maestro_lab_id=document.getElementById('mm-lab-teacher').value||null;
+  if(!nombre){toast('Escribe el nombre','err');return;}
+  // Find group DB id
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===editMateriaGid||x.id===editMateriaGid);
+  if(!g){toast('Grupo no encontrado','err');return;}
+  showLoading('Guardando materia…');
+  try{
+    if(editMateriaIdx!==null){
+      const s=(subjects[currentCicloId]||{})[g.id]?.[editMateriaIdx];
+      if(s){
+        await dbPatch('materias',`id=eq.${s.id}`,{nombre,hrs,hrs_lab,maestro_lab_id});
+        (subjects[currentCicloId][g.id])[editMateriaIdx]={...s,name:nombre,hrs,lab:hrs_lab,labTeacherId:maestro_lab_id};
+      }
+    } else {
+      const [row]=await dbPost('materias',{grupo_id:g.id,nombre,hrs,hrs_lab,maestro_lab_id});
+      if(!subjects[currentCicloId])subjects[currentCicloId]={};
+      if(!subjects[currentCicloId][g.id])subjects[currentCicloId][g.id]=[];
+      subjects[currentCicloId][g.id].push({id:row.id,name:row.nombre,hrs:row.hrs,lab:row.hrs_lab,labTeacherId:row.maestro_lab_id});
+    }
+    closeM('modal-materia');
+    renderMaterias();renderGrupos();
+    toast('Materia guardada ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Delete materia from DB ──
+const _origDelMateria=delMateria;
+delMateria=async function(){
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===editMateriaGid||x.id===editMateriaGid);
+  if(!g)return;
+  const s=(subjects[currentCicloId]||{})[g.id]?.[editMateriaIdx];
+  if(!s)return;
+  showLoading('Eliminando…');
+  try{
+    await dbDel('materias',`id=eq.${s.id}`);
+    subjects[currentCicloId][g.id].splice(editMateriaIdx,1);
+    closeM('modal-materia');renderMaterias();renderGrupos();
+    toast('Materia eliminada','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Save competencia to DB ──
+const _origSaveComp=saveComp;
+saveComp=async function(){
+  const name=normSubj(document.getElementById('mc-name').value);
+  if(!name){toast('Escribe una materia','err');return;}
+  const tid=editMateriaGid;
+  showLoading('Guardando…');
+  try{
+    await dbPost('competencias',{maestro_id:tid,materia:name});
+    if(!competencias[tid])competencias[tid]=new Set();
+    competencias[tid].add(name);
+    closeM('modal-comp');renderMaestroDetail(tid);renderMaestrosList();
+    toast('Competencia agregada ✓');
+  }catch(e){
+    // ignore unique violation — already exists
+    if(!competencias[tid])competencias[tid]=new Set();
+    competencias[tid].add(name);
+    closeM('modal-comp');renderMaestroDetail(tid);
+    toast('Competencia agregada ✓');
+  }
+  hideLoading();
+};
+
+// ── Delete competencia from DB ──
+const _origDelComp=delComp;
+delComp=async function(tid,enc){
+  const name=decodeURIComponent(enc);
+  showLoading('Eliminando…');
+  try{
+    await dbDel('competencias',`maestro_id=eq.${tid}&materia=eq.${encodeURIComponent(name)}`);
+    if(competencias[tid])competencias[tid].delete(name);
+    renderMaestroDetail(tid);renderMaestrosList();
+    toast('Competencia eliminada','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Save disponibilidad to DB ──
+const _origSaveDisp=saveDisp;
+saveDisp=async function(){
+  if(!selTeacher){toast('Selecciona un maestro','warn');return;}
+  const av=((availability[selTeacher]||{})[currentCicloId]||{});
+  const rows=Object.entries(av).map(([key,estado])=>{
+    const [slot_id,dia]=key.split('_');
+    return {maestro_id:selTeacher,ciclo_id:currentCicloId,slot_id,dia:parseInt(dia),estado};
+  });
+  showLoading('Guardando disponibilidad…');
+  try{
+    if(rows.length){
+      // upsert all at once
+      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(rows)
+      });
+    }
+    renderMaestrosSb();
+    toast('Disponibilidad guardada ✓');
+  }catch(e){toast('Error guardando disponibilidad','err');}
+  hideLoading();
+};
+
+// ── Save teacher edits to DB ──
+const _origSaveTeacher=saveTeacher;
+saveTeacher=async function(){
+  const t=T(editTeacherId);if(!t)return;
+  const nombre=document.getElementById('mte-name').value.trim().toUpperCase();
+  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||t.hrs_nom;
+  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||t.hrs_carga;
+  const obs=document.getElementById('mte-obs').value.trim()||null;
+  if(!nombre){toast('El nombre no puede estar vacío','err');return;}
+  showLoading('Guardando…');
+  try{
+    await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre,hrs_nom,hrs_carga,obs,rfc:t.rfc||null,categoria:t.categoria||null});
+    Object.assign(t,{name:nombre,hrs_nom,hrs_carga,obs});
+    closeM('modal-teacher');renderMaestroDetail(editTeacherId);renderMaestrosList();
+    toast('Datos actualizados ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Save cell (horario) to DB ──
+const _origCellSave=cellSave;
+cellSave=async function(){
+  if(!editCell)return;
+  const {gid}=editCell;
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===gid||x.id===gid);
+  if(!g){toast('Grupo no encontrado','err');return;}
+  const slotId=document.getElementById('mcell-slot').value;
+  const dayIdx=parseInt(document.getElementById('mcell-day').value);
+  const subjectName=document.getElementById('mcell-subj').value;
+  const teacherId=document.getElementById('mcell-teacher').value||null;
+  if(!subjectName){toast('Selecciona una materia','err');return;}
+  const {slotId:oldSl,dayIdx:oldDy}=editCell;
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid);
+  const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
+  const status=conflict?'conflict':unavail?'warn':'ok';
+  showLoading('Guardando…');
+  try{
+    // Delete old if slot changed
+    if(!schedule[currentCicloId])schedule[currentCicloId]={};
+    if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
+    const oldKey=oldSl+'_'+oldDy;
+    const newKey=slotId+'_'+dayIdx;
+    if(oldKey!==newKey){
+      const old=schedule[currentCicloId][g.id][oldKey];
+      if(old?.horarioId)await dbDel('horario',`id=eq.${old.horarioId}`);
+      delete schedule[currentCicloId][g.id][oldKey];
+    }
+    // Upsert new
+    const [row]=await fetch(SUPA_URL+'/rest/v1/horario',{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:teacherId,slot_id:slotId,dia:dayIdx,status})
+    }).then(r=>r.json());
+    schedule[currentCicloId][g.id][newKey]={subjectName,teacherId,status,horarioId:row.id};
+    closeM('modal-cell');renderHorario();updConflict();
+    toast('Guardado ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Remove cell from DB ──
+const _origCellRemove=cellRemove;
+cellRemove=async function(){
+  if(!editCell)return;
+  const {gid,slotId,dayIdx}=editCell;
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===gid||x.id===gid);
+  if(!g)return;
+  const key=slotId+'_'+dayIdx;
+  const cell=(schedule[currentCicloId]||{})[g.id]?.[key];
+  showLoading('Eliminando…');
+  try{
+    if(cell?.horarioId)await dbDel('horario',`id=eq.${cell.horarioId}`);
+    else await dbDel('horario',`ciclo_id=eq.${currentCicloId}&grupo_id=eq.${g.id}&slot_id=eq.${slotId}&dia=eq.${dayIdx}`);
+    if(schedule[currentCicloId]?.[g.id])delete schedule[currentCicloId][g.id][key];
+    closeM('modal-cell');renderHorario();updConflict();
+    toast('Eliminada','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ── Approve suggestion — save to DB ──
+const _origApproveSug=approveSug;
+approveSug=async function(){
+  if(selSugIdx===null)return;
+  const s=suggestions[selSugIdx];
+  if(!s.slotId||!s.teacherId){toast('No se puede aprobar','err');return;}
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId);
+  if(!g){toast('Grupo no encontrado','err');return;}
+  const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
+  const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
+  const status=conflict?'conflict':unavail?'warn':'ok';
+  showLoading('Aprobando…');
+  try{
+    const [row]=await fetch(SUPA_URL+'/rest/v1/horario',{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotId,dia:s.dayIdx,status})
+    }).then(r=>r.json());
+    s.status='approved';
+    if(!schedule[currentCicloId])schedule[currentCicloId]={};
+    if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
+    schedule[currentCicloId][g.id][s.slotId+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status,horarioId:row.id};
+    closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
+    toast('Aprobada ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
+// ═══════════════════════════════════════════
+//  PATCH DATA GETTERS to use currentCicloId
+// ═══════════════════════════════════════════
+// Override fillSemSels to use ciclo type
+const _origFillSemSels=fillSemSels;
+fillSemSels=function(){
+  const c=ciclos.find(x=>x.id===currentCicloId);
+  const tipo=c?.tipo||cycle;
+  const sems=CYCLE_SEMS[tipo];
+  ['g-sem-f','asig-sem','h-sem'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const v=el.value;
+    while(el.options.length>1)el.remove(1);
+    sems.forEach(s=>{el.appendChild(new Option(s+'° Semestre',s));});
+    if([...el.options].some(o=>o.value==v))el.value=v;
+  });
+};
+
+// ═══════════════════════════════════════════
+//  PATCH RENDER FUNCTIONS for DB-backed data
+// ═══════════════════════════════════════════
+const _origRenderGrupos=renderGrupos;
+renderGrupos=async function(){
+  await ensureGroups();
+  _origRenderGrupos();
+};
+
+const _origSelGrp=selGrp;
+selGrp=async function(id){
+  selGroup=id;
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===id||x.id===id);
+  if(g){
+    await ensureSubjects(g.id);
+    await ensureSchedule(g.id);
+    // Map subjects/schedule to clave-keyed for legacy code
+    if(!subjects[currentCicloId])subjects[currentCicloId]={};
+    subjects[currentCicloId][id]=subjects[currentCicloId][g.id]||[];
+    if(!schedule[currentCicloId])schedule[currentCicloId]={};
+    schedule[currentCicloId][id]=schedule[currentCicloId][g.id]||{};
+  }
+  renderGrupos();
+};
+
+const _origRenderMaterias=renderMaterias;
+renderMaterias=async function(){
+  const gid=document.getElementById('m-grp-sel').value;
+  if(gid){
+    const g=(groups[currentCicloId]||[]).find(x=>x.clave===gid||x.id===gid);
+    if(g){
+      await ensureSubjects(g.id);
+      if(!subjects[currentCicloId])subjects[currentCicloId]={};
+      subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
+    }
+  }
+  _origRenderMaterias();
+};
+
+const _origSelDispTeacher=selDispTeacher;
+selDispTeacher=async function(tid){
+  selTeacher=tid;
+  await ensureDisponibilidad(tid);
+  renderMaestrosSb();renderDispGrid(tid);
+};
+
+const _origSelMaestro=selMaestro;
+selMaestro=async function(tid){
+  selTeacher=tid;
+  renderMaestrosList();renderMaestroDetail(tid);
+};
+
+const _origRenderHorario=renderHorario;
+renderHorario=async function(){
+  const gid=document.getElementById('h-grp').value;
+  if(gid){
+    const g=(groups[currentCicloId]||[]).find(x=>x.clave===gid||x.id===gid);
+    if(g){
+      await ensureSubjects(g.id);
+      await ensureSchedule(g.id);
+      if(!subjects[currentCicloId])subjects[currentCicloId]={};
+      subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
+      if(!schedule[currentCicloId])schedule[currentCicloId]={};
+      schedule[currentCicloId][gid]=schedule[currentCicloId][g.id]||{};
+    }
+  }
+  _origRenderHorario();
+
+};
+
+// ═══════════════════════════════════════════
+//  VISTA MAESTRO — link único
+// ═══════════════════════════════════════════
+
+// Generate a stable token from teacher id (simple, not cryptographic)
+function teacherToken(tid){
+  // XOR-based hash of tid chars + secret salt — unique per teacher, hard to guess
+  const salt='HorariosApp2026';
+  const str=tid+salt;
+  let h=0;
+  for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0;
+  return Math.abs(h).toString(36).padStart(6,'0');
+}
+
+function teacherLink(tid){
+  const token=teacherToken(tid);
+  const base=window.location.href.split('/').slice(0,-1).join('/')+'/maestro.html';
+  return `${base}?maestro=${tid}&token=${token}`;
+}
+
+function copyTeacherLink(tid){
+  const t=T(tid);
+  const link=teacherLink(tid);
+  navigator.clipboard.writeText(link).then(()=>{
+    toast(`Link copiado para ${t?.name||tid} ✓`);
+  }).catch(()=>{
+    // Fallback: show in prompt
+    prompt(`Link para ${t?.name||tid} — cópialo:`,link);
+  });
+}
+
+// ── Detect maestro mode on load ──
+async function checkMaestroMode(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  const token=params.get('token');
+  if(!tid||!token) return false;
+
+  // Validate token
+  if(token!==teacherToken(tid)){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:var(--fh);color:var(--red);font-size:1.1rem">❌ Link inválido o expirado</div>`;
+    return true;
+  }
+
+  // Switch already done instantly via body class — just load data
+  showLoading('Cargando tu información…');
+  try{
+    await loadCiclos();
+  }catch(e){ hideLoading(); return true; }
+
+  const t=T(tid);
+  if(!t){
+    hideLoading();
+    document.getElementById('mv-grids').innerHTML='<div style="color:var(--red);text-align:center;padding:2rem">Maestro no encontrado</div>';
+    return true;
+  }
+
+  // Render header info
+  const avatar=document.getElementById('mv-avatar');
+  avatar.textContent=ini(t.name);
+  avatar.style.background=ac(tid);
+  document.getElementById('mv-nombre').textContent=t.name;
+  document.getElementById('mv-info').innerHTML=
+    `${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga reglamentaria${t.obs?' · <b>'+t.obs+'</b>':''}`;
+
+  // Show active ciclo
+  const ciclo=ciclos.find(c=>c.activo)||ciclos[0];
+  if(ciclo){
+    currentCicloId=ciclo.id;
+    cycle=ciclo.tipo;
+    document.getElementById('mv-ciclo').textContent=ciclo.nombre;
+  }
+
+  // Load availability for this teacher
+  await ensureDisponibilidad(tid);
+
+  // Render grids
+  renderMvGrids(tid);
+
+  // Load and show assigned schedule
+  await renderMvHorario(tid);
+
+  document.getElementById('mv-ts').textContent=new Date().toLocaleDateString('es-MX');
+  hideLoading();
+  return true;
+}
+
+function renderMvGrids(tid){
+  if(!availability[tid])availability[tid]={};
+  if(!availability[tid][currentCicloId])availability[tid][currentCicloId]={};
+  const av=availability[tid][currentCicloId];
+
+  let html='';
+  for(const turno of['M','V']){
+    html+=`<div class="card" style="margin-bottom:1rem;overflow:hidden">
+      <div class="ch">Turno ${turno==='M'?'Matutino (7:00 – 13:40)':'Vespertino (13:40 – 20:00)'}</div>
+      <div style="overflow-x:auto;padding:.75rem">
+      <div class="ag" style="min-width:480px">
+        <div></div>
+        ${DAYS.map(d=>`<div class="ag-dh">${d.slice(0,3)}</div>`).join('')}
+    `;
+    for(const slot of SLOTS[turno]){
+      html+=`<div class="ag-th">${slot.lbl}</div>`;
+      if(slot.recess||slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5" style="font-size:.58rem">${slot.recess?'☕ Receso':'—'}</div>`;
+        continue;
+      }
+      for(let d=0;d<5;d++){
+        const key=slot.id+'_'+d;
+        const st=av[key]||'neutral';
+        html+=`<div class="ag-cell ${st}" onclick="mvToggle('${tid}','${key}',this)"></div>`;
+      }
+    }
+    html+=`</div></div></div>`;
+  }
+  document.getElementById('mv-grids').innerHTML=html;
+}
+
+function mvToggle(tid,key,el){
+  if(!availability[tid])availability[tid]={};
+  if(!availability[tid][currentCicloId])availability[tid][currentCicloId]={};
+  const av=availability[tid][currentCicloId];
+  const cur=av[key]||'neutral';
+  const next=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
+  av[key]=next;
+  el.className='ag-cell '+next;
+}
+
+async function mvSave(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  if(!tid||!currentCicloId)return;
+
+  const av=((availability[tid]||{})[currentCicloId]||{});
+  const rows=Object.entries(av).map(([key,estado])=>{
+    const[slot_id,dia]=key.split('_');
+    return{maestro_id:tid,ciclo_id:currentCicloId,slot_id,dia:parseInt(dia),estado};
+  });
+
+  const btn=document.querySelector('#mv-save-wrap button');
+  btn.disabled=true;btn.textContent='Guardando…';
+  try{
+    if(rows.length){
+      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(rows)
+      });
+    }
+    btn.textContent='✓ Guardado correctamente';
+    btn.style.background='var(--green)';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Guardar disponibilidad';btn.style.background='';},3000);
+  }catch(e){
+    btn.disabled=false;btn.textContent='❌ Error — intenta de nuevo';
+    setTimeout(()=>{btn.textContent='💾 Guardar disponibilidad';},3000);
+  }
+}
+
+async function renderMvHorario(tid){
+  if(!currentCicloId)return;
+  try{
+    // Load all horario rows for this teacher in this ciclo
+    const rows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${tid}&order=dia.asc,slot_id.asc`);
+    if(!rows||!rows.length){
+      document.getElementById('mv-horario-section').style.display='none';
+      return;
+    }
+    // Load group names
+    const grpIds=[...new Set(rows.map(r=>r.grupo_id))];
+    const grps=await dbGet('grupos',`id=in.(${grpIds.join(',')})`);
+    const grpMap={};grps.forEach(g=>grpMap[g.id]=g.clave);
+
+    document.getElementById('mv-horario-section').style.display='block';
+
+    // Build simple table
+    let html=`<div class="card" style="overflow:hidden">
+      <div class="ch">Clases asignadas <span class="tag t-blue">${rows.length} bloques</span></div>`;
+    const byDay=[0,1,2,3,4].map(d=>rows.filter(r=>r.dia===d));
+    for(let d=0;d<5;d++){
+      const dayRows=byDay[d];
+      if(!dayRows.length)continue;
+      html+=`<div style="padding:.5rem .9rem;background:var(--bg2);font-family:var(--fh);font-weight:700;font-size:.72rem;border-bottom:1px solid var(--bdr)">${DAYS[d]}</div>`;
+      dayRows.forEach(r=>{
+        const slot=allSlots().find(s=>s.id===r.slot_id);
+        const grpClave=grpMap[r.grupo_id]||'?';
+        html+=`<div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .9rem;border-bottom:1px solid var(--bdr);font-size:.78rem">
+          <span style="font-family:var(--fm);font-size:.62rem;color:var(--ink2);width:90px;flex-shrink:0">${slot?.lbl||r.slot_id}</span>
+          <span style="font-weight:700;flex:1;font-family:var(--fh)">${r.materia_nombre}</span>
+          <span class="tag t-blue">${grpClave}</span>
+        </div>`;
+      });
+    }
+    html+=`</div>`;
+    document.getElementById('mv-horario').innerHTML=html;
+  }catch(e){
+    document.getElementById('mv-horario-section').style.display='none';
+  }
+}
+
+// ── Detect maestro mode IMMEDIATELY on script load (before any async) ──
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const tid=params.get('maestro');
+  const token=params.get('token');
+  if(tid&&token){
+    // Add class to body immediately — no flash
+    document.body.classList.add('maestro-mode');
+    document.getElementById('maestro-view').style.display='block';
+  }
+})();
+
+document.querySelectorAll('.mbg').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+
+(async()=>{
+  showLoading('Conectando a Supabase…');
+  try{
+    await ensureTeachers();
+    await ensureCompetencias();
+
+    // Check if this is a teacher link
+    const isMaestroMode=await checkMaestroMode();
+    if(isMaestroMode){ hideLoading(); return; }
+
+    await loadCiclos();
+    if(currentCicloId) await ensureGroups();
+  }catch(e){
+    toast('Error de conexión. Verifica tu clave de Supabase.','err');
+    console.error(e);
+  }
+  hideLoading();
+  fillSemSels();fillGrpSel();renderGrupos();renderMaestrosList();renderAsigStats();fillPrSel();
+})();
+</script>
+</body>
+</html>
