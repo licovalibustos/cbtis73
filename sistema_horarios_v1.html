@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horarios CBTIS</title>
+<title>Horarios CBTIS 73</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
 
@@ -234,8 +234,8 @@ input::placeholder{color:var(--ink3);}
   <div class="brand">
     <div class="bmark">73</div>
     <div>
-      <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.1</span></div>
+      <div class="btxt">CBTIS 73</div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v5.1</span></div>
     </div>
   </div>
   <div class="cycle-bar" style="gap:.5rem">
@@ -307,7 +307,6 @@ input::placeholder{color:var(--ink3);}
   <div class="vbar">
     <div class="vtit">👨‍🏫 Maestros y Competencias</div><div class="vsep"></div>
     <input type="text" id="maest-search" placeholder="Buscar maestro…" oninput="renderMaestrosList()" style="width:220px">
-    <button class="btn btn-green btn-sm" onclick="openNewTeacher()">+ Nuevo maestro</button>
   </div>
   <div style="display:flex;flex:1;overflow:hidden">
     <div class="sb">
@@ -413,7 +412,7 @@ input::placeholder{color:var(--ink3);}
     <div style="background:var(--ink);color:white;border-radius:var(--r);padding:1.2rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem">
       <div style="width:42px;height:42px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:.8rem;flex-shrink:0">73</div>
       <div>
-        <div style="font-family:var(--fh);font-weight:800;font-size:1rem">CBTIS</div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1rem">CBTIS No. 73</div>
         <div style="font-size:.65rem;color:rgba(255,255,255,.5);font-family:var(--fm)">Captura de Disponibilidad</div>
       </div>
       <div style="margin-left:auto;text-align:right">
@@ -457,7 +456,7 @@ input::placeholder{color:var(--ink3);}
       <div id="mv-horario"></div>
     </div>
 
-    <div style="text-align:center;margin-top:2rem;font-size:.65rem;color:var(--ink3)">CBTIS · Sistema de Horarios · <span id="mv-ts"></span></div>
+    <div style="text-align:center;margin-top:2rem;font-size:.65rem;color:var(--ink3)">CBTIS No. 73 · Sistema de Horarios · <span id="mv-ts"></span></div>
   </div>
 </div>
 
@@ -551,15 +550,15 @@ input::placeholder{color:var(--ink3);}
 <div class="mbg" id="modal-teacher">
   <div class="modal">
     <div class="mh">
-      <div><div class="mt" id="mte-title">Nuevo maestro</div><div class="ms" id="mte-sub"></div></div>
+      <div><div class="mt">Editar datos del maestro</div><div class="ms" id="mte-sub"></div></div>
       <button class="mx" onclick="closeM('modal-teacher')">✕</button>
     </div>
     <div class="mb">
-      <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%;text-transform:uppercase" placeholder="Ej: GARCÍA LÓPEZ JUAN CARLOS"></div>
+      <div class="field"><label>Nombre completo</label><input type="text" id="mte-name" style="width:100%"></div>
       <div class="frow">
-        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: GALJ850101AB1" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+        <div class="field"><label>RFC</label><input type="text" id="mte-rfc" placeholder="Ej: TEMA750707L67" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
         <div class="field"><label>Categoría</label>
-          <select id="mte-cat" style="width:100%" onchange="mteAutoHrs()">
+          <select id="mte-cat" style="width:100%">
             <option value="">— Selecciona —</option>
             <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
             <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
@@ -570,9 +569,9 @@ input::placeholder{color:var(--ink3);}
             <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
             <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
             <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
-            <option value="INTERINO T/C">Interino T/C (40h)</option>
-            <option value="INTERINO 3/4">Interino 3/4 Tiempo (30h)</option>
-            <option value="INTERINO 1/2">Interino 1/2 Tiempo (20h)</option>
+            <option value="INTERINO T/C">Interino T/C</option>
+            <option value="INTERINO 3/4">Interino 3/4 Tiempo</option>
+            <option value="INTERINO 1/2">Interino 1/2 Tiempo</option>
             <option value="OTRO">Otro</option>
           </select>
         </div>
@@ -588,8 +587,7 @@ input::placeholder{color:var(--ink3);}
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-teacher')">Cancelar</button>
-      <button class="btn btn-red btn-sm" id="mte-del-btn" style="display:none" onclick="deleteTeacher()">Eliminar maestro</button>
-      <button class="btn btn-green" onclick="saveTeacher()">Guardar</button>
+      <button class="btn btn-green" onclick="saveTeacher()">Guardar cambios</button>
     </div>
   </div>
 </div>
@@ -640,8 +638,53 @@ const SLOTS={
 };
 
 // Teachers from the real distribution file
-const TEACHERS=[];
-// Maestros se cargan desde Supabase
+const TEACHERS=[
+  {id:'T01',name:'ACOSTA TERRAZAS MA. LUISA',hrs_nom:40,hrs_carga:30},
+  {id:'T02',name:'ALVAREZ SOLIS JUAN ALBERTO',hrs_nom:30,hrs_carga:24},
+  {id:'T03',name:'ANA LAURA ROSAS VILLARREAL',hrs_nom:30,hrs_carga:22},
+  {id:'T04',name:'ARCOS VELÁZQUEZ GABRIELA',hrs_nom:30,hrs_carga:24,obs:'JEFE ESC. TM'},
+  {id:'T05',name:'AVILA GONZALEZ GRASIELA',hrs_nom:40,hrs_carga:30},
+  {id:'T06',name:'BEATRIZ GARZA GARZA',hrs_nom:30,hrs_carga:22},
+  {id:'T07',name:'BOLAÑOS CARMONA MA. GUADALUPE',hrs_nom:30,hrs_carga:22},
+  {id:'T08',name:'BRENDA ELENA PÉREZ LIMAS',hrs_nom:30,hrs_carga:22},
+  {id:'T09',name:'CARRASCO GARCIA ESPERANZA',hrs_nom:30,hrs_carga:24},
+  {id:'T10',name:'DANTE A. LÓPEZ LÓPEZ',hrs_nom:20,hrs_carga:16},
+  {id:'T11',name:'DANIEL HERNANDEZ PONCE',hrs_nom:20,hrs_carga:16},
+  {id:'T12',name:'EDGAR ISAAC AYALA MORALES',hrs_nom:7,hrs_carga:7},
+  {id:'T13',name:'ELVA MOLANO AGADO',hrs_nom:30,hrs_carga:22},
+  {id:'T14',name:'ESPERANZA CARRASCO GARCÍA',hrs_nom:30,hrs_carga:24},
+  {id:'T15',name:'FELICIANO MARTINEZ GAUDENCIO',hrs_nom:18,hrs_carga:18},
+  {id:'T16',name:'FLORES ZÁRATE MARÍA DEL CARMEN',hrs_nom:30,hrs_carga:22},
+  {id:'T17',name:'GALVAN PEÑA PAMELA',hrs_nom:20,hrs_carga:16},
+  {id:'T18',name:'GLADYS GONZALEZ PAZ',hrs_nom:30,hrs_carga:24},
+  {id:'T19',name:'GLENDA MENDIOLA TEJADA',hrs_nom:30,hrs_carga:24},
+  {id:'T20',name:'GONZALEZ MTZ. ARNULFO H.',hrs_nom:40,hrs_carga:30},
+  {id:'T21',name:'HECTOR RODELA ROJAS',hrs_nom:40,hrs_carga:30},
+  {id:'T22',name:'IBARRA BELMARES KARINA LEONOR',hrs_nom:30,hrs_carga:24},
+  {id:'T23',name:'J. ISABEL HERNÁNDEZ ORTEGA',hrs_nom:30,hrs_carga:22},
+  {id:'T24',name:'JANETH LUNA RODRÍGUEZ',hrs_nom:30,hrs_carga:22},
+  {id:'T25',name:'JORGE OMAR HERNÁNDEZ DORIA',hrs_nom:40,hrs_carga:30},
+  {id:'T26',name:'JOSE ANGEL SEGURA CASTILLA',hrs_nom:30,hrs_carga:24},
+  {id:'T27',name:'JOSE SIFUENTES CERVANTES',hrs_nom:40,hrs_carga:30},
+  {id:'T28',name:'JUAN ANDRES SANCHEZ PESQUEDA',hrs_nom:40,hrs_carga:30},
+  {id:'T29',name:'JUVENTINO PEREZ FLORES',hrs_nom:36,hrs_carga:28},
+  {id:'T30',name:'KARLA PERALES TREJO',hrs_nom:40,hrs_carga:30},
+  {id:'T31',name:'KERIME SANCHEZ LOPEZ',hrs_nom:30,hrs_carga:22},
+  {id:'T32',name:'LUZ ELENA GARZA HERNÁNDEZ',hrs_nom:30,hrs_carga:24},
+  {id:'T33',name:'MARCO ANTONIO MEDINA DELGADO',hrs_nom:30,hrs_carga:24},
+  {id:'T34',name:'MARITZA PEREZ GARZA',hrs_nom:30,hrs_carga:22},
+  {id:'T35',name:'MAYRA VERBER WALLE',hrs_nom:20,hrs_carga:16},
+  {id:'T36',name:'NORMA IRAIDA LUNA TORRES',hrs_nom:30,hrs_carga:24},
+  {id:'T37',name:'ORTEGA GUERRERO ELVIA LIZETH',hrs_nom:30,hrs_carga:22},
+  {id:'T38',name:'RODRIGUEZ GAUCIN ALFREDO',hrs_nom:40,hrs_carga:30},
+  {id:'T39',name:'ROSA ELIA PECINA MORENO',hrs_nom:30,hrs_carga:22},
+  {id:'T40',name:'SALINAS DIAZ ALFREDO JOEL',hrs_nom:40,hrs_carga:30},
+  {id:'T41',name:'TREVIÑO MERCADO ALBERTO',hrs_nom:30,hrs_carga:22},
+  {id:'T42',name:'TRUJILLO GARCIA MYRIAM LIZETH',hrs_nom:20,hrs_carga:16},
+  {id:'T43',name:'VAZQUEZ HERRERA JAZMIN LIZETH',hrs_nom:20,hrs_carga:16},
+  {id:'T44',name:'VAZQUEZ ROBLES ESTEBAN',hrs_nom:40,hrs_carga:30,obs:'JEFE ESC. TV'},
+  {id:'T45',name:'VERBER WALLE MAYRA ALEJANDRA',hrs_nom:20,hrs_carga:16},
+];
 
 // ═══════════════════════════════════════════
 //  STATE
@@ -689,13 +732,28 @@ let currentCicloId=null;
 let cycle='par';      // kept for legacy helpers, derived from currentCiclo.tipo
 
 // groups[cycle] = [{id,sem,turno,especialidad}]
-let groups={};
-// Grupos se cargan desde Supabase por ciclo
+let groups={
+  par:[
+    {id:'2AMA',sem:2,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'2AMC',sem:2,turno:'M',especialidad:'Contabilidad'},
+    {id:'2AML',sem:2,turno:'M',especialidad:'Logística'},
+    {id:'2BML',sem:2,turno:'M',especialidad:'Logística'},
+    {id:'2AMM',sem:2,turno:'M',especialidad:'Mantenimiento'},
+    {id:'2AMP',sem:2,turno:'M',especialidad:'Programación'},
+    {id:'4AMA',sem:4,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'4AMC',sem:4,turno:'M',especialidad:'Contabilidad'},
+    {id:'4AVA',sem:4,turno:'V',especialidad:'Administración'},
+    {id:'4AVL',sem:4,turno:'V',especialidad:'Logística'},
+    {id:'6AMA',sem:6,turno:'M',especialidad:'Recursos Humanos'},
+    {id:'6AMP',sem:6,turno:'M',especialidad:'Programación'},
+    {id:'6AVP',sem:6,turno:'V',especialidad:'Programación'},
+  ],
+  impar:[]
 };
 
 // subjects[cycle][groupId] = [{id,name,hrs,lab,labTeacherId}]
 // NO teacher for regular hours — motor decides
-let subjects={};
+let subjects={par:{},impar:{}};
 
 // competencias[teacherId] = Set of subject names (strings, normalized uppercase)
 let competencias={};
@@ -704,7 +762,7 @@ let competencias={};
 let availability={};
 
 // schedule[cycle][groupId][slotId_day] = {subjectName,teacherId,status,isLab}
-let schedule={};
+let schedule={par:{},impar:{}};
 
 // suggestions list
 let suggestions=[];
@@ -1262,101 +1320,33 @@ function delComp(tid,enc){
 }
 
 let editTeacherId=null;
-
-function openNewTeacher(){
-  editTeacherId=null;
-  document.getElementById('mte-title').textContent='Nuevo maestro';
-  document.getElementById('mte-sub').textContent='';
-  document.getElementById('mte-name').value='';
-  document.getElementById('mte-rfc').value='';
-  document.getElementById('mte-cat').value='';
-  document.getElementById('mte-nom').value='';
-  document.getElementById('mte-carga').value='';
-  document.getElementById('mte-obs').value='';
-  document.getElementById('mte-del-btn').style.display='none';
-  document.getElementById('modal-teacher').classList.add('open');
-}
-
 function openEditTeacher(tid){
   const t=T(tid);if(!t)return;
   editTeacherId=tid;
-  document.getElementById('mte-title').textContent='Editar maestro';
-  document.getElementById('mte-sub').textContent=t.name;
-  document.getElementById('mte-name').value=t.name;
-  document.getElementById('mte-rfc').value=t.rfc||'';
-  document.getElementById('mte-cat').value=t.categoria||'';
-  document.getElementById('mte-nom').value=t.hrs_nom;
-  document.getElementById('mte-carga').value=t.hrs_carga;
-  document.getElementById('mte-obs').value=t.obs||'';
-  document.getElementById('mte-del-btn').style.display='inline-flex';
-  document.getElementById('modal-teacher').classList.add('open');
-}
-
-// Auto-fill hours when category is selected
-function mteAutoHrs(){
-  const cat=document.getElementById('mte-cat').value;
-  if(cat.includes('T/C')){
-    document.getElementById('mte-nom').value=40;
-    document.getElementById('mte-carga').value=30;
-  } else if(cat.includes('3/4')){
-    document.getElementById('mte-nom').value=30;
-    document.getElementById('mte-carga').value=22;
-  } else if(cat.includes('1/2')){
-    document.getElementById('mte-nom').value=20;
-    document.getElementById('mte-carga').value=16;
-  }
+  document.getElementById("mte-sub").textContent=t.name;
+  document.getElementById("mte-name").value=t.name;
+  document.getElementById("mte-rfc").value=t.rfc||'';
+  document.getElementById("mte-cat").value=t.categoria||'';
+  document.getElementById("mte-nom").value=t.hrs_nom;
+  document.getElementById("mte-carga").value=t.hrs_carga;
+  document.getElementById("mte-obs").value=t.obs||"";
+  document.getElementById("modal-teacher").classList.add("open");
 }
 
 function saveTeacher(){
-  const name=document.getElementById('mte-name').value.trim().toUpperCase();
-  const rfc=document.getElementById('mte-rfc').value.trim().toUpperCase()||null;
-  const categoria=document.getElementById('mte-cat').value||null;
-  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
-  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
-  const obs=document.getElementById('mte-obs').value.trim()||null;
-  if(!name){toast('El nombre no puede estar vacío','err');return;}
-  if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
-
-  if(editTeacherId){
-    // Edit existing
-    const t=T(editTeacherId);
-    if(t) Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
-    closeM('modal-teacher');
-    renderMaestroDetail(editTeacherId);
-    renderMaestrosList();
-    toast('Maestro actualizado ✓');
-  } else {
-    // New teacher — generate next ID
-    const maxId=TEACHERS.reduce((max,t)=>{
-      const n=parseInt(t.id.replace(/\D/g,''))||0;
-      return n>max?n:max;
-    },0);
-    const newId='T'+(String(maxId+1).padStart(2,'0'));
-    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
-    selTeacher=newId;
-    closeM('modal-teacher');
-    renderMaestrosList();
-    renderMaestroDetail(newId);
-    toast('Maestro agregado ✓');
-  }
-}
-
-async function deleteTeacher(){
-  if(!editTeacherId)return;
-  const t=T(editTeacherId);
-  if(!confirm(`¿Eliminar a ${t?.name}? Esta acción no se puede deshacer.`))return;
-  showLoading('Eliminando…');
-  try{
-    await dbDel('maestros',`id=eq.${editTeacherId}`);
-    const idx=TEACHERS.findIndex(x=>x.id===editTeacherId);
-    if(idx>-1)TEACHERS.splice(idx,1);
-    closeM('modal-teacher');
-    selTeacher=null;
-    renderMaestrosList();
-    document.getElementById('maest-detail').innerHTML='<div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>';
-    toast('Maestro eliminado','warn');
-  }catch(e){toast('Error: '+e.message,'err');}
-  hideLoading();
+  const t=T(editTeacherId);if(!t)return;
+  const name=document.getElementById("mte-name").value.trim().toUpperCase();
+  const rfc=document.getElementById("mte-rfc").value.trim().toUpperCase()||null;
+  const categoria=document.getElementById("mte-cat").value||null;
+  const hrs_nom=parseInt(document.getElementById("mte-nom").value)||t.hrs_nom;
+  const hrs_carga=parseInt(document.getElementById("mte-carga").value)||t.hrs_carga;
+  const obs=document.getElementById("mte-obs").value.trim()||null;
+  if(!name){toast("El nombre no puede estar vacío","err");return;}
+  Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+  closeM("modal-teacher");
+  renderMaestroDetail(editTeacherId);
+  renderMaestrosList();
+  toast("Datos del maestro actualizados");
 }
 
 // ═══════════════════════════════════════════
@@ -1915,7 +1905,7 @@ function buildPrint(){
     const cells=(schedule[cycle]||{})[which]||{};
     const isVes=g.turno==='V';
     let html=`
-      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">DIRECCIÓN GENERAL DE EDUCACIÓN TECNOLÓGICA INDUSTRIAL · CBTIS</div>
+      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">DIRECCIÓN GENERAL DE EDUCACIÓN TECNOLÓGICA INDUSTRIAL · CBTIS No. 73</div>
       <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;margin:.18rem 0">Horario — Grupo ${which}</div>
       <div style="font-size:.72rem;color:var(--ink2);margin-bottom:1.1rem">${g.sem}° Semestre · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${CYCLE_LBL[cycle]}</div>
       <div class="ovr-x"><div class="sg" style="gap:1px">
@@ -1950,7 +1940,7 @@ function buildPrint(){
       }
 
     let html=`
-      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">CBTIS No. 73 · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
       <div style="font-family:var(--fh);font-weight:800;font-size:1.05rem;margin:.18rem 0">${t.name}</div>
       <div style="font-size:.7rem;color:var(--ink2);margin-bottom:1.1rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
     `;
@@ -2381,43 +2371,21 @@ saveDisp=async function(){
   hideLoading();
 };
 
-// ── Save/create teacher to DB ──
+// ── Save teacher edits to DB ──
 const _origSaveTeacher=saveTeacher;
 saveTeacher=async function(){
-  const name=document.getElementById('mte-name').value.trim().toUpperCase();
-  const rfc=document.getElementById('mte-rfc').value.trim().toUpperCase()||null;
-  const categoria=document.getElementById('mte-cat').value||null;
-  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
-  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
+  const t=T(editTeacherId);if(!t)return;
+  const nombre=document.getElementById('mte-name').value.trim().toUpperCase();
+  const hrs_nom=parseInt(document.getElementById('mte-nom').value)||t.hrs_nom;
+  const hrs_carga=parseInt(document.getElementById('mte-carga').value)||t.hrs_carga;
   const obs=document.getElementById('mte-obs').value.trim()||null;
-  if(!name){toast('El nombre no puede estar vacío','err');return;}
-  if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
+  if(!nombre){toast('El nombre no puede estar vacío','err');return;}
   showLoading('Guardando…');
   try{
-    if(editTeacherId){
-      // Update existing
-      await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
-      const t=T(editTeacherId);
-      if(t)Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
-      closeM('modal-teacher');
-      renderMaestroDetail(editTeacherId);
-      renderMaestrosList();
-      toast('Maestro actualizado ✓');
-    } else {
-      // New teacher — generate next ID
-      const maxId=TEACHERS.reduce((max,t)=>{
-        const n=parseInt(t.id.replace(/\D/g,''))||0;
-        return n>max?n:max;
-      },0);
-      const newId='T'+(String(maxId+1).padStart(2,'0'));
-      await dbPost('maestros',{id:newId,nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
-      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
-      selTeacher=newId;
-      closeM('modal-teacher');
-      renderMaestrosList();
-      renderMaestroDetail(newId);
-      toast('Maestro agregado ✓');
-    }
+    await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre,hrs_nom,hrs_carga,obs,rfc:t.rfc||null,categoria:t.categoria||null});
+    Object.assign(t,{name:nombre,hrs_nom,hrs_carga,obs});
+    closeM('modal-teacher');renderMaestroDetail(editTeacherId);renderMaestrosList();
+    toast('Datos actualizados ✓');
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
 };
@@ -2608,7 +2576,7 @@ renderHorario=async function(){
 // Generate a stable token from teacher id (simple, not cryptographic)
 function teacherToken(tid){
   // XOR-based hash of tid chars + secret salt — unique per teacher, hard to guess
-  const salt='HorariosApp2026';
+  const salt='CBTIS73RBravo';
   const str=tid+salt;
   let h=0;
   for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0;
