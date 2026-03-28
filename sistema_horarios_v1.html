@@ -688,10 +688,9 @@ let ciclos=[];        // [{id,nombre,tipo,fecha_inicio,fecha_fin,activo}]
 let currentCicloId=null;
 let cycle='par';      // kept for legacy helpers, derived from currentCiclo.tipo
 
-// groups[cycle] = [{id,sem,turno,especialidad}]
+// groups[cicloId] = [{id,clave,sem,turno,especialidad}]
 let groups={};
 // Grupos se cargan desde Supabase por ciclo
-};
 
 // subjects[cycle][groupId] = [{id,name,hrs,lab,labTeacherId}]
 // NO teacher for regular hours — motor decides
