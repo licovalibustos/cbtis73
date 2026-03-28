@@ -692,17 +692,17 @@ let cycle='par';      // kept for legacy helpers, derived from currentCiclo.tipo
 let groups={};
 // Grupos se cargan desde Supabase por ciclo
 
-// subjects[cycle][groupId] = [{id,name,hrs,lab,labTeacherId}]
+// subjects[currentCicloId][groupId] = [{id,name,hrs,lab,labTeacherId}]
 // NO teacher for regular hours — motor decides
 let subjects={};
 
 // competencias[teacherId] = Set of subject names (strings, normalized uppercase)
 let competencias={};
 
-// availability[tid][cycle][slotId_day] = 'avail'|'unavail'|'neutral'
+// availability[tid][currentCicloId][slotId_day] = 'avail'|'unavail'|'neutral'
 let availability={};
 
-// schedule[cycle][groupId][slotId_day] = {subjectName,teacherId,status,isLab}
+// schedule[currentCicloId][groupId][slotId_day] = {subjectName,teacherId,status,isLab}
 let schedule={};
 
 // suggestions list
@@ -727,7 +727,7 @@ const normSubj=s=>s.trim().toUpperCase();
 // All unique subject names across current cycle groups
 function allSubjectNames(){
   const names=new Set();
-  for(const [,subjs] of Object.entries(subjects[cycle]||{}))
+  for(const [,subjs] of Object.entries(subjects[currentCicloId]||{}))
     subjs.forEach(s=>names.add(normSubj(s.name)));
   return [...names].sort();
 }
@@ -793,14 +793,14 @@ function fillGrpSel(){
   const sel=document.getElementById('m-grp-sel');
   const v=sel.value;
   while(sel.options.length>1)sel.remove(1);
-  groups[cycle].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
+  groups[currentCicloId].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
   if([...sel.options].some(o=>o.value===v))sel.value=v;
 }
 
 // Conflict detection
 function detectConflicts(){
   const map={};
-  for(const [gid,cells] of Object.entries(schedule[cycle]||{}))
+  for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{}))
     for(const [key,d] of Object.entries(cells)){
       if(!d.teacherId)continue;
       if(!map[d.teacherId])map[d.teacherId]={};
@@ -815,7 +815,7 @@ function detectConflicts(){
 function isConflict(tid,slotId,day,exGroup){
   if(!tid)return false;
   const key=slotId+'_'+day;
-  for(const [gid,cells] of Object.entries(schedule[cycle]||{})){
+  for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
     if(gid===exGroup)continue;
     if(cells[key]&&cells[key].teacherId===tid)return true;
   }
@@ -823,12 +823,12 @@ function isConflict(tid,slotId,day,exGroup){
 }
 
 function isUnavail(tid,slotId,day){
-  return ((availability[tid]||{})[cycle]||{})[slotId+'_'+day]==='unavail';
+  return ((availability[tid]||{})[currentCicloId]||{})[slotId+'_'+day]==='unavail';
 }
 
 function assignedHrs(tid){
   let n=0;
-  for(const cells of Object.values(schedule[cycle]||{}))
+  for(const cells of Object.values(schedule[currentCicloId]||{}))
     for(const d of Object.values(cells))
       if(d.teacherId===tid)n++;
   return n;
@@ -847,11 +847,11 @@ function updConflict(){
 function renderGrupos(){
   const semF=document.getElementById('g-sem-f').value;
   const turF=document.getElementById('g-tur-f').value;
-  const gs=groups[cycle].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF));
+  const gs=groups[currentCicloId].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF));
   document.getElementById('g-count').textContent=gs.length;
 
   document.getElementById('g-list').innerHTML=gs.map(g=>{
-    const sc=(subjects[cycle][g.id]||[]).length;
+    const sc=(subjects[currentCicloId][g.id]||[]).length;
     const hasComp=sc>0;
     return `<div class="li ${selGroup===g.id?'sel':''}" onclick="selGrp('${g.id}')">
       <div class="av" style="background:${g.turno==='M'?'#1a44be':'#6218be'};border-radius:5px;font-size:.58rem">${g.id.slice(0,3)}</div>
@@ -870,7 +870,7 @@ function selGrp(id){selGroup=id;renderGrupos();}
 
 function renderGrupoDetail(gid){
   const g=G(gid); if(!g){document.getElementById('g-detail').innerHTML='';return;}
-  const subjs=subjects[cycle][gid]||[];
+  const subjs=subjects[currentCicloId][gid]||[];
   const totalHrs=subjs.reduce((a,s)=>a+(s.hrs+(s.lab||0)),0);
   document.getElementById('g-detail').innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
@@ -886,11 +886,11 @@ function renderGrupoDetail(gid){
     <div class="stats">
       <div class="stat"><div class="sv c-blue">${subjs.length}</div><div class="sl">Materias</div></div>
       <div class="stat"><div class="sv c-blue">${totalHrs}</div><div class="sl">Horas/semana</div></div>
-      <div class="stat"><div class="sv c-green">${Object.keys((schedule[cycle]||{})[gid]||{}).length}</div><div class="sl">Bloques asignados</div></div>
+      <div class="stat"><div class="sv c-green">${Object.keys((schedule[currentCicloId]||{})[gid]||{}).length}</div><div class="sl">Bloques asignados</div></div>
     </div>
     ${subjs.length?`<div class="card">
       ${subjs.map(s=>{
-        const used=Object.values((schedule[cycle]||{})[gid]||{}).filter(c=>c.subjectName===s.name&&!c.isLab).length;
+        const used=Object.values((schedule[currentCicloId]||{})[gid]||{}).filter(c=>c.subjectName===s.name&&!c.isLab).length;
         return `<div class="subj-row">
           <div style="flex:1">
             <span style="font-family:var(--fh);font-weight:700;font-size:.78rem">${s.name}</span>
@@ -933,7 +933,7 @@ function autoGrpId(){
   const sem=document.getElementById('mg-sem').value;
   const tur=document.getElementById('mg-tur').value;
   const pre=sem+(tur==='M'?'AM':'AV');
-  const cnt=groups[cycle].filter(g=>g.id.startsWith(sem+(tur==='M'?'AM':'AV'))).length;
+  const cnt=groups[currentCicloId].filter(g=>g.id.startsWith(sem+(tur==='M'?'AM':'AV'))).length;
   document.getElementById('mg-id').value=pre+'ABCDEFGH'[cnt]||'X';
 }
 
@@ -947,8 +947,8 @@ function saveGrupo(){
     const g=G(editGrupoId);
     if(g)Object.assign(g,{id,sem,turno,especialidad});
   } else {
-    if(groups[cycle].find(g=>g.id===id)){toast('ID ya existe','err');return;}
-    groups[cycle].push({id,sem,turno,especialidad});
+    if(groups[currentCicloId].find(g=>g.id===id)){toast('ID ya existe','err');return;}
+    groups[currentCicloId].push({id,sem,turno,especialidad});
   }
   selGroup=id;
   closeM('modal-grupo');
@@ -957,9 +957,9 @@ function saveGrupo(){
 }
 
 function delGrupo(){
-  groups[cycle]=groups[cycle].filter(g=>g.id!==editGrupoId);
-  delete subjects[cycle][editGrupoId];
-  if(schedule[cycle])delete schedule[cycle][editGrupoId];
+  groups[currentCicloId]=groups[currentCicloId].filter(g=>g.id!==editGrupoId);
+  delete subjects[currentCicloId][editGrupoId];
+  if(schedule[currentCicloId])delete schedule[currentCicloId][editGrupoId];
   selGroup=null;
   closeM('modal-grupo');
   fillSemSels();fillGrpSel();renderGrupos();
@@ -976,7 +976,7 @@ function renderMaterias(){
   const body=document.getElementById('m-body');
   if(!gid){body.innerHTML='<div class="empty"><div class="ico">📚</div><div>Selecciona un grupo</div></div>';return;}
   const g=G(gid);if(!g)return;
-  const subjs=subjects[cycle][gid]||[];
+  const subjs=subjects[currentCicloId][gid]||[];
 
   // Populate lab teacher select options ready
   let html=`
@@ -1028,7 +1028,7 @@ function openMateriaModal(gid){
 }
 
 function openEditMateria(gid,idx){
-  const s=(subjects[cycle][gid]||[])[idx];
+  const s=(subjects[currentCicloId][gid]||[])[idx];
   if(!s)return;
   document.getElementById('mm-t').textContent='Editar materia';
   document.getElementById('mm-s').textContent='Grupo '+gid;
@@ -1059,9 +1059,9 @@ function saveMateria(){
   const lab=parseInt(document.getElementById('mm-lab').value)||0;
   const labTeacherId=document.getElementById('mm-lab-teacher').value;
   if(!name){toast('Escribe el nombre de la materia','err');return;}
-  if(!subjects[cycle][editMateriaGid])subjects[cycle][editMateriaGid]=[];
+  if(!subjects[currentCicloId][editMateriaGid])subjects[currentCicloId][editMateriaGid]=[];
   const obj={id:'m'+Date.now(),name,hrs,lab,labTeacherId};
-  const arr=subjects[cycle][editMateriaGid];
+  const arr=subjects[currentCicloId][editMateriaGid];
   if(editMateriaIdx!==null)arr[editMateriaIdx]=obj;
   else arr.push(obj);
   closeM('modal-materia');
@@ -1070,7 +1070,7 @@ function saveMateria(){
 }
 
 function delMateria(){
-  subjects[cycle][editMateriaGid].splice(editMateriaIdx,1);
+  subjects[currentCicloId][editMateriaGid].splice(editMateriaIdx,1);
   closeM('modal-materia');
   renderMaterias();renderGrupos();
   toast('Materia eliminada','warn');
@@ -1119,7 +1119,7 @@ function renderMaestroDetail(tid){
   const col=assigned>t.hrs_carga?'var(--red)':pct>=90?'var(--amber)':'var(--green)';
 
   // Build assignment rows for this cycle
-  const asgRows=Object.entries(schedule[cycle]||{}).flatMap(([gid,cells])=>
+  const asgRows=Object.entries(schedule[currentCicloId]||{}).flatMap(([gid,cells])=>
     Object.entries(cells).filter(([,d])=>d.teacherId===tid).map(([key,d])=>{
       const [sl,dy]=key.split('_');
       const slot=allSlots().find(s=>s.id===sl);
@@ -1387,8 +1387,8 @@ function selDispTeacher(tid){selTeacher=tid;renderMaestrosSb();renderDispGrid(ti
 function renderDispGrid(tid){
   const t=T(tid);if(!t)return;
   if(!availability[tid])availability[tid]={};
-  if(!availability[tid][cycle])availability[tid][cycle]={};
-  const av=availability[tid][cycle];
+  if(!availability[tid][currentCicloId])availability[tid][currentCicloId]={};
+  const av=availability[tid][currentCicloId];
 
   let html=`
     <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.9rem;flex-wrap:wrap">
@@ -1437,7 +1437,7 @@ function renderDispGrid(tid){
 }
 
 function tglAv(tid,key){
-  const av=availability[tid][cycle];
+  const av=availability[tid][currentCicloId];
   const cur=av[key]||'neutral';
   av[key]=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
   refreshAg(key,av[key]);
@@ -1456,7 +1456,7 @@ function refreshAg(key,st){
 function setAll(tid,st){
   for(const tur of['M','V'])for(const s of SLOTS[tur]){
     if(s.recess||s.blocked)continue;
-    for(let d=0;d<5;d++)availability[tid][cycle][s.id+'_'+d]=st;
+    for(let d=0;d<5;d++)availability[tid][currentCicloId][s.id+'_'+d]=st;
   }
   renderDispGrid(tid);
 }
@@ -1470,15 +1470,15 @@ function runEngine(){
   suggestions=[];
   const semF=document.getElementById('asig-sem').value;
   const turF=document.getElementById('asig-tur').value;
-  const sched=schedule[cycle]||{};
+  const sched=schedule[currentCicloId]||{};
 
   // Track teacher hours already used in this suggestion run
   const tmpHrs={};// tid -> hrs suggested
 
-  for(const g of groups[cycle]){
+  for(const g of groups[currentCicloId]){
     if(semF&&g.sem!=semF)continue;
     if(turF&&g.turno!==turF)continue;
-    const subjs=subjects[cycle][g.id]||[];
+    const subjs=subjects[currentCicloId][g.id]||[];
     if(!subjs.length)continue;
 
     for(const subj of subjs){
@@ -1621,12 +1621,12 @@ function approveSug(){
   const s=suggestions[selSugIdx];
   if(!s.slotId||!s.teacherId){toast('No se puede aprobar esta sugerencia','err');return;}
   s.status='approved';
-  if(!schedule[cycle])schedule[cycle]={};
-  if(!schedule[cycle][s.groupId])schedule[cycle][s.groupId]={};
+  if(!schedule[currentCicloId])schedule[currentCicloId]={};
+  if(!schedule[currentCicloId][s.groupId])schedule[currentCicloId][s.groupId]={};
   const key=s.slotId+'_'+s.dayIdx;
   const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
   const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
-  schedule[cycle][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  schedule[currentCicloId][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
   closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
   if(selTeacher)renderMaestroDetail(selTeacher);
   toast('Aprobada ✓');
@@ -1641,21 +1641,21 @@ function rejectSug(){
 function approveAll(){
   const pend=suggestions.filter(s=>s.status==='pending'&&s.slotId&&s.teacherId);
   if(!pend.length){toast('Sin sugerencias válidas pendientes','warn');return;}
-  if(!schedule[cycle])schedule[cycle]={};
+  if(!schedule[currentCicloId])schedule[currentCicloId]={};
   for(const s of pend){
     s.status='approved';
-    if(!schedule[cycle][s.groupId])schedule[cycle][s.groupId]={};
+    if(!schedule[currentCicloId][s.groupId])schedule[currentCicloId][s.groupId]={};
     const key=s.slotId+'_'+s.dayIdx;
     const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
     const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
-    schedule[cycle][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+    schedule[currentCicloId][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
   }
   renderSugList();renderAsigStats();updConflict();
   toast(`${pend.length} aprobadas ✓`);
 }
 
 function renderAsigStats(){
-  const sched=schedule[cycle]||{};
+  const sched=schedule[currentCicloId]||{};
   const total=Object.values(sched).reduce((a,g)=>a+Object.keys(g).length,0);
   const conflicts=detectConflicts().length;
   const warns=Object.values(sched).reduce((a,g)=>a+Object.values(g).filter(c=>c.status==='warn').length,0);
@@ -1703,7 +1703,7 @@ function renderAsigStats(){
 }
 
 function removeAsig(gid,key){
-  if(schedule[cycle]?.[gid])delete schedule[cycle][gid][key];
+  if(schedule[currentCicloId]?.[gid])delete schedule[currentCicloId][gid][key];
   renderAsigStats();updConflict();toast('Eliminada','warn');
 }
 
@@ -1716,7 +1716,7 @@ function filterHorGrp(){
   const sel=document.getElementById('h-grp');
   const prev=sel.value;
   while(sel.options.length>1)sel.remove(1);
-  groups[cycle].filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
+  groups[currentCicloId].filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
     .forEach(g=>sel.appendChild(new Option(g.id,g.id)));
   if([...sel.options].some(o=>o.value===prev))sel.value=prev;
   renderHorario();
@@ -1727,10 +1727,10 @@ function renderHorario(){
   const body=document.getElementById('h-body');
   if(!gid){body.innerHTML='<div class="empty"><div class="ico">📋</div><div>Selecciona un grupo</div></div>';return;}
   const g=G(gid);
-  const cells=(schedule[cycle]||{})[gid]||{};
+  const cells=(schedule[currentCicloId]||{})[gid]||{};
   const slots=SLOTS[g.turno];
   const isVes=g.turno==='V';
-  const subjs=subjects[cycle][gid]||[];
+  const subjs=subjects[currentCicloId][gid]||[];
 
   let html=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
@@ -1807,8 +1807,8 @@ function openCellEdit(gid,slotId,dayIdx){
   editCell={gid,slotId,dayIdx};
   const g=G(gid);
   const slot=allSlots().find(s=>s.id===slotId);
-  const cell=((schedule[cycle]||{})[gid]||{})[slotId+'_'+dayIdx];
-  const subjs=subjects[cycle][gid]||[];
+  const cell=((schedule[currentCicloId]||{})[gid]||{})[slotId+'_'+dayIdx];
+  const subjs=subjects[currentCicloId][gid]||[];
 
   document.getElementById('mcell-t').textContent=`${gid} — ${DAYS[dayIdx]}`;
   document.getElementById('mcell-s').textContent=slot?.lbl||slotId;
@@ -1881,21 +1881,21 @@ function cellSave(){
   const teacherId=document.getElementById('mcell-teacher').value;
   if(!subjectName){toast('Selecciona una materia','err');return;}
   const {slotId:oldSl,dayIdx:oldDy}=editCell;
-  if(!schedule[cycle])schedule[cycle]={};
-  if(!schedule[cycle][gid])schedule[cycle][gid]={};
+  if(!schedule[currentCicloId])schedule[currentCicloId]={};
+  if(!schedule[currentCicloId][gid])schedule[currentCicloId][gid]={};
   const oldKey=oldSl+'_'+oldDy;
   const newKey=slotId+'_'+dayIdx;
-  if(oldKey!==newKey)delete schedule[cycle][gid][oldKey];
+  if(oldKey!==newKey)delete schedule[currentCicloId][gid][oldKey];
   const conflict=isConflict(teacherId,slotId,dayIdx,gid);
   const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
-  schedule[cycle][gid][newKey]={subjectName,teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  schedule[currentCicloId][gid][newKey]={subjectName,teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
   closeM('modal-cell');renderHorario();updConflict();toast('Guardado ✓');
 }
 
 function cellRemove(){
   if(!editCell)return;
   const {gid,slotId,dayIdx}=editCell;
-  if(schedule[cycle]?.[gid])delete schedule[cycle][gid][slotId+'_'+dayIdx];
+  if(schedule[currentCicloId]?.[gid])delete schedule[currentCicloId][gid][slotId+'_'+dayIdx];
   closeM('modal-cell');renderHorario();updConflict();toast('Eliminada','warn');
 }
 
@@ -1906,7 +1906,7 @@ function fillPrSel(){
   const type=document.getElementById('pr-type').value;
   const sel=document.getElementById('pr-which');
   sel.innerHTML='';
-  if(type==='group') groups[cycle].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
+  if(type==='group') groups[currentCicloId].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
   else TEACHERS.forEach(t=>sel.appendChild(new Option(t.name,t.id)));
 }
 
@@ -1917,7 +1917,7 @@ function buildPrint(){
 
   if(type==='group'){
     const g=G(which);if(!g)return;
-    const cells=(schedule[cycle]||{})[which]||{};
+    const cells=(schedule[currentCicloId]||{})[which]||{};
     const isVes=g.turno==='V';
     let html=`
       <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">DIRECCIÓN GENERAL DE EDUCACIÓN TECNOLÓGICA INDUSTRIAL · CBTIS</div>
@@ -1946,7 +1946,7 @@ function buildPrint(){
   } else {
     const t=T(which);if(!t)return;
     const asgns=[];
-    for(const [gid,cells] of Object.entries(schedule[cycle]||{}))
+    for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{}))
       for(const [key,d] of Object.entries(cells)){
         if(d.teacherId!==which)continue;
         const [sl,dy]=key.split('_');
