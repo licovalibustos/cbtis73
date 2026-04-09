@@ -498,7 +498,12 @@ input::placeholder{color:var(--ink3);}
   <div class="modal">
     <div class="mh"><div><div class="mt" id="mm-t">Nueva materia</div></div><button class="mx" onclick="closeM('modal-materia')">✕</button></div>
     <div class="mb">
-      <div class="field"><label>Nombre de la materia</label><input type="text" id="mm-name" placeholder="Ej: INGLÉS IV" style="width:100%;text-transform:uppercase"></div>
+      <div class="field">
+        <label>Nombre de la materia</label>
+        <input type="hidden" id="mm-plantilla-id">
+        <input type="text" id="mm-name" placeholder="Nombre de la materia…" style="width:100%;text-transform:uppercase" oninput="matValidate()" autocomplete="off">
+        <div id="mm-name-hint" style="font-size:.75rem;margin-top:.25rem;min-height:1em"></div>
+      </div>
       <div class="frow">
         <div class="field"><label>Semestre</label>
           <select id="mm-sem" style="width:100%">
@@ -545,10 +550,12 @@ input::placeholder{color:var(--ink3);}
     <div class="mb">
       <div class="field">
         <label>Materia que puede impartir</label>
-        <input type="text" id="mc-name" placeholder="Ej: INGLÉS IV, MATEMÁTICAS II…" style="width:100%;text-transform:uppercase" oninput="compSuggest()">
+        <input type="hidden" id="mc-plantilla-id">
+        <input type="text" id="mc-name" placeholder="Buscar materia…" style="width:100%;text-transform:uppercase" oninput="compSuggest()" autocomplete="off">
         <div id="comp-suggestions" style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem"></div>
+        <div id="comp-create" style="margin-top:.3rem;display:none"></div>
       </div>
-      <div style="font-size:.72rem;color:var(--ink2)">💡 Las materias ya definidas en los grupos aparecen como sugerencias</div>
+      <div style="font-size:.72rem;color:var(--ink2)">💡 Selecciona una materia de la lista o escribe un nombre nuevo para crearla</div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-comp')">Cancelar</button>
@@ -737,7 +744,9 @@ let asignGrupo={};
 // UI state for catálogo view
 let selCatSem=1, selMateria=null, editMateriaId=null;
 
-// competencias[teacherId] = Set of subject names (strings, normalized uppercase)
+// plantillas = [{id,nombre}] — catálogo global de materias (independiente de ciclo)
+let plantillas=[];
+// competencias[teacherId] = Set of plantilla_id (uuid)
 let competencias={};
 
 // availability[tid][currentCicloId][slotId_day] = 'avail'|'unavail'|'neutral'
@@ -773,12 +782,11 @@ function allSubjectNames(){
   return [...names].sort();
 }
 
-// Teachers who can teach a given subject
-function competentTeachers(subjName){
-  const n=normSubj(subjName);
+// Teachers who can teach a given subject (by plantilla_id uuid)
+function competentTeachers(plantillaId){
   return TEACHERS.filter(t=>{
     const c=competencias[t.id];
-    return c&&c.has(n);
+    return c&&c.has(plantillaId);
   });
 }
 
@@ -1213,6 +1221,7 @@ function openMateriaCatModal(matId){
     if(!mc)return;
     document.getElementById('mm-t').textContent='Editar materia';
     document.getElementById('mm-name').value=mc.nombre;
+    document.getElementById('mm-plantilla-id').value=mc.plantilla_id||'';
     document.getElementById('mm-sem').value=mc.semestre;
     document.getElementById('mm-tipo').value=mc.tipo||'troncal';
     document.getElementById('mm-esp').value=mc.especialidad||'A';
@@ -1223,6 +1232,7 @@ function openMateriaCatModal(matId){
   } else {
     document.getElementById('mm-t').textContent='Nueva materia';
     document.getElementById('mm-name').value='';
+    document.getElementById('mm-plantilla-id').value='';
     document.getElementById('mm-sem').value=selCatSem||1;
     document.getElementById('mm-tipo').value='troncal';
     document.getElementById('mm-hrs').value='3';
@@ -1231,6 +1241,20 @@ function openMateriaCatModal(matId){
     document.getElementById('mm-esp-wrap').style.display='none';
   }
   document.getElementById('modal-materia').classList.add('open');
+  document.getElementById('mm-name-hint').textContent='';
+}
+
+function matValidate(){
+  const q=(document.getElementById('mm-name').value||'').toUpperCase().trim();
+  document.getElementById('mm-plantilla-id').value='';
+  const hint=document.getElementById('mm-name-hint');
+  const dup=(catalogo[currentCicloId]||[]).find(m=>m.nombre===q&&m.id!==editMateriaId);
+  if(dup){
+    hint.style.color='var(--red,#e53)';
+    hint.textContent=`⚠ "${q}" ya existe en el catálogo (Sem. ${dup.semestre}°)`;
+  } else {
+    hint.textContent='';
+  }
 }
 
 function onMmTipoChange(){
@@ -1239,21 +1263,36 @@ function onMmTipoChange(){
 
 async function saveMateriasCatalogo(){
   const nombre=document.getElementById('mm-name').value.trim().toUpperCase();
+  let pid=document.getElementById('mm-plantilla-id').value;
   const semestre=parseInt(document.getElementById('mm-sem').value);
   const tipo=document.getElementById('mm-tipo').value;
   const especialidad=tipo==='cfp'?(document.getElementById('mm-esp').value||null):null;
   const hrs=parseInt(document.getElementById('mm-hrs').value)||1;
   const hrs_lab=parseInt(document.getElementById('mm-lab').value)||0;
-  if(!nombre){toast('Escribe el nombre','err');return;}
+  if(!nombre){toast('Escribe el nombre de la materia','err');return;}
+  const dup=(catalogo[currentCicloId]||[]).find(m=>m.nombre===nombre&&m.id!==editMateriaId);
+  if(dup){toast(`"${nombre}" ya existe en el catálogo`,'err');return;}
   showLoading('Guardando materia…');
   try{
+    // Resolve or create plantilla
+    if(!pid){
+      const existing=plantillas.find(p=>p.nombre===nombre);
+      if(existing){
+        pid=existing.id;
+      } else {
+        const [np]=await dbPost('materias_plantilla',{nombre});
+        plantillas.push(np);
+        plantillas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+        pid=np.id;
+      }
+    }
     if(editMateriaId){
-      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,semestre,tipo,especialidad,hrs,hrs_lab});
+      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab});
       const arr=catalogo[currentCicloId]||[];
       const idx=arr.findIndex(m=>m.id===editMateriaId);
-      if(idx>=0)arr[idx]={...arr[idx],nombre,semestre,tipo,especialidad,hrs,hrs_lab};
+      if(idx>=0)arr[idx]={...arr[idx],nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab};
     } else {
-      const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,semestre,tipo,especialidad,hrs,hrs_lab});
+      const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab});
       if(!catalogo[currentCicloId])catalogo[currentCicloId]=[];
       catalogo[currentCicloId].push(row);
       // Auto-crear asignaciones para grupos existentes del mismo semestre
@@ -1352,7 +1391,7 @@ function renderMaestroDetail(tid){
     return;
   }
   if(!competencias[tid])competencias[tid]=new Set();
-  const comps=[...competencias[tid]].sort();
+  const comps=[...competencias[tid]].map(pid=>{const p=plantillas.find(x=>x.id===pid);return{id:pid,nombre:p?.nombre||pid};}).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   const assigned=assignedHrs(tid);
   const libre=t.hrs_carga-assigned;
   const pct=Math.min(100,Math.round(assigned/t.hrs_carga*100));
@@ -1429,8 +1468,8 @@ function renderMaestroDetail(tid){
         ${comps.length
           ? `<div class="comp-wrap">${comps.map(c=>`
               <div class="comp-tag">
-                ${c}
-                <span class="del" onclick="delComp('${tid}','${encodeURIComponent(c)}')">✕</span>
+                ${c.nombre}
+                <span class="del" onclick="delComp('${tid}','${encodeURIComponent(c.id)}')">✕</span>
               </div>`).join('')}
             </div>
             <div style="font-size:.65rem;color:var(--ink3);margin-top:.65rem">
@@ -1471,26 +1510,47 @@ function openCompModal(tid){
   document.getElementById('mc-t').textContent='Agregar competencia';
   document.getElementById('mc-s').textContent=T(tid)?.name||tid;
   document.getElementById('mc-name').value='';
+  document.getElementById('mc-plantilla-id').value='';
   document.getElementById('comp-suggestions').innerHTML='';
+  document.getElementById('comp-create').style.display='none';
   editMateriaGid=tid; // reuse variable for teacher id
   document.getElementById('modal-comp').classList.add('open');
   compSuggest();
 }
 
 function compSuggest(){
-  const q=(document.getElementById('mc-name').value||'').toUpperCase();
-  const names=allSubjectNames().filter(n=>!q||n.includes(q));
-  document.getElementById('comp-suggestions').innerHTML=names.slice(0,12).map(n=>
-    `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="document.getElementById('mc-name').value='${n}';compSuggest()">${n}</span>`
-  ).join('');
+  const q=(document.getElementById('mc-name').value||'').toUpperCase().trim();
+  document.getElementById('mc-plantilla-id').value='';
+  const filtered=plantillas.filter(p=>!q||p.nombre.includes(q));
+  const exactMatch=plantillas.some(p=>p.nombre===q);
+  document.getElementById('comp-suggestions').innerHTML=filtered.slice(0,12).map(p=>{
+    const safe=p.nombre.replace(/'/g,"\\'");
+    return `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp('${p.id}','${safe}')">${p.nombre}</span>`;
+  }).join('');
+  const createEl=document.getElementById('comp-create');
+  if(!exactMatch&&q){
+    const safe=q.replace(/'/g,"\\'");
+    createEl.style.display='';
+    createEl.innerHTML=`<span class="tag t-green" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp(null,'${safe}')" title="Crear nueva plantilla">+ Crear \"${q}\"</span>`;
+  } else {
+    createEl.style.display='none';
+  }
+}
+
+function selectPlantillaComp(pid,nombre){
+  document.getElementById('mc-name').value=nombre;
+  document.getElementById('mc-plantilla-id').value=pid||'';
+  document.getElementById('comp-suggestions').innerHTML='';
+  document.getElementById('comp-create').style.display='none';
 }
 
 function saveComp(){
-  const name=normSubj(document.getElementById('mc-name').value);
-  if(!name){toast('Escribe una materia','err');return;}
+  const nombre=document.getElementById('mc-name').value.trim().toUpperCase();
+  const pid=document.getElementById('mc-plantilla-id').value;
+  if(!nombre){toast('Selecciona una materia','err');return;}
   const tid=editMateriaGid;
   if(!competencias[tid])competencias[tid]=new Set();
-  competencias[tid].add(name);
+  if(pid)competencias[tid].add(pid);
   closeM('modal-comp');
   renderMaestroDetail(tid);
   renderMaestrosList();
@@ -1498,8 +1558,8 @@ function saveComp(){
 }
 
 function delComp(tid,enc){
-  const name=decodeURIComponent(enc);
-  if(competencias[tid])competencias[tid].delete(name);
+  const pid=decodeURIComponent(enc);
+  if(competencias[tid])competencias[tid].delete(pid);
   renderMaestroDetail(tid);
   renderMaestrosList();
   toast('Competencia eliminada','warn');
@@ -1711,7 +1771,7 @@ function subjectsFromAsignaciones(g){
   const asigs=(asignGrupo[currentCicloId]||{})[g.id]||[];
   return asigs.map(a=>{
     const mc=a.materias_catalogo||{};
-    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id};
+    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null};
   }).filter(s=>s.name).sort((a,b)=>a.name.localeCompare(b.name,'es'));
 }
 
@@ -1744,7 +1804,7 @@ async function runEngine(){
 
     for(const subj of subjs){
       // Find all teachers competent for this subject
-      const candidates=competentTeachers(subj.name);
+      const candidates=competentTeachers(subj.plantilla_id);
       if(!candidates.length){
         // No competent teacher — add warning suggestion
         suggestions.push({groupId:g.id,subjectName:subj.name,slotId:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
@@ -2104,7 +2164,8 @@ function cellAutoTeacher(){
   // When subject is chosen, suggest competent teachers
   const subjName=document.getElementById('mcell-subj').value;
   if(!subjName)return;
-  const candidates=competentTeachers(subjName);
+  const _pt=plantillas.find(p=>p.nombre===subjName);
+  const candidates=_pt?competentTeachers(_pt.id):[];
   const sel=document.getElementById('mcell-teacher');
   const cur=sel.value;
   sel.innerHTML='<option value="">— Maestro —</option>'+
@@ -2127,7 +2188,8 @@ function cellCheck(){
     if(isUnavail(tid,slotId,dayIdx))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ El maestro marcó este horario como no disponible.</div>`);
     const subjName=document.getElementById('mcell-subj').value;
-    if(subjName&&tid&&!competentTeachers(subjName).find(c=>c.id===tid))
+    const _ptc=subjName?plantillas.find(p=>p.nombre===subjName):null;
+    if(_ptc&&tid&&!competentTeachers(_ptc.id).find(c=>c.id===tid))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ Este maestro no tiene esta materia como competencia.</div>`);
   }
   w.innerHTML=msgs.join('');
@@ -2427,7 +2489,7 @@ async function ensureSubjects(groupDbId){
 async function ensureCatalogo(cicloId){
   if(catalogo[cicloId])return;
   try{
-    const rows=await dbGet('materias_catalogo',`ciclo_id=eq.${cicloId}&order=semestre.asc,nombre.asc`);
+    const rows=await dbGet('materias_catalogo',`ciclo_id=eq.${cicloId}&order=semestre.asc,nombre.asc&select=*`);
     catalogo[cicloId]=rows;
   }catch(e){catalogo[cicloId]=[];}
 }
@@ -2480,9 +2542,17 @@ async function ensureCompetencias(){
     const rows=await dbGet('competencias');
     rows.forEach(r=>{
       if(!competencias[r.maestro_id])competencias[r.maestro_id]=new Set();
-      competencias[r.maestro_id].add(r.materia);
+      competencias[r.maestro_id].add(r.plantilla_id);
     });
   }catch(e){console.warn('Competencias not loaded');}
+}
+
+async function ensurePlantillas(){
+  if(plantillas.length>0)return;
+  try{
+    const rows=await dbGet('materias_plantilla','order=nombre.asc');
+    plantillas=rows;
+  }catch(e){console.warn('Plantillas not loaded');}
 }
 
 async function ensureDisponibilidad(tid){
@@ -2642,20 +2712,33 @@ delMateria=async function(){
 // ── Save competencia to DB ──
 const _origSaveComp=saveComp;
 saveComp=async function(){
-  const name=normSubj(document.getElementById('mc-name').value);
-  if(!name){toast('Escribe una materia','err');return;}
+  const nombre=document.getElementById('mc-name').value.trim().toUpperCase();
+  let pid=document.getElementById('mc-plantilla-id').value;
+  if(!nombre){toast('Selecciona una materia','err');return;}
   const tid=editMateriaGid;
   showLoading('Guardando…');
   try{
-    await dbPost('competencias',{maestro_id:tid,materia:name});
+    // Resolve or create plantilla
+    if(!pid){
+      const existing=plantillas.find(p=>p.nombre===nombre);
+      if(existing){
+        pid=existing.id;
+      } else {
+        const [np]=await dbPost('materias_plantilla',{nombre});
+        plantillas.push(np);
+        plantillas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+        pid=np.id;
+      }
+    }
+    await dbPost('competencias',{maestro_id:tid,plantilla_id:pid});
     if(!competencias[tid])competencias[tid]=new Set();
-    competencias[tid].add(name);
+    competencias[tid].add(pid);
     closeM('modal-comp');renderMaestroDetail(tid);renderMaestrosList();
     toast('Competencia agregada ✓');
   }catch(e){
     // ignore unique violation — already exists
     if(!competencias[tid])competencias[tid]=new Set();
-    competencias[tid].add(name);
+    if(pid)competencias[tid].add(pid);
     closeM('modal-comp');renderMaestroDetail(tid);
     toast('Competencia agregada ✓');
   }
@@ -2665,11 +2748,11 @@ saveComp=async function(){
 // ── Delete competencia from DB ──
 const _origDelComp=delComp;
 delComp=async function(tid,enc){
-  const name=decodeURIComponent(enc);
+  const pid=decodeURIComponent(enc);
   showLoading('Eliminando…');
   try{
-    await dbDel('competencias',`maestro_id=eq.${tid}&materia=eq.${encodeURIComponent(name)}`);
-    if(competencias[tid])competencias[tid].delete(name);
+    await dbDel('competencias',`maestro_id=eq.${tid}&plantilla_id=eq.${pid}`);
+    if(competencias[tid])competencias[tid].delete(pid);
     renderMaestroDetail(tid);renderMaestrosList();
     toast('Competencia eliminada','warn');
   }catch(e){toast('Error: '+e.message,'err');}
@@ -3149,6 +3232,7 @@ document.querySelectorAll('.mbg').forEach(el=>{
   try{
     await ensureTeachers();
     await ensureCompetencias();
+    await ensurePlantillas();
 
     // Check if this is a teacher link
     const isMaestroMode=await checkMaestroMode();

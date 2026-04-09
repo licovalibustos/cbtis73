@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Vinculación de grupos a materias del catálogo
 El sistema SHALL mantener registros en `asignaciones` que vinculan cada materia del catálogo con los grupos que la reciben, como base para el motor de asignación automática.
@@ -31,7 +31,7 @@ El sistema SHALL mantener registros en `asignaciones` que vinculan cada materia 
 - **WHEN** se ejecuta el motor de asignación de slots para un grupo
 - **THEN** el motor lee las materias y maestros desde `asignaciones` vinculadas al grupo, en lugar de la tabla `materias`
 
----
+## ADDED Requirements
 
 ### Requirement: Competencias de maestros vinculadas a plantillas globales
 El sistema SHALL almacenar las competencias de cada maestro como referencias a `materias_plantilla` (por `plantilla_id`) en lugar de strings de texto libre, garantizando que el match con el catálogo sea exacto y no se rompa ante correcciones de nombre.
