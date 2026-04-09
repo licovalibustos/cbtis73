@@ -1322,6 +1322,7 @@ async function saveMateriasCatalogo(){
         renderCatalogo(semestre);
         toast('Materia guardada ✓');
       }
+      hideLoading();
       return;
     }
     closeM('modal-materia');
