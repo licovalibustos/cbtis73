@@ -483,7 +483,17 @@ input::placeholder{color:var(--ink3);}
         <div class="field"><label>Turno</label><select id="mg-tur" style="width:100%" onchange="autoGrpId()"><option value="M">Matutino</option><option value="V">Vespertino</option></select></div>
       </div>
       <div class="field"><label>Clave del grupo</label><input type="text" id="mg-id" style="width:100%;font-family:var(--fm);text-transform:uppercase" placeholder="Ej: 1AMC"></div>
-      <div class="field"><label>Especialidad / Carrera</label><input type="text" id="mg-esp" placeholder="Ej: Recursos Humanos, Programación…" style="width:100%"></div>
+      <div class="field"><label>Especialidad / Carrera</label>
+        <select id="mg-esp" style="width:100%">
+          <option value="">— Sin especialidad (troncal) —</option>
+          <option value="A">A — Administración</option>
+          <option value="C">C — Contabilidad</option>
+          <option value="L">L — Lab. Clínico</option>
+          <option value="M">M — Mantenimiento Aut.</option>
+          <option value="P">P — Programación</option>
+          <option value="S">S — Soporte Cómputo</option>
+        </select>
+      </div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-grupo')">Cancelar</button>
@@ -530,10 +540,14 @@ input::placeholder{color:var(--ink3);}
           <option value="S">S — Soporte Cómputo</option>
         </select>
       </div>
-      <div class="frow">
-        <div class="field"><label>Horas/semana (aula)</label><input type="number" id="mm-hrs" min="1" max="20" value="3" style="width:100%"></div>
-        <div class="field"><label>Horas de laboratorio</label><input type="number" id="mm-lab" min="0" max="12" value="0" style="width:100%"></div>
+      <div id="mm-total-wrap" style="display:none">
+        <div class="field"><label>Horas Totales</label><input type="number" id="mm-total" min="1" style="width:100%" oninput="onMmTotalChange()"></div>
       </div>
+      <div class="frow">
+        <div class="field"><label>Horas/semana (aula)</label><input type="number" id="mm-hrs" min="1" max="20" value="3" style="width:100%" oninput="onMmHrsChange()"></div>
+        <div class="field"><label>Horas de laboratorio</label><input type="number" id="mm-lab" min="0" max="12" value="0" style="width:100%" oninput="onMmHrsChange()"></div>
+      </div>
+      <div id="mm-hrs-hint" style="font-size:.75rem;margin-top:.25rem;min-height:1em"></div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-materia')">Cancelar</button>
@@ -654,6 +668,7 @@ input::placeholder{color:var(--ink3);}
 const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
 const CYCLE_SEMS={par:[2,4,6],impar:[1,3,5]};
 const CYCLE_LBL={par:'Feb–Jul · Pares',impar:'Ago–Ene · Impares'};
+const HRS_LOOKUP={6:[4,2],8:[5,3],10:[6,4],11:[7,4],13:[8,5],15:[9,6],17:[10,7],19:[11,8],20:[12,8]};
 
 const SLOTS={
   M:[
@@ -1226,6 +1241,14 @@ function openMateriaCatModal(matId){
     document.getElementById('mm-esp').value=mc.especialidad||'A';
     document.getElementById('mm-hrs').value=mc.hrs;
     document.getElementById('mm-lab').value=mc.hrs_lab||0;
+    if(mc.tipo==='cfp'){
+      document.getElementById('mm-total').value=mc.hrs+(mc.hrs_lab||0);
+      document.getElementById('mm-total-wrap').style.display='block';
+    }else{
+      document.getElementById('mm-total').value='';
+      document.getElementById('mm-total-wrap').style.display='none';
+    }
+    document.getElementById('mm-hrs-hint').textContent='';
     document.getElementById('mm-del').style.display='inline-flex';
     document.getElementById('mm-esp-wrap').style.display=mc.tipo==='cfp'?'block':'none';
   } else {
@@ -1236,6 +1259,9 @@ function openMateriaCatModal(matId){
     document.getElementById('mm-tipo').value='troncal';
     document.getElementById('mm-hrs').value='3';
     document.getElementById('mm-lab').value='0';
+    document.getElementById('mm-total').value='';
+    document.getElementById('mm-total-wrap').style.display='none';
+    document.getElementById('mm-hrs-hint').textContent='';
     document.getElementById('mm-del').style.display='none';
     document.getElementById('mm-esp-wrap').style.display='none';
   }
@@ -1257,7 +1283,40 @@ function matValidate(){
 }
 
 function onMmTipoChange(){
-  document.getElementById('mm-esp-wrap').style.display=document.getElementById('mm-tipo').value==='cfp'?'block':'none';
+  const isCfp=document.getElementById('mm-tipo').value==='cfp';
+  document.getElementById('mm-esp-wrap').style.display=isCfp?'block':'none';
+  document.getElementById('mm-total-wrap').style.display=isCfp?'block':'none';
+  if(!isCfp)document.getElementById('mm-hrs-hint').textContent='';
+}
+
+function hrsLookup(total){
+  if(HRS_LOOKUP[total])return HRS_LOOKUP[total];
+  const aula=total%2===0?total/2:Math.ceil(total/2);
+  const lab=total-aula;
+  return[aula,lab];
+}
+
+function onMmTotalChange(){
+  const total=parseInt(document.getElementById('mm-total').value)||0;
+  if(total<1)return;
+  const[aula,lab]=hrsLookup(total);
+  document.getElementById('mm-hrs').value=aula;
+  document.getElementById('mm-lab').value=lab;
+  onMmHrsChange();
+}
+
+function onMmHrsChange(){
+  const total=parseInt(document.getElementById('mm-total').value)||0;
+  const hint=document.getElementById('mm-hrs-hint');
+  if(!total){hint.textContent='';return;}
+  const aula=parseInt(document.getElementById('mm-hrs').value)||0;
+  const lab=parseInt(document.getElementById('mm-lab').value)||0;
+  if(aula+lab!==total){
+    hint.style.color='var(--orange,#f90)';
+    hint.textContent=`⚠ La suma debe ser ${total}`;
+  }else{
+    hint.textContent='';
+  }
 }
 
 async function saveMateriasCatalogo(){
@@ -1271,6 +1330,10 @@ async function saveMateriasCatalogo(){
   if(!nombre){toast('Escribe el nombre de la materia','err');return;}
   const dup=(catalogo[currentCicloId]||[]).find(m=>m.nombre===nombre&&m.id!==editMateriaId);
   if(dup){toast(`"${nombre}" ya existe en el catálogo`,'err');return;}
+  if(tipo==='cfp'){
+    const total=parseInt(document.getElementById('mm-total').value)||0;
+    if(hrs+hrs_lab!==total){toast(`La suma aula+lab debe ser ${total}`,'err');return;}
+  }
   showLoading('Guardando materia…');
   try{
     // Resolve or create plantilla
