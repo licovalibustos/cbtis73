@@ -915,7 +915,7 @@ function renderGrupos(){
       <div class="av" style="background:${g.turno==='M'?'#1a44be':'#6218be'};border-radius:5px;font-size:.58rem">${g.clave.slice(0,3)}</div>
       <div style="flex:1;min-width:0">
         <div class="ln">${g.clave}</div>
-        <div class="ls">${g.sem}° · ${g.turno==='M'?'Mat':'Ves'} · ${g.especialidad||'—'}</div>
+        <div class="ls">${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}${g.especialidad?' · '+(ESPECIALIDADES.find(e=>e.code===g.especialidad)?.label||g.especialidad):''}</div>
       </div>
       <span class="tag ${hasComp?'t-green':'t-gray'}">${sc}m</span>
       <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openGrupoModal('${g.clave}')" title="Editar grupo">✏️</button>
@@ -1070,18 +1070,22 @@ function renderCatalogo(sem){
 
   const byTipo={troncal:[],optativa:[],cfp:[]};
   mats.forEach(m=>{const t=m.tipo||'troncal';if(!byTipo[t])byTipo[t]=[];byTipo[t].push(m);});
+  byTipo.cfp.sort((a,b)=>(a.especialidad||'').localeCompare(b.especialidad||'')||a.nombre.localeCompare(b.nombre,'es'));
+  const espMap=Object.fromEntries(ESPECIALIDADES.map(e=>[e.code,e.label]));
   const tipLbl={troncal:'Troncales',optativa:'Optativas',cfp:'CFP / Sub-módulos'};
   let html='';
   for(const [tipo,items] of Object.entries(byTipo)){
     if(!items.length)continue;
     html+=`<div class="sb-head" style="font-size:.66rem;padding:.4rem .65rem;background:var(--bg2);text-transform:uppercase;letter-spacing:.04em">${tipLbl[tipo]}</div>`;
-    html+=items.map(m=>`<div class="li ${selMateria===m.id?'sel':''}" onclick="selCatMateria('${m.id}')">
+    html+=items.map(m=>{
+      const espLabel=m.especialidad?(espMap[m.especialidad]||m.especialidad):null;
+      return`<div class="li ${selMateria===m.id?'sel':''}" onclick="selCatMateria('${m.id}')">
       <div style="flex:1;min-width:0">
         <div class="ln">${m.nombre}</div>
-        <div class="ls">${m.hrs}h aula${m.hrs_lab?` + ${m.hrs_lab}h lab`:''}${m.especialidad?' · Esp '+m.especialidad:''}</div>
+        <div class="ls">${m.hrs}h aula${m.hrs_lab?` + ${m.hrs_lab}h lab`:''}${espLabel?' · '+espLabel:''}</div>
       </div>
       <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openMateriaCatModal('${m.id}')" title="Editar materia">✏️</button>
-    </div>`).join('');
+    </div>`;}).join('');
   }
   document.getElementById('cat-list').innerHTML=html;
 
@@ -1818,8 +1822,14 @@ function subjectsFromAsignaciones(g){
   const asigs=(asignGrupo[currentCicloId]||{})[g.id]||[];
   return asigs.map(a=>{
     const mc=a.materias_catalogo||{};
-    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null};
-  }).filter(s=>s.name).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null,_sem:mc.semestre,_tipo:mc.tipo,_esp:mc.especialidad};
+  }).filter(s=>{
+    if(!s.name)return false;
+    if(s._tipo==='optativa')return true; // optativas: sin restricción de semestre/especialidad
+    if(s._sem!=g.sem)return false;       // troncal/cfp: debe coincidir con semestre del grupo
+    if(s._tipo==='cfp'&&s._esp&&g.especialidad&&s._esp!==g.especialidad)return false;
+    return true;
+  }).sort((a,b)=>a.name.localeCompare(b.name,'es'));
 }
 
 async function runEngine(){
