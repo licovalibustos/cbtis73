@@ -1125,14 +1125,14 @@ async function renderAsigPanel(matId){
   } else if(mc.tipo==='cfp'){
     targetGroups=allGroups.filter(g=>g.sem==mc.semestre && grupoEspCode(g)===mc.especialidad);
   } else {
-    targetGroups=allGroups.filter(g=>asigs.some(a=>a.grupo_id===g.id));
+    targetGroups=allGroups.filter(g=>g.sem==mc.semestre);
   }
 
   const asigByGroup={};
   asigs.forEach(a=>asigByGroup[a.grupo_id]=a);
 
   // Auto-create asignacion records (sin maestro) para que el motor tenga base
-  if(mc.tipo!=='optativa'){
+  if(true){
     for(const g of targetGroups){
       if(!asigByGroup[g.id]){
         try{
@@ -1355,33 +1355,27 @@ async function saveMateriasCatalogo(){
       if(!catalogo[currentCicloId])catalogo[currentCicloId]=[];
       catalogo[currentCicloId].push(row);
       // Auto-crear asignaciones para grupos existentes del mismo semestre
-      if(tipo!=='optativa'){
-        await ensureGroups();
-        const gruposTarget=(groups[currentCicloId]||[]).filter(g=>{
-          if(g.sem!=semestre)return false;
-          if(tipo==='cfp')return grupoEspCode(g)===especialidad;
-          return true; // troncal
-        });
-        let created=0;
-        for(const g of gruposTarget){
-          try{
-            await dbPost('asignaciones',{materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
-            if(!asignDet[currentCicloId])asignDet[currentCicloId]={};
-            if(!asignDet[currentCicloId][row.id])asignDet[currentCicloId][row.id]=[];
-            asignDet[currentCicloId][row.id].push({materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
-            if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][g.id];
-            g.matCount=(g.matCount||0)+1;
-            created++;
-          }catch(e){/* ya existe */}
-        }
-        closeM('modal-materia');
-        renderCatalogo(semestre);
-        toast(created?`Materia guardada · ${created} grupos asignados ✓`:'Materia guardada ✓');
-      } else {
-        closeM('modal-materia');
-        renderCatalogo(semestre);
-        toast('Materia guardada ✓');
+      await ensureGroups();
+      const gruposTarget=(groups[currentCicloId]||[]).filter(g=>{
+        if(g.sem!=semestre)return false;
+        if(tipo==='cfp')return grupoEspCode(g)===especialidad;
+        return true; // troncal u optativa
+      });
+      let created=0;
+      for(const g of gruposTarget){
+        try{
+          await dbPost('asignaciones',{materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
+          if(!asignDet[currentCicloId])asignDet[currentCicloId]={};
+          if(!asignDet[currentCicloId][row.id])asignDet[currentCicloId][row.id]=[];
+          asignDet[currentCicloId][row.id].push({materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
+          if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][g.id];
+          g.matCount=(g.matCount||0)+1;
+          created++;
+        }catch(e){/* ya existe */}
       }
+      closeM('modal-materia');
+      renderCatalogo(semestre);
+      toast(created?`Materia guardada · ${created} grupos asignados ✓`:'Materia guardada ✓');
       hideLoading();
       return;
     }
