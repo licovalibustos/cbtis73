@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Catálogo de materias por ciclo y semestre
 El sistema SHALL permitir definir un catálogo de materias agrupado por ciclo escolar y semestre, donde cada materia existe una sola vez independientemente de cuántos grupos la impartan. Cada materia del catálogo SHALL referenciar una `materias_plantilla` que provee el nombre canónico.
