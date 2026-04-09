@@ -1051,7 +1051,10 @@ async function goMaterias(){
 }
 
 function renderCatSemTabs(){
-  document.getElementById('cat-sem-tabs').innerHTML=[1,2,3,4,5,6].map(s=>
+  const c=ciclos.find(x=>x.id===currentCicloId);
+  const sems=CYCLE_SEMS[c?.tipo||cycle];
+  if(!sems.includes(selCatSem))selCatSem=sems[0];
+  document.getElementById('cat-sem-tabs').innerHTML=sems.map(s=>
     `<button class="btn btn-sm ${selCatSem===s?'btn-blue':'btn-ghost'}" onclick="selCatSem=${s};renderCatSemTabs();renderCatalogo(${s})">${s}°</button>`
   ).join('');
 }
@@ -2977,6 +2980,7 @@ fillSemSels=function(){
   const c=ciclos.find(x=>x.id===currentCicloId);
   const tipo=c?.tipo||cycle;
   const sems=CYCLE_SEMS[tipo];
+  renderCatSemTabs();
   ['g-sem-f','asig-sem','h-sem'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
