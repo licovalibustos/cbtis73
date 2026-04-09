@@ -235,7 +235,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.1</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.2</span></div>
     </div>
   </div>
   <div class="cycle-bar" style="gap:.5rem">
@@ -285,18 +285,27 @@ input::placeholder{color:var(--ink3);}
 </div>
 
 <!-- ══════════════════════════════
-     2. MATERIAS (por grupo)
+     2. MATERIAS (catálogo + distribución)
      ══════════════════════════════ -->
 <div class="view" id="view-materias">
   <div class="vbar">
-    <div class="vtit">📚 Materias por Grupo</div><div class="vsep"></div>
+    <div class="vtit">📚 Catálogo de Materias</div><div class="vsep"></div>
     <span id="cy-materias" class="cy-badge cy-par">Feb–Jul · Pares</span>
     <div class="vsep"></div>
-    <select id="m-grp-sel" onchange="renderMaterias()" style="min-width:150px"><option value="">— Grupo —</option></select>
-    <button class="btn btn-green btn-sm" id="m-add-btn" onclick="openMateriaModal()" style="display:none">+ Agregar materia</button>
+    <div id="cat-sem-tabs" style="display:flex;gap:.3rem"></div>
+    <div class="vsep"></div>
+    <button class="btn btn-green btn-sm" id="m-add-btn" onclick="openMateriaCatModal()">+ Materia</button>
   </div>
-  <div class="vbody" id="m-body">
-    <div class="empty"><div class="ico">📚</div><div>Selecciona un grupo para gestionar sus materias</div></div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="sb">
+      <div class="sb-head">Materias <span id="cat-count" class="tag t-gray">0</span></div>
+      <div class="sb-scroll" id="cat-list">
+        <div style="padding:1rem;font-size:.75rem;color:var(--ink2)">Cargando…</div>
+      </div>
+    </div>
+    <div class="vbody" id="asig-panel">
+      <div class="empty"><div class="ico">📚</div><div>Selecciona una materia del catálogo</div></div>
+    </div>
   </div>
 </div>
 
@@ -473,7 +482,7 @@ input::placeholder{color:var(--ink3);}
         <div class="field"><label>Semestre</label><select id="mg-sem" style="width:100%" onchange="autoGrpId()"></select></div>
         <div class="field"><label>Turno</label><select id="mg-tur" style="width:100%" onchange="autoGrpId()"><option value="M">Matutino</option><option value="V">Vespertino</option></select></div>
       </div>
-      <div class="field"><label>ID del grupo</label><input type="text" id="mg-id" style="width:100%;font-family:var(--fm);text-transform:uppercase"></div>
+      <div class="field"><label>Clave del grupo</label><input type="text" id="mg-id" style="width:100%;font-family:var(--fm);text-transform:uppercase" placeholder="Ej: 1AMC"></div>
       <div class="field"><label>Especialidad / Carrera</label><input type="text" id="mg-esp" placeholder="Ej: Recursos Humanos, Programación…" style="width:100%"></div>
     </div>
     <div class="mf">
@@ -484,25 +493,47 @@ input::placeholder{color:var(--ink3);}
   </div>
 </div>
 
-<!-- ══ MODAL MATERIA ══ -->
+<!-- ══ MODAL MATERIA (CATÁLOGO) ══ -->
 <div class="mbg" id="modal-materia">
   <div class="modal">
-    <div class="mh"><div><div class="mt" id="mm-t">Agregar materia</div><div class="ms" id="mm-s"></div></div><button class="mx" onclick="closeM('modal-materia')">✕</button></div>
+    <div class="mh"><div><div class="mt" id="mm-t">Nueva materia</div></div><button class="mx" onclick="closeM('modal-materia')">✕</button></div>
     <div class="mb">
       <div class="field"><label>Nombre de la materia</label><input type="text" id="mm-name" placeholder="Ej: INGLÉS IV" style="width:100%;text-transform:uppercase"></div>
+      <div class="frow">
+        <div class="field"><label>Semestre</label>
+          <select id="mm-sem" style="width:100%">
+            <option value="1">1°</option><option value="2">2°</option><option value="3">3°</option>
+            <option value="4">4°</option><option value="5">5°</option><option value="6">6°</option>
+          </select>
+        </div>
+        <div class="field"><label>Tipo</label>
+          <select id="mm-tipo" onchange="onMmTipoChange()" style="width:100%">
+            <option value="troncal">Troncal</option>
+            <option value="optativa">Optativa</option>
+            <option value="cfp">CFP (Sub-módulo)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="mm-esp-wrap" style="display:none">
+        <label>Especialidad</label>
+        <select id="mm-esp" style="width:100%">
+          <option value="A">A — Administración</option>
+          <option value="C">C — Contabilidad</option>
+          <option value="L">L — Lab. Clínico</option>
+          <option value="M">M — Mantenimiento Aut.</option>
+          <option value="P">P — Programación</option>
+          <option value="S">S — Soporte Cómputo</option>
+        </select>
+      </div>
       <div class="frow">
         <div class="field"><label>Horas/semana (aula)</label><input type="number" id="mm-hrs" min="1" max="20" value="3" style="width:100%"></div>
         <div class="field"><label>Horas de laboratorio</label><input type="number" id="mm-lab" min="0" max="12" value="0" style="width:100%"></div>
       </div>
-      <div class="field" id="mm-lab-teacher-wrap" style="display:none">
-        <label>Maestro de laboratorio (puede ser diferente)</label>
-        <select id="mm-lab-teacher" style="width:100%"></select>
-      </div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-materia')">Cancelar</button>
-      <button class="btn btn-red btn-sm" id="mm-del" style="display:none" onclick="delMateria()">Quitar</button>
-      <button class="btn btn-green" onclick="saveMateria()">Guardar</button>
+      <button class="btn btn-red btn-sm" id="mm-del" style="display:none" onclick="delMateriaCatalogo()">Eliminar</button>
+      <button class="btn btn-green" onclick="saveMateriasCatalogo()">Guardar</button>
     </div>
   </div>
 </div>
@@ -696,6 +727,16 @@ let groups={};
 // NO teacher for regular hours — motor decides
 let subjects={};
 
+// catalogo[cicloId] = [{id,ciclo_id,semestre,tipo,especialidad,nombre,hrs,hrs_lab}]
+let catalogo={};
+// asignDet[cicloId][materiaId] = [{id,materia_id,grupo_id,maestro_id,maestro_lab_id}]
+let asignDet={};
+// asignGrupo[cicloId][grupoDbId] = [{id,materia_id,grupo_id,maestro_id,maestro_lab_id,materias_catalogo:{...}}]
+let asignGrupo={};
+
+// UI state for catálogo view
+let selCatSem=1, selMateria=null, editMateriaId=null;
+
 // competencias[teacherId] = Set of subject names (strings, normalized uppercase)
 let competencias={};
 
@@ -754,7 +795,7 @@ function go(name){
   document.getElementById('view-'+name).classList.add('on');
   document.querySelector(`[data-v="${name}"]`).classList.add('on');
   if(name==='grupos') renderGrupos();
-  if(name==='materias'){fillGrpSel();renderMaterias();}
+  if(name==='materias'){goMaterias();}
   if(name==='maestros') renderMaestrosList();
   if(name==='disponibilidad') renderMaestrosSb();
   if(name==='asignacion'){fillSemSels();renderAsigStats();}
@@ -791,6 +832,7 @@ function fillSemSels(){
 
 function fillGrpSel(){
   const sel=document.getElementById('m-grp-sel');
+  if(!sel)return;
   const v=sel.value;
   while(sel.options.length>1)sel.remove(1);
   groups[currentCicloId].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
@@ -845,14 +887,14 @@ function updConflict(){
 //  1. GRUPOS
 // ═══════════════════════════════════════════
 function renderGrupos(){
+  if(!groups[currentCicloId])return;
   const semF=document.getElementById('g-sem-f').value;
   const turF=document.getElementById('g-tur-f').value;
   const gs=groups[currentCicloId].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF));
   document.getElementById('g-count').textContent=gs.length;
 
   document.getElementById('g-list').innerHTML=gs.map(g=>{
-    const _subs=subjects[currentCicloId]||{};
-    const sc=(_subs[g.clave]||_subs[g.id]||[]).length;
+    const sc=g.matCount??0;
     const hasComp=sc>0;
     return `<div class="li ${selGroup===g.clave||selGroup===g.id?'sel':''}" onclick="selGrp('${g.clave}')">
       <div class="av" style="background:${g.turno==='M'?'#1a44be':'#6218be'};border-radius:5px;font-size:.58rem">${g.clave.slice(0,3)}</div>
@@ -861,6 +903,7 @@ function renderGrupos(){
         <div class="ls">${g.sem}° · ${g.turno==='M'?'Mat':'Ves'} · ${g.especialidad||'—'}</div>
       </div>
       <span class="tag ${hasComp?'t-green':'t-gray'}">${sc}m</span>
+      <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openGrupoModal('${g.clave}')" title="Editar grupo">✏️</button>
     </div>`;
   }).join('');
 
@@ -871,8 +914,16 @@ function selGrp(id){selGroup=id;renderGrupos();}
 
 function renderGrupoDetail(gid){
   const g=G(gid); if(!g){document.getElementById('g-detail').innerHTML='';return;}
-  const _sd=subjects[currentCicloId]||{};
-  const subjs=_sd[gid]||_sd[g.id]||[];
+  // Prefer asignaciones cache, fallback to subjects cache
+  let subjs=[];
+  if(asignGrupo[currentCicloId]?.[g.id]){
+    subjs=subjectsFromAsignaciones(g);
+  } else {
+    const _sd=subjects[currentCicloId]||{};
+    subjs=_sd[gid]||_sd[g.id]||[];
+    // async-load asignaciones and re-render once ready
+    ensureAsignacionesGrupo(currentCicloId,g.id).then(()=>renderGrupoDetail(gid));
+  }
   const totalHrs=subjs.reduce((a,s)=>a+(s.hrs+(s.lab||0)),0);
   document.getElementById('g-detail').innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
@@ -881,8 +932,7 @@ function renderGrupoDetail(gid){
         <div style="font-size:.75rem;color:var(--ink2)">${g.sem}° Semestre · ${g.turno==='M'?'Matutino':'Vespertino'} · ${g.especialidad||''}</div>
       </div>
       <div style="display:flex;gap:.4rem">
-        <button class="btn btn-ghost btn-sm" onclick="openGrupoModal('${gid}')">✏ Editar</button>
-        <button class="btn btn-green btn-sm" onclick="go('materias');setTimeout(()=>{document.getElementById('m-grp-sel').value='${gid}';renderMaterias();openMateriaModal();},50)">+ Materia</button>
+        <button class="btn btn-green btn-sm" onclick="go('materias')">+ Agregar materias</button>
       </div>
     </div>
     <div class="stats">
@@ -915,13 +965,17 @@ function openGrupoModal(gid){
     document.getElementById('mg-t').textContent='Editar grupo '+gid;
     sel.value=g.sem;
     document.getElementById('mg-tur').value=g.turno;
-    document.getElementById('mg-id').value=g.id;
+    document.getElementById('mg-id').value=g.clave;
+    document.getElementById('mg-id').readOnly=true;
+    document.getElementById('mg-id').style.opacity='.6';
     document.getElementById('mg-esp').value=g.especialidad||'';
     document.getElementById('mg-del').style.display='inline-flex';
     editGrupoId=gid;
   } else {
     document.getElementById('mg-t').textContent='Nuevo grupo';
     document.getElementById('mg-id').value='';
+    document.getElementById('mg-id').readOnly=false;
+    document.getElementById('mg-id').style.opacity='';
     document.getElementById('mg-esp').value='';
     document.getElementById('mg-del').style.display='none';
     editGrupoId=null;
@@ -970,113 +1024,296 @@ function delGrupo(){
 }
 
 // ═══════════════════════════════════════════
-//  2. MATERIAS
+//  2. MATERIAS — CATÁLOGO + DISTRIBUCIÓN
 // ═══════════════════════════════════════════
-function renderMaterias(){
-  const gid=document.getElementById('m-grp-sel').value;
-  document.getElementById('m-add-btn').style.display=gid?'inline-flex':'none';
-  const body=document.getElementById('m-body');
-  if(!gid){body.innerHTML='<div class="empty"><div class="ico">📚</div><div>Selecciona un grupo</div></div>';return;}
-  const g=G(gid);if(!g)return;
-  const subjs=subjects[currentCicloId][gid]||[];
 
-  // Populate lab teacher select options ready
-  let html=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
-      <div>
-        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Materias — Grupo ${gid}</div>
-        <div style="font-size:.75rem;color:var(--ink2)">${g.sem}° Semestre · ${g.turno==='M'?'Matutino':'Vespertino'} · ${g.especialidad||''}</div>
-      </div>
-    </div>
-    <div style="font-size:.75rem;color:var(--ink2);background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem">
-      ℹ️ <b>Sin maestro asignado aquí</b> — el motor de asignación decidirá qué maestro da cada materia basándose en sus competencias y disponibilidad. Solo define el nombre de la materia y las horas.
-    </div>
-  `;
+// Entry point when navigating to the materias tab
+async function goMaterias(){
+  await ensureGroups();
+  await ensureCatalogo(currentCicloId);
+  renderCatSemTabs();
+  renderCatalogo(selCatSem);
+}
 
-  if(!subjs.length){
-    html+=`<div class="empty"><div class="ico">📚</div><div>Sin materias. Agrega la primera.</div></div>`;
-  } else {
-    html+=`<div class="card">
-      <div class="ch">Materias <span class="tag t-gray">${subjs.length}</span><span style="font-size:.68rem;color:var(--ink2)">${subjs.reduce((a,s)=>a+s.hrs,0)}h aula + ${subjs.reduce((a,s)=>a+(s.lab||0),0)}h lab</span></div>
-      ${subjs.map((s,i)=>{
-        const labT=s.labTeacherId?T(s.labTeacherId):null;
-        return `<div class="subj-row">
-          <div style="flex:1">
-            <span style="font-family:var(--fh);font-weight:700;font-size:.8rem">${s.name}</span>
-          </div>
-          <span class="tag t-blue">${s.hrs}h aula</span>
-          ${s.lab?`<span class="tag t-purple">${s.lab}h lab${labT?' · '+labT.name.split(' ')[0]:''}</span>`:''}
-          <button class="btn btn-ghost btn-xs" onclick="openEditMateria('${gid}',${i})">✏</button>
-        </div>`;
-      }).join('')}
-    </div>`;
+function renderCatSemTabs(){
+  document.getElementById('cat-sem-tabs').innerHTML=[1,2,3,4,5,6].map(s=>
+    `<button class="btn btn-sm ${selCatSem===s?'btn-blue':'btn-ghost'}" onclick="selCatSem=${s};renderCatSemTabs();renderCatalogo(${s})">${s}°</button>`
+  ).join('');
+}
+
+function renderCatalogo(sem){
+  selCatSem=sem;
+  const mats=(catalogo[currentCicloId]||[]).filter(m=>m.semestre==sem);
+  document.getElementById('cat-count').textContent=mats.length;
+
+  if(!mats.length){
+    document.getElementById('cat-list').innerHTML=`<div style="padding:1rem;font-size:.75rem;color:var(--ink2)">Sin materias para ${sem}° semestre.<br>Usa "+ Materia" para agregar.</div>`;
+    document.getElementById('asig-panel').innerHTML='<div class="empty"><div class="ico">📚</div><div>Sin materias en este semestre</div></div>';
+    selMateria=null;
+    return;
   }
-  body.innerHTML=html;
+
+  const byTipo={troncal:[],optativa:[],cfp:[]};
+  mats.forEach(m=>{const t=m.tipo||'troncal';if(!byTipo[t])byTipo[t]=[];byTipo[t].push(m);});
+  const tipLbl={troncal:'Troncales',optativa:'Optativas',cfp:'CFP / Sub-módulos'};
+  let html='';
+  for(const [tipo,items] of Object.entries(byTipo)){
+    if(!items.length)continue;
+    html+=`<div class="sb-head" style="font-size:.66rem;padding:.4rem .65rem;background:var(--bg2);text-transform:uppercase;letter-spacing:.04em">${tipLbl[tipo]}</div>`;
+    html+=items.map(m=>`<div class="li ${selMateria===m.id?'sel':''}" onclick="selCatMateria('${m.id}')">
+      <div style="flex:1;min-width:0">
+        <div class="ln">${m.nombre}</div>
+        <div class="ls">${m.hrs}h aula${m.hrs_lab?` + ${m.hrs_lab}h lab`:''}${m.especialidad?' · Esp '+m.especialidad:''}</div>
+      </div>
+      <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openMateriaCatModal('${m.id}')" title="Editar materia">✏️</button>
+    </div>`).join('');
+  }
+  document.getElementById('cat-list').innerHTML=html;
+
+  if(selMateria && mats.find(m=>m.id===selMateria)){
+    renderAsigPanel(selMateria);
+  } else {
+    selMateria=null;
+    document.getElementById('asig-panel').innerHTML='<div class="empty"><div class="ico">📚</div><div>Selecciona una materia para ver la distribución de maestros</div></div>';
+  }
 }
 
-function openMateriaModal(gid){
-  const currentGid=gid||document.getElementById('m-grp-sel').value;
-  if(!currentGid){toast('Selecciona un grupo','err');return;}
-  document.getElementById('mm-t').textContent='Agregar materia';
-  document.getElementById('mm-s').textContent='Grupo '+currentGid;
-  document.getElementById('mm-name').value='';
-  document.getElementById('mm-hrs').value='3';
-  document.getElementById('mm-lab').value='0';
-  document.getElementById('mm-del').style.display='none';
-  document.getElementById('mm-lab-teacher-wrap').style.display='none';
-  fillLabTeacherSel('');
-  editMateriaGid=currentGid;editMateriaIdx=null;
+async function selCatMateria(matId){
+  selMateria=matId;
+  renderCatalogo(selCatSem);
+  await renderAsigPanel(matId);
+}
+
+// Returns the specialty letter code from a group's clave (e.g. "3AML" → "L")
+function grupoEspCode(g){return g.especialidad||'';}
+
+async function renderAsigPanel(matId){
+  const panel=document.getElementById('asig-panel');
+  const mc=(catalogo[currentCicloId]||[]).find(m=>m.id===matId);
+  if(!mc){panel.innerHTML='<div class="empty"><div class="ico">📚</div><div>Materia no encontrada</div></div>';return;}
+
+  panel.innerHTML='<div style="padding:1.2rem;font-size:.75rem;color:var(--ink2)">⏳ Cargando…</div>';
+
+  await ensureGroups();
+  await ensureAsignaciones(currentCicloId, matId);
+
+  const asigs=asignDet[currentCicloId][matId]||[];
+  const allGroups=groups[currentCicloId]||[];
+
+  let targetGroups;
+  if(mc.tipo==='troncal'){
+    targetGroups=allGroups.filter(g=>g.sem==mc.semestre);
+  } else if(mc.tipo==='cfp'){
+    targetGroups=allGroups.filter(g=>g.sem==mc.semestre && grupoEspCode(g)===mc.especialidad);
+  } else {
+    targetGroups=allGroups.filter(g=>asigs.some(a=>a.grupo_id===g.id));
+  }
+
+  const asigByGroup={};
+  asigs.forEach(a=>asigByGroup[a.grupo_id]=a);
+
+  // Auto-create asignacion records (sin maestro) para que el motor tenga base
+  if(mc.tipo!=='optativa'){
+    for(const g of targetGroups){
+      if(!asigByGroup[g.id]){
+        try{
+          const [row]=await dbPost('asignaciones',{materia_id:matId,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
+          asignDet[currentCicloId][matId].push(row);
+          asigByGroup[g.id]=row;
+          if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][g.id];
+          const gObj=(groups[currentCicloId]||[]).find(x=>x.id===g.id);
+          if(gObj)gObj.matCount=(gObj.matCount||0)+1;
+        }catch(e){/* ya existe */}
+      }
+    }
+  }
+
+  const tipoLabel={troncal:'Troncal',optativa:'Optativa',cfp:'CFP Sub-módulo'}[mc.tipo]||mc.tipo;
+
+  const rows=targetGroups.map(g=>`<tr>
+    <td style="font-family:var(--fm);font-weight:700;font-size:.78rem;white-space:nowrap;padding:.55rem .75rem">${g.clave}</td>
+    <td style="font-size:.7rem;color:var(--ink2);padding:.55rem .5rem">${g.sem}°</td>
+    <td style="font-size:.7rem;color:var(--ink2);padding:.55rem .5rem">${g.turno==='M'?'Matutino':'Vespertino'}</td>
+    <td style="padding:.35rem .5rem"><span class="tag t-green" style="font-size:.62rem">✓ Incluido</span></td>
+    ${mc.tipo==='optativa'?`<td style="padding:.35rem .5rem;text-align:center"><button class="btn btn-red btn-xs" onclick="removeOptativaGroup('${matId}','${asigByGroup[g.id]?.id}','${g.id}')">✕</button></td>`:''}
+  </tr>`).join('');
+
+  const optativaAddRow=mc.tipo==='optativa'?`<tr>
+    <td colspan="5" style="padding:.5rem .75rem">
+      <select id="add-optativa-grp" style="font-size:.75rem;margin-right:.4rem">
+        <option value="">— Agregar grupo —</option>
+        ${allGroups.filter(g=>g.sem==mc.semestre&&!targetGroups.some(tg=>tg.id===g.id)).map(g=>`<option value="${g.id}">${g.clave}</option>`).join('')}
+      </select>
+      <button class="btn btn-green btn-xs" onclick="addOptativaGroup('${matId}')">Agregar</button>
+    </td>
+  </tr>`:'';
+
+  panel.innerHTML=`
+    <div style="padding:1.1rem 1.1rem .7rem;border-bottom:1px solid var(--bdr)">
+      <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem">${mc.nombre}</div>
+      <div style="font-size:.73rem;color:var(--ink2);margin-top:.2rem">${mc.semestre}° Sem · ${tipoLabel}${mc.hrs_lab?` · ${mc.hrs}h aula + ${mc.hrs_lab}h lab`:(mc.hrs?` · ${mc.hrs}h`:'')}${mc.especialidad?' · Esp '+mc.especialidad:''}</div>
+    </div>
+    ${targetGroups.length||mc.tipo==='optativa'?`
+    <div style="overflow:auto;max-height:calc(100% - 100px)">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid var(--bdr);background:var(--bg2)">
+            <th style="padding:.4rem .75rem;text-align:left;font-size:.66rem;color:var(--ink2);text-transform:uppercase">Grupo</th>
+            <th style="padding:.4rem .5rem;text-align:left;font-size:.66rem;color:var(--ink2);text-transform:uppercase">Sem</th>
+            <th style="padding:.4rem .5rem;text-align:left;font-size:.66rem;color:var(--ink2);text-transform:uppercase">Turno</th>
+            <th style="padding:.4rem .5rem;font-size:.66rem;color:var(--ink2);text-transform:uppercase">Estado</th>
+            ${mc.tipo==='optativa'?'<th></th>':''}
+          </tr>
+        </thead>
+        <tbody>${rows}${optativaAddRow}</tbody>
+      </table>
+    </div>
+    `:'<div class="empty"><div class="ico">🏫</div><div>Sin grupos para esta materia</div><div style="font-size:.7rem;color:var(--ink3);margin-top:.4rem">${mc.tipo==="cfp"?"¿Hay grupos con la especialidad indicada?":mc.tipo==="optativa"?"Usa el botón Agregar para inscribir grupos":"Agrega grupos al ciclo primero"}</div></div>'}
+  `;
+}
+
+// saveAsignacion removed — teacher assignment is handled by the Asignación Automática engine
+
+async function addOptativaGroup(matId){
+  const sel=document.getElementById('add-optativa-grp');
+  const grupoDbId=sel?.value;
+  if(!grupoDbId){toast('Elige un grupo','err');return;}
+  const payload={materia_id:matId,grupo_id:grupoDbId,maestro_id:null,maestro_lab_id:null};
+  try{
+    const [row]=await dbPost('asignaciones',payload);
+    if(!asignDet[currentCicloId])asignDet[currentCicloId]={};
+    if(!asignDet[currentCicloId][matId])asignDet[currentCicloId][matId]=[];
+    asignDet[currentCicloId][matId].push(row);
+    if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][grupoDbId];
+    const gObjA=(groups[currentCicloId]||[]).find(x=>x.id===grupoDbId);
+    if(gObjA)gObjA.matCount=(gObjA.matCount||0)+1;
+    await renderAsigPanel(matId);
+    toast('Grupo agregado ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+async function removeOptativaGroup(matId,asigId,grupoDbId){
+  if(!asigId)return;
+  try{
+    await dbDel('asignaciones',`id=eq.${asigId}`);
+    if(asignDet[currentCicloId]?.[matId])
+      asignDet[currentCicloId][matId]=asignDet[currentCicloId][matId].filter(a=>a.id!==asigId);
+    if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][grupoDbId];
+    const gObjR=(groups[currentCicloId]||[]).find(x=>x.id===grupoDbId);
+    if(gObjR)gObjR.matCount=Math.max(0,(gObjR.matCount||1)-1);
+    await renderAsigPanel(matId);
+    toast('Grupo quitado','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+function openMateriaCatModal(matId){
+  editMateriaId=matId||null;
+  if(matId){
+    const mc=(catalogo[currentCicloId]||[]).find(m=>m.id===matId);
+    if(!mc)return;
+    document.getElementById('mm-t').textContent='Editar materia';
+    document.getElementById('mm-name').value=mc.nombre;
+    document.getElementById('mm-sem').value=mc.semestre;
+    document.getElementById('mm-tipo').value=mc.tipo||'troncal';
+    document.getElementById('mm-esp').value=mc.especialidad||'A';
+    document.getElementById('mm-hrs').value=mc.hrs;
+    document.getElementById('mm-lab').value=mc.hrs_lab||0;
+    document.getElementById('mm-del').style.display='inline-flex';
+    document.getElementById('mm-esp-wrap').style.display=mc.tipo==='cfp'?'block':'none';
+  } else {
+    document.getElementById('mm-t').textContent='Nueva materia';
+    document.getElementById('mm-name').value='';
+    document.getElementById('mm-sem').value=selCatSem||1;
+    document.getElementById('mm-tipo').value='troncal';
+    document.getElementById('mm-hrs').value='3';
+    document.getElementById('mm-lab').value='0';
+    document.getElementById('mm-del').style.display='none';
+    document.getElementById('mm-esp-wrap').style.display='none';
+  }
   document.getElementById('modal-materia').classList.add('open');
 }
 
-function openEditMateria(gid,idx){
-  const s=(subjects[currentCicloId][gid]||[])[idx];
-  if(!s)return;
-  document.getElementById('mm-t').textContent='Editar materia';
-  document.getElementById('mm-s').textContent='Grupo '+gid;
-  document.getElementById('mm-name').value=s.name;
-  document.getElementById('mm-hrs').value=s.hrs;
-  document.getElementById('mm-lab').value=s.lab||0;
-  document.getElementById('mm-del').style.display='inline-flex';
-  const hasLab=(s.lab||0)>0;
-  document.getElementById('mm-lab-teacher-wrap').style.display=hasLab?'block':'none';
-  fillLabTeacherSel(s.labTeacherId||'');
-  editMateriaGid=gid;editMateriaIdx=idx;
-  document.getElementById('modal-materia').classList.add('open');
+function onMmTipoChange(){
+  document.getElementById('mm-esp-wrap').style.display=document.getElementById('mm-tipo').value==='cfp'?'block':'none';
 }
 
-function fillLabTeacherSel(cur){
-  const sel=document.getElementById('mm-lab-teacher');
-  sel.innerHTML='<option value="">— Sin asignar —</option>'+
-    TEACHERS.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${t.name}</option>`).join('');
-}
-
-document.getElementById('mm-lab').addEventListener('input',function(){
-  document.getElementById('mm-lab-teacher-wrap').style.display=parseInt(this.value)>0?'block':'none';
-});
-
-function saveMateria(){
-  const name=document.getElementById('mm-name').value.trim().toUpperCase();
+async function saveMateriasCatalogo(){
+  const nombre=document.getElementById('mm-name').value.trim().toUpperCase();
+  const semestre=parseInt(document.getElementById('mm-sem').value);
+  const tipo=document.getElementById('mm-tipo').value;
+  const especialidad=tipo==='cfp'?(document.getElementById('mm-esp').value||null):null;
   const hrs=parseInt(document.getElementById('mm-hrs').value)||1;
-  const lab=parseInt(document.getElementById('mm-lab').value)||0;
-  const labTeacherId=document.getElementById('mm-lab-teacher').value;
-  if(!name){toast('Escribe el nombre de la materia','err');return;}
-  if(!subjects[currentCicloId][editMateriaGid])subjects[currentCicloId][editMateriaGid]=[];
-  const obj={id:'m'+Date.now(),name,hrs,lab,labTeacherId};
-  const arr=subjects[currentCicloId][editMateriaGid];
-  if(editMateriaIdx!==null)arr[editMateriaIdx]=obj;
-  else arr.push(obj);
-  closeM('modal-materia');
-  renderMaterias();renderGrupos();
-  toast('Materia guardada ✓');
+  const hrs_lab=parseInt(document.getElementById('mm-lab').value)||0;
+  if(!nombre){toast('Escribe el nombre','err');return;}
+  showLoading('Guardando materia…');
+  try{
+    if(editMateriaId){
+      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,semestre,tipo,especialidad,hrs,hrs_lab});
+      const arr=catalogo[currentCicloId]||[];
+      const idx=arr.findIndex(m=>m.id===editMateriaId);
+      if(idx>=0)arr[idx]={...arr[idx],nombre,semestre,tipo,especialidad,hrs,hrs_lab};
+    } else {
+      const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,semestre,tipo,especialidad,hrs,hrs_lab});
+      if(!catalogo[currentCicloId])catalogo[currentCicloId]=[];
+      catalogo[currentCicloId].push(row);
+      // Auto-crear asignaciones para grupos existentes del mismo semestre
+      if(tipo!=='optativa'){
+        await ensureGroups();
+        const gruposTarget=(groups[currentCicloId]||[]).filter(g=>{
+          if(g.sem!=semestre)return false;
+          if(tipo==='cfp')return grupoEspCode(g)===especialidad;
+          return true; // troncal
+        });
+        let created=0;
+        for(const g of gruposTarget){
+          try{
+            await dbPost('asignaciones',{materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
+            if(!asignDet[currentCicloId])asignDet[currentCicloId]={};
+            if(!asignDet[currentCicloId][row.id])asignDet[currentCicloId][row.id]=[];
+            asignDet[currentCicloId][row.id].push({materia_id:row.id,grupo_id:g.id,maestro_id:null,maestro_lab_id:null});
+            if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][g.id];
+            g.matCount=(g.matCount||0)+1;
+            created++;
+          }catch(e){/* ya existe */}
+        }
+        closeM('modal-materia');
+        renderCatalogo(semestre);
+        toast(created?`Materia guardada · ${created} grupos asignados ✓`:'Materia guardada ✓');
+      } else {
+        closeM('modal-materia');
+        renderCatalogo(semestre);
+        toast('Materia guardada ✓');
+      }
+      return;
+    }
+    closeM('modal-materia');
+    renderCatalogo(semestre);
+    toast('Materia guardada ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
 }
 
-function delMateria(){
-  subjects[currentCicloId][editMateriaGid].splice(editMateriaIdx,1);
-  closeM('modal-materia');
-  renderMaterias();renderGrupos();
-  toast('Materia eliminada','warn');
+async function delMateriaCatalogo(){
+  if(!editMateriaId)return;
+  showLoading('Eliminando materia…');
+  try{
+    await dbDel('asignaciones',`materia_id=eq.${editMateriaId}`);
+    await dbDel('materias_catalogo',`id=eq.${editMateriaId}`);
+    const delSem=(catalogo[currentCicloId]||[]).find(m=>m.id===editMateriaId)?.semestre||selCatSem;
+    catalogo[currentCicloId]=(catalogo[currentCicloId]||[]).filter(m=>m.id!==editMateriaId);
+    if(asignDet[currentCicloId])delete asignDet[currentCicloId][editMateriaId];
+    selMateria=null;
+    closeM('modal-materia');
+    renderCatalogo(delSem);
+    toast('Materia eliminada','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
 }
+
+// Compatibility alias — referenced by legacy patched overrides
+function renderMaterias(){renderCatalogo(selCatSem);}
+function saveMateria(){}
+function delMateria(){}
 
 // ═══════════════════════════════════════════
 //  3. MAESTROS + COMPETENCIAS
@@ -1095,6 +1332,7 @@ function renderMaestrosList(){
         <div class="ls">${t.hrs_carga}h carga${t.obs?' · '+t.obs:''}</div>
       </div>
       <span class="tag ${cnt?'t-green':'t-red'}">${cnt} comp.</span>
+      <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditTeacher('${t.id}')" title="Editar maestro">✏️</button>
     </div>`;
   }).join('');
 }
@@ -1141,7 +1379,6 @@ function renderMaestroDetail(tid){
           ${t.categoria?`<span><b>Cat:</b> ${t.categoria}</span>`:'<span style="color:var(--ink3)">Categoría: —</span>'}
         </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="openEditTeacher('${tid}')">✏ Editar datos</button>
       <button class="btn btn-blue btn-sm" onclick="copyTeacherLink('${tid}')" title="Copiar link de disponibilidad para enviar al maestro">🔗 Copiar link</button>
     </div>
 
@@ -1374,8 +1611,8 @@ let isDrag=false,dVal=null;
 function renderMaestrosSb(){
   const q=(document.getElementById('disp-q')?.value||'').toLowerCase();
   document.getElementById('disp-sb').innerHTML=TEACHERS.filter(t=>t.name.toLowerCase().includes(q)).map(t=>{
-    const av=((availability[t.id]||{})[cycle]||{});
-    const cnt=Object.values(av).filter(v=>v!=='neutral').length;
+    const av=((availability[t.id]||{})[currentCicloId]||{});
+    const cnt=Object.values(av).filter(v=>v==='avail').length;
     return `<div class="li ${selTeacher===t.id?'sel':''}" onclick="selDispTeacher('${t.id}')">
       <div class="av" style="background:${ac(t.id)}">${ini(t.name)}</div>
       <div style="flex:1;min-width:0"><div class="ln" style="font-size:.7rem">${t.name}</div><div class="ls">${t.hrs_carga}h</div></div>
@@ -1447,7 +1684,7 @@ function tglAv(tid,key){
 function dStart(tid,key,cur){isDrag=true;dVal=cur==='avail'?'unavail':'avail';}
 function dMove(tid,key){
   if(!isDrag||!selTeacher)return;
-  availability[selTeacher][cycle][key]=dVal;
+  availability[selTeacher][currentCicloId][key]=dVal;
   refreshAg(key,dVal);
 }
 document.addEventListener('mouseup',()=>{isDrag=false;dVal=null;});
@@ -1463,24 +1700,46 @@ function setAll(tid,st){
   renderDispGrid(tid);
 }
 function saveDisp(){if(!selTeacher){toast('Selecciona un maestro','warn');return;}renderMaestrosSb();toast('Disponibilidad guardada ✓');}
-function clearDisp(){if(!selTeacher)return;availability[selTeacher][cycle]={};renderDispGrid(selTeacher);renderMaestrosSb();toast('Limpiado','warn');}
+function clearDisp(){if(!selTeacher)return;availability[selTeacher][currentCicloId]={};renderDispGrid(selTeacher);renderMaestrosSb();toast('Limpiado','warn');}
 
 // ═══════════════════════════════════════════
 //  5. MOTOR DE ASIGNACIÓN
 // ═══════════════════════════════════════════
-function runEngine(){
+
+// Build [{name,hrs,lab,teacherId,labTeacherId}] for a group from asignaciones cache
+function subjectsFromAsignaciones(g){
+  const asigs=(asignGrupo[currentCicloId]||{})[g.id]||[];
+  return asigs.map(a=>{
+    const mc=a.materias_catalogo||{};
+    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id};
+  }).filter(s=>s.name).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+}
+
+async function runEngine(){
   suggestions=[];
   const semF=document.getElementById('asig-sem').value;
   const turF=document.getElementById('asig-tur').value;
-  const sched=schedule[currentCicloId]||{};
 
-  // Track teacher hours already used in this suggestion run
-  const tmpHrs={};// tid -> hrs suggested
+  // Ensure asignaciones loaded for all groups in scope
+  showLoading('Cargando asignaciones…');
+  await ensureGroups();
+  for(const g of (groups[currentCicloId]||[])){
+    if(semF&&g.sem!=semF)continue;
+    if(turF&&g.turno!==turF)continue;
+    await ensureAsignacionesGrupo(currentCicloId,g.id);
+  }
+  hideLoading();
+
+  const sched=schedule[currentCicloId]||{};
+  const tmpHrs={};
 
   for(const g of groups[currentCicloId]){
     if(semF&&g.sem!=semF)continue;
     if(turF&&g.turno!==turF)continue;
-    const subjs=subjects[currentCicloId][g.id]||[];
+    // Use asignaciones if available, fallback to subjects cache
+    const subjs=subjectsFromAsignaciones(g).length
+      ? subjectsFromAsignaciones(g)
+      : (subjects[currentCicloId]?.[g.id]||[]);
     if(!subjs.length)continue;
 
     for(const subj of subjs){
@@ -1507,7 +1766,7 @@ function runEngine(){
           // Score each candidate teacher
           let bestT=null,bestScore=-1;
           for(const cand of candidates){
-            const av=((availability[cand.id]||{})[cycle]||{})[key]||'neutral';
+            const av=((availability[cand.id]||{})[currentCicloId]||{})[key]||'neutral';
             if(av==='unavail')continue; // skip hard unavailable unless no choice
             if(isConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
@@ -1529,7 +1788,7 @@ function runEngine(){
 
           if(!bestT)continue;
 
-          const avState=((availability[bestT.id]||{})[cycle]||{})[key]||'neutral';
+          const availState=((availability[bestT.id]||{})[currentCicloId]||{})[key]||'neutral';
           if(!tmpHrs[bestT.id])tmpHrs[bestT.id]=0;
           tmpHrs[bestT.id]++;
 
@@ -2022,6 +2281,7 @@ function onCicloChange(){
   updateCycleBadges();
   // Reload all data for this ciclo
   groups[currentCicloId]=null; subjects[currentCicloId]=null; schedule[currentCicloId]=null;
+  catalogo[currentCicloId]=null; asignDet[currentCicloId]=null; asignGrupo[currentCicloId]=null;
   selGroup=null;suggestions=[];
   fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();fillPrSel();
   toast('Ciclo: '+(c?.nombre||''));
@@ -2060,7 +2320,7 @@ function openNuevoCiclo(){
           <div class="field"><label>Fecha fin</label><input type="date" id="nc-fin" style="width:100%"></div>
         </div>
         <div style="font-size:.72rem;color:var(--ink2);background:var(--green-lt);border:1px solid #80c8a0;border-radius:8px;padding:.65rem .85rem">
-          ✓ Si copias grupos de un ciclo anterior, se duplican los grupos y sus materias. Los horarios y disponibilidad empiezan limpios.
+          ✓ Si copias grupos de un ciclo anterior, se duplican los grupos y el catálogo de materias. Las asignaciones de maestros, horarios y disponibilidad empiezan limpios.
         </div>
       </div>
       <div class="mf">
@@ -2101,16 +2361,16 @@ async function saveNuevoCiclo(){
     // Create ciclo
     const [newCiclo]=await dbPost('ciclos',{nombre,tipo,fecha_inicio:fi,fecha_fin:ff,activo:true});
 
-    // If copying from another ciclo, duplicate groups+materias
+    // If copying from another ciclo, duplicate groups+catalog (no teacher assignments)
     if(copyFrom){
-      showLoading('Copiando grupos y materias…');
+      showLoading('Copiando grupos y catálogo de materias…');
       const oldGrupos=await dbGet('grupos',`ciclo_id=eq.${copyFrom}`);
       for(const g of oldGrupos){
-        const [newG]=await dbPost('grupos',{ciclo_id:newCiclo.id,clave:g.clave,semestre:g.semestre,turno:g.turno,especialidad:g.especialidad});
-        const oldMaterias=await dbGet('materias',`grupo_id=eq.${g.id}`);
-        for(const m of oldMaterias){
-          await dbPost('materias',{grupo_id:newG.id,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab,maestro_lab_id:m.maestro_lab_id});
-        }
+        await dbPost('grupos',{ciclo_id:newCiclo.id,clave:g.clave,semestre:g.semestre,turno:g.turno,especialidad:g.especialidad});
+      }
+      const oldCat=await dbGet('materias_catalogo',`ciclo_id=eq.${copyFrom}&order=semestre.asc,nombre.asc`);
+      for(const m of oldCat){
+        await dbPost('materias_catalogo',{ciclo_id:newCiclo.id,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab});
       }
     }
 
@@ -2123,8 +2383,11 @@ async function saveNuevoCiclo(){
     closeM('modal-ciclo');
     // Reset local cache
     groups[currentCicloId]=null;subjects[currentCicloId]=null;schedule[currentCicloId]=null;
+    catalogo[currentCicloId]=null;asignDet[currentCicloId]=null;asignGrupo[currentCicloId]=null;
     selGroup=null;suggestions=[];
-    fillSemSels();renderGrupos();fillGrpSel();renderAsigStats();filterHorGrp();fillPrSel();
+    fillSemSels();
+    await ensureGroups();
+    renderGrupos();fillGrpSel();renderAsigStats();filterHorGrp();fillPrSel();
     toast(`Ciclo "${nombre}" creado ✓`);
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
@@ -2145,8 +2408,8 @@ async function ensureGroups(){
   if(groups[currentCicloId])return;
   showLoading('Cargando grupos…');
   try{
-    const rows=await dbGet('grupos',`ciclo_id=eq.${currentCicloId}&order=clave.asc`);
-    groups[currentCicloId]=rows.map(r=>({id:r.id,clave:r.clave,sem:r.semestre,turno:r.turno,especialidad:r.especialidad}));
+    const rows=await dbGet('grupos',`ciclo_id=eq.${currentCicloId}&order=clave.asc&select=*,asignaciones(count)`);
+    groups[currentCicloId]=rows.map(r=>({id:r.id,clave:r.clave,sem:r.semestre,turno:r.turno,especialidad:r.especialidad,matCount:r.asignaciones?.[0]?.count??0}));
   }catch(e){toast('Error cargando grupos','err');groups[currentCicloId]=[];}
   if(!subjects[currentCicloId])subjects[currentCicloId]={};
   hideLoading();
@@ -2159,6 +2422,32 @@ async function ensureSubjects(groupDbId){
     const rows=await dbGet('materias',`grupo_id=eq.${groupDbId}&order=nombre.asc`);
     subjects[currentCicloId][groupDbId]=rows.map(r=>({id:r.id,name:r.nombre,hrs:r.hrs,lab:r.hrs_lab,labTeacherId:r.maestro_lab_id}));
   }catch(e){subjects[currentCicloId][groupDbId]=[];}
+}
+
+async function ensureCatalogo(cicloId){
+  if(catalogo[cicloId])return;
+  try{
+    const rows=await dbGet('materias_catalogo',`ciclo_id=eq.${cicloId}&order=semestre.asc,nombre.asc`);
+    catalogo[cicloId]=rows;
+  }catch(e){catalogo[cicloId]=[];}
+}
+
+async function ensureAsignaciones(cicloId,materiaId){
+  if(!asignDet[cicloId])asignDet[cicloId]={};
+  if(asignDet[cicloId][materiaId]!==undefined)return;
+  try{
+    const rows=await dbGet('asignaciones',`materia_id=eq.${materiaId}`);
+    asignDet[cicloId][materiaId]=rows;
+  }catch(e){asignDet[cicloId][materiaId]=[];}
+}
+
+async function ensureAsignacionesGrupo(cicloId,grupoDbId){
+  if(!asignGrupo[cicloId])asignGrupo[cicloId]={};
+  if(asignGrupo[cicloId][grupoDbId]!==undefined)return;
+  try{
+    const rows=await dbGet('asignaciones',`grupo_id=eq.${grupoDbId}&select=*,materias_catalogo(*)`);
+    asignGrupo[cicloId][grupoDbId]=rows;
+  }catch(e){asignGrupo[cicloId][grupoDbId]=[];}
 }
 
 async function ensureSchedule(groupDbId){
@@ -2242,16 +2531,41 @@ saveGrupo=async function(){
         await dbPatch('grupos',`id=eq.${g.id}`,{clave:id_input,semestre:sem,turno,especialidad});
         g.clave=id_input;g.sem=sem;g.turno=turno;g.especialidad=especialidad;
       }
+      selGroup=id_input;
+      closeM('modal-grupo');
+      fillSemSels();fillGrpSel();renderGrupos();
+      toast('Grupo guardado ✓');
     } else {
       if((groups[currentCicloId]||[]).find(g=>g.clave===id_input)){toast('ID ya existe','err');hideLoading();return;}
       const [row]=await dbPost('grupos',{ciclo_id:currentCicloId,clave:id_input,semestre:sem,turno,especialidad});
+      const newGrp={id:row.id,clave:row.clave,sem:row.semestre,turno:row.turno,especialidad:row.especialidad,matCount:0};
       if(!groups[currentCicloId])groups[currentCicloId]=[];
-      groups[currentCicloId].push({id:row.id,clave:row.clave,sem:row.semestre,turno:row.turno,especialidad:row.especialidad});
+      groups[currentCicloId].push(newGrp);
+      // Auto-crear asignaciones para materias troncales y CFP del mismo semestre
+      await ensureCatalogo(currentCicloId);
+      const matsParaGrupo=(catalogo[currentCicloId]||[]).filter(m=>{
+        if(m.semestre!=sem)return false;
+        if(m.tipo==='troncal')return true;
+        if(m.tipo==='cfp')return m.especialidad===especialidad;
+        return false;
+      });
+      let created=0;
+      for(const mat of matsParaGrupo){
+        try{
+          await dbPost('asignaciones',{materia_id:mat.id,grupo_id:row.id,maestro_id:null,maestro_lab_id:null});
+          if(!asignDet[currentCicloId])asignDet[currentCicloId]={};
+          if(!asignDet[currentCicloId][mat.id])asignDet[currentCicloId][mat.id]=[];
+          asignDet[currentCicloId][mat.id].push({materia_id:mat.id,grupo_id:row.id,maestro_id:null,maestro_lab_id:null});
+          if(asignGrupo[currentCicloId])delete asignGrupo[currentCicloId][row.id];
+          newGrp.matCount=(newGrp.matCount||0)+1;
+          created++;
+        }catch(e){/* ya existe */}
+      }
+      selGroup=id_input;
+      closeM('modal-grupo');
+      fillSemSels();fillGrpSel();renderGrupos();
+      toast(created?`Grupo guardado · ${created} materias asignadas ✓`:'Grupo guardado ✓');
     }
-    selGroup=id_input;
-    closeM('modal-grupo');
-    fillSemSels();fillGrpSel();renderGrupos();
-    toast('Grupo guardado ✓');
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
 };
@@ -2566,7 +2880,7 @@ selGrp=async function(id){
 
 const _origRenderMaterias=renderMaterias;
 renderMaterias=async function(){
-  const gid=document.getElementById('m-grp-sel').value;
+  const gid=(document.getElementById('m-grp-sel')||{}).value;
   if(gid){
     const g=(groups[currentCicloId]||[]).find(x=>x.clave===gid||x.id===gid);
     if(g){
