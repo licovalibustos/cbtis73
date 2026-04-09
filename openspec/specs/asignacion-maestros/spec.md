@@ -36,13 +36,13 @@ El sistema SHALL mantener registros en `asignaciones` que vinculan cada materia 
 ### Requirement: Competencias de maestros vinculadas a plantillas globales
 El sistema SHALL almacenar las competencias de cada maestro como referencias a `materias_plantilla` (por `plantilla_id`) en lugar de strings de texto libre, garantizando que el match con el catálogo sea exacto y no se rompa ante correcciones de nombre.
 
-#### Scenario: Agregar competencia desde picker
-- **WHEN** el admin abre el modal de competencias de un maestro
-- **THEN** el sistema muestra un picker filtrable con todos los registros de `materias_plantilla`; el admin selecciona uno y se guarda `{ maestro_id, plantilla_id }` en `competencias`
+#### Scenario: Agregar competencia desde selector
+- **WHEN** el admin abre el modal de competencias de un maestro y escribe en el campo de búsqueda
+- **THEN** el sistema muestra chips filtrables con los registros de `materias_plantilla` que coinciden; el admin selecciona uno y se guarda `{ maestro_id, plantilla_id }` en `competencias`
 
-#### Scenario: Agregar competencia con nombre nuevo
-- **WHEN** el admin escribe un nombre que no existe en `materias_plantilla`
-- **THEN** el sistema crea el registro en `materias_plantilla` y luego registra la competencia con el nuevo `plantilla_id`
+#### Scenario: Intentar agregar una materia que no existe en el catálogo
+- **WHEN** el admin escribe un nombre que no corresponde a ningún registro en `materias_plantilla` y presiona guardar
+- **THEN** el sistema muestra un mensaje de error "Materia no encontrada. Agrégala primero en el catálogo." y no crea el registro; para agregar esa materia, el admin debe ir al catálogo primero
 
 #### Scenario: Motor encuentra maestros competentes por plantilla_id
 - **WHEN** el motor busca maestros para una materia del catálogo con `plantilla_id = X`
