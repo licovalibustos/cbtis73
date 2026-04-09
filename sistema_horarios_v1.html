@@ -553,9 +553,8 @@ input::placeholder{color:var(--ink3);}
         <input type="hidden" id="mc-plantilla-id">
         <input type="text" id="mc-name" placeholder="Buscar materia…" style="width:100%;text-transform:uppercase" oninput="compSuggest()" autocomplete="off">
         <div id="comp-suggestions" style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem"></div>
-        <div id="comp-create" style="margin-top:.3rem;display:none"></div>
       </div>
-      <div style="font-size:.72rem;color:var(--ink2)">💡 Selecciona una materia de la lista o escribe un nombre nuevo para crearla</div>
+      <div style="font-size:.72rem;color:var(--ink2)">💡 Selecciona una materia de la lista. Si no existe, agrégala primero en el catálogo.</div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-comp')">Cancelar</button>
@@ -1512,7 +1511,6 @@ function openCompModal(tid){
   document.getElementById('mc-name').value='';
   document.getElementById('mc-plantilla-id').value='';
   document.getElementById('comp-suggestions').innerHTML='';
-  document.getElementById('comp-create').style.display='none';
   editMateriaGid=tid; // reuse variable for teacher id
   document.getElementById('modal-comp').classList.add('open');
   compSuggest();
@@ -1522,19 +1520,10 @@ function compSuggest(){
   const q=(document.getElementById('mc-name').value||'').toUpperCase().trim();
   document.getElementById('mc-plantilla-id').value='';
   const filtered=plantillas.filter(p=>!q||p.nombre.includes(q));
-  const exactMatch=plantillas.some(p=>p.nombre===q);
   document.getElementById('comp-suggestions').innerHTML=filtered.slice(0,12).map(p=>{
     const safe=p.nombre.replace(/'/g,"\\'");
     return `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp('${p.id}','${safe}')">${p.nombre}</span>`;
   }).join('');
-  const createEl=document.getElementById('comp-create');
-  if(!exactMatch&&q){
-    const safe=q.replace(/'/g,"\\'");
-    createEl.style.display='';
-    createEl.innerHTML=`<span class="tag t-green" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp(null,'${safe}')" title="Crear nueva plantilla">+ Crear \"${q}\"</span>`;
-  } else {
-    createEl.style.display='none';
-  }
 }
 
 function selectPlantillaComp(pid,nombre){
@@ -2724,10 +2713,9 @@ saveComp=async function(){
       if(existing){
         pid=existing.id;
       } else {
-        const [np]=await dbPost('materias_plantilla',{nombre});
-        plantillas.push(np);
-        plantillas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-        pid=np.id;
+        hideLoading();
+        toast('Materia no encontrada. Agrégala primero en el catálogo.','err');
+        return;
       }
     }
     await dbPost('competencias',{maestro_id:tid,plantilla_id:pid});
