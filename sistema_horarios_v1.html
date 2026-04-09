@@ -558,7 +558,7 @@ input::placeholder{color:var(--ink3);}
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-comp')">Cancelar</button>
-      <button class="btn btn-green" onclick="saveComp()">Agregar competencia</button>
+      <button id="btn-save-comp" class="btn btn-green" onclick="saveComp()" disabled>Agregar competencia</button>
     </div>
   </div>
 </div>
@@ -1511,6 +1511,7 @@ function openCompModal(tid){
   document.getElementById('mc-name').value='';
   document.getElementById('mc-plantilla-id').value='';
   document.getElementById('comp-suggestions').innerHTML='';
+  document.getElementById('btn-save-comp').disabled=true;
   editMateriaGid=tid; // reuse variable for teacher id
   document.getElementById('modal-comp').classList.add('open');
   compSuggest();
@@ -1530,7 +1531,7 @@ function selectPlantillaComp(pid,nombre){
   document.getElementById('mc-name').value=nombre;
   document.getElementById('mc-plantilla-id').value=pid||'';
   document.getElementById('comp-suggestions').innerHTML='';
-  document.getElementById('comp-create').style.display='none';
+  document.getElementById('btn-save-comp').disabled=!pid;
 }
 
 function saveComp(){
