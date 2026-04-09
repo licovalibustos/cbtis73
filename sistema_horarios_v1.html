@@ -67,7 +67,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .vbody{flex:1;overflow-y:auto;padding:1.2rem 1.4rem;}
 
 /* ── SIDEBAR ── */
-.sb{width:265px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;}
+.sb{width:295px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;}
 .sb-head{padding:.65rem .9rem;border-bottom:1px solid var(--bdr);font-family:var(--fh);font-weight:700;font-size:.7rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between;}
 .sb-search{padding:.55rem .75rem;border-bottom:1px solid var(--bdr);}
 .sb-scroll{flex:1;overflow-y:auto;}
@@ -548,6 +548,29 @@ input::placeholder{color:var(--ink3);}
   <div class="modal" style="width:480px">
     <div class="mh"><div><div class="mt" id="mc-t">Agregar competencia</div><div class="ms" id="mc-s"></div></div><button class="mx" onclick="closeM('modal-comp')">✕</button></div>
     <div class="mb">
+      <div class="frow" style="gap:.6rem;margin-bottom:.4rem">
+        <div class="field" style="flex:1">
+          <label>Semestre</label>
+          <select id="mc-sem" style="width:100%" onchange="compSuggest()">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1">
+          <label>Tipo</label>
+          <select id="mc-tipo" style="width:100%" onchange="compSuggest()">
+            <option value="">— Todos —</option>
+            <option value="troncal">Troncal</option>
+            <option value="optativa">Optativa</option>
+            <option value="cfp">CFP</option>
+          </select>
+        </div>
+      </div>
+      <div id="mc-esp-wrap" style="margin-bottom:.4rem;display:none">
+        <div class="field">
+          <label>Especialidad</label>
+          <select id="mc-esp" style="width:100%" onchange="compSuggest()"></select>
+        </div>
+      </div>
       <div class="field">
         <label>Materia que puede impartir</label>
         <input type="hidden" id="mc-plantilla-id">
@@ -906,7 +929,8 @@ function renderGrupos(){
   if(!groups[currentCicloId])return;
   const semF=document.getElementById('g-sem-f').value;
   const turF=document.getElementById('g-tur-f').value;
-  const gs=groups[currentCicloId].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF));
+  const gs=groups[currentCicloId].filter(g=>(!semF||g.sem==semF)&&(!turF||g.turno===turF))
+    .sort((a,b)=>a.sem-b.sem||(a.especialidad||'').localeCompare(b.especialidad||'')||a.clave.localeCompare(b.clave,'es'));
   document.getElementById('g-count').textContent=gs.length;
 
   document.getElementById('g-list').innerHTML=gs.map(g=>{
@@ -1075,6 +1099,8 @@ function renderCatalogo(sem){
   const byTipo={troncal:[],optativa:[],cfp:[]};
   mats.forEach(m=>{const t=m.tipo||'troncal';if(!byTipo[t])byTipo[t]=[];byTipo[t].push(m);});
   byTipo.cfp.sort((a,b)=>(a.especialidad||'').localeCompare(b.especialidad||'')||a.nombre.localeCompare(b.nombre,'es'));
+  byTipo.troncal.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  byTipo.optativa.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   const espMap=Object.fromEntries(ESPECIALIDADES.map(e=>[e.code,e.label]));
   const tipLbl={troncal:'Troncales',optativa:'Optativas',cfp:'CFP / Sub-módulos'};
   let html='';
@@ -1564,26 +1590,62 @@ function renderMaestroDetail(tid){
   `;
 }
 
-function openCompModal(tid){
+async function openCompModal(tid){
   document.getElementById('mc-t').textContent='Agregar competencia';
   document.getElementById('mc-s').textContent=T(tid)?.name||tid;
   document.getElementById('mc-name').value='';
   document.getElementById('mc-plantilla-id').value='';
-  document.getElementById('comp-suggestions').innerHTML='';
+  document.getElementById('comp-suggestions').innerHTML='<span style="font-size:.75rem;color:var(--ink3)">Cargando…</span>';
   document.getElementById('btn-save-comp').disabled=true;
+  // populate semestre options from current cycle
+  const c=ciclos.find(x=>x.id===currentCicloId);
+  const sems=CYCLE_SEMS[c?.tipo||cycle];
+  document.getElementById('mc-sem').innerHTML='<option value="">— Todos —</option>'+sems.map(s=>`<option value="${s}">${s}°</option>`).join('');
+  document.getElementById('mc-sem').value='';
+  document.getElementById('mc-tipo').value='';
+  document.getElementById('mc-esp').value='';
+  document.getElementById('mc-esp-wrap').style.display='none';
+  delete document.getElementById('mc-esp-wrap').dataset.populated;
   editMateriaGid=tid; // reuse variable for teacher id
   document.getElementById('modal-comp').classList.add('open');
+  await ensureCatalogo(currentCicloId);
   compSuggest();
 }
 
 function compSuggest(){
   const q=(document.getElementById('mc-name').value||'').toUpperCase().trim();
+  const semF=document.getElementById('mc-sem').value;
+  const tipoF=document.getElementById('mc-tipo').value;
+  const wrap=document.getElementById('mc-esp-wrap');
+  if(tipoF==='cfp'){
+    if(!wrap.dataset.populated){
+      document.getElementById('mc-esp').innerHTML='<option value="">— Todas —</option>'+
+        ESPECIALIDADES.map(e=>`<option value="${e.code}">${e.label}</option>`).join('');
+      wrap.dataset.populated='1';
+    }
+    wrap.style.display='block';
+  }else{
+    wrap.style.display='none';
+    document.getElementById('mc-esp').value='';
+  }
+  const espF=document.getElementById('mc-esp').value;
   document.getElementById('mc-plantilla-id').value='';
-  const filtered=plantillas.filter(p=>!q||p.nombre.includes(q));
-  document.getElementById('comp-suggestions').innerHTML=filtered.slice(0,12).map(p=>{
-    const safe=p.nombre.replace(/'/g,"\\'");
-    return `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp('${p.id}','${safe}')">${p.nombre}</span>`;
+  const seen=new Set();
+  const filtered=(catalogo[currentCicloId]||[]).filter(m=>{
+    if(semF&&m.semestre!=semF)return false;
+    if(tipoF&&m.tipo!==tipoF)return false;
+    if(espF&&m.especialidad!==espF)return false;
+    if(q&&!(m.nombre||'').toUpperCase().includes(q))return false;
+    if(!m.plantilla_id)return false;
+    if(seen.has(m.plantilla_id))return false;
+    seen.add(m.plantilla_id);return true;
+  }).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+  const limit=semF||tipoF||q?20:10;
+  const html=filtered.slice(0,limit).map(m=>{
+    const safe=(m.nombre||'').replace(/'/g,"\\'");
+    return `<span class="tag t-blue" style="cursor:pointer;padding:.2rem .55rem" onclick="selectPlantillaComp('${m.plantilla_id}','${safe}')">${m.nombre}</span>`;
   }).join('');
+  document.getElementById('comp-suggestions').innerHTML=html||'<span style="font-size:.75rem;color:var(--ink3)">Sin materias para los filtros seleccionados</span>';
 }
 
 function selectPlantillaComp(pid,nombre){
