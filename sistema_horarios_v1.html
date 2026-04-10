@@ -2673,7 +2673,7 @@ async function ensureTeachers(){
   try{
     const rows=await dbGet('maestros','order=nombre.asc');
     TEACHERS.length=0;
-    rows.forEach(r=>TEACHERS.push({id:r.id,name:r.nombre,hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,_loaded:true}));
+    rows.forEach(r=>TEACHERS.push({id:r.id,name:r.nombre,rfc:r.rfc||null,categoria:r.categoria||null,hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,_loaded:true}));
   }catch(e){console.warn('Using local TEACHERS fallback');}
 }
 
