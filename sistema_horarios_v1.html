@@ -621,19 +621,43 @@ input::placeholder{color:var(--ink3);}
         <div class="field"><label>Categoría</label>
           <select id="mte-cat" style="width:100%" onchange="mteAutoHrs()">
             <option value="">— Selecciona —</option>
-            <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
-            <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
-            <option value="PROF TIT. &quot;C&quot; T/C">Prof. Tit. "C" T/C (40h)</option>
-            <option value="PROF TIT. &quot;A&quot; 3/4">Prof. Tit. "A" 3/4 Tiempo (30h)</option>
-            <option value="PROF TIT. &quot;B&quot; 3/4">Prof. Tit. "B" 3/4 Tiempo (30h)</option>
-            <option value="PROF TIT. &quot;C&quot; 3/4">Prof. Tit. "C" 3/4 Tiempo (30h)</option>
-            <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
-            <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
-            <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
-            <option value="INTERINO T/C">Interino T/C (40h)</option>
-            <option value="INTERINO 3/4">Interino 3/4 Tiempo (30h)</option>
-            <option value="INTERINO 1/2">Interino 1/2 Tiempo (20h)</option>
-            <option value="OTRO">Otro</option>
+            <optgroup label="Titular">
+              <option value="PROF TIT. &quot;A&quot; T/C">Prof. Tit. "A" T/C (40h)</option>
+              <option value="PROF TIT. &quot;B&quot; T/C">Prof. Tit. "B" T/C (40h)</option>
+              <option value="PROF TIT. &quot;C&quot; T/C">Prof. Tit. "C" T/C (40h)</option>
+              <option value="PROF TIT. &quot;A&quot; 3/4">Prof. Tit. "A" 3/4 Tiempo (30h)</option>
+              <option value="PROF TIT. &quot;B&quot; 3/4">Prof. Tit. "B" 3/4 Tiempo (30h)</option>
+              <option value="PROF TIT. &quot;C&quot; 3/4">Prof. Tit. "C" 3/4 Tiempo (30h)</option>
+              <option value="PROF TIT. &quot;D&quot; 3/4">Prof. Tit. "D" 3/4 Tiempo (30h)</option>
+              <option value="PROF TIT. &quot;A&quot; 1/2">Prof. Tit. "A" 1/2 Tiempo (20h)</option>
+              <option value="PROF TIT. &quot;B&quot; 1/2">Prof. Tit. "B" 1/2 Tiempo (20h)</option>
+              <option value="PROF TIT. &quot;C&quot; 1/2">Prof. Tit. "C" 1/2 Tiempo (20h)</option>
+            </optgroup>
+            <optgroup label="Asociado">
+              <option value="PROF ASOC. &quot;A&quot; T/C">Prof. Asoc. "A" T/C (40h)</option>
+              <option value="PROF ASOC. &quot;A&quot; 3/4">Prof. Asoc. "A" 3/4 Tiempo (30h)</option>
+              <option value="PROF ASOC. &quot;A&quot; 1/2">Prof. Asoc. "A" 1/2 Tiempo (20h)</option>
+              <option value="PROF ASOC. &quot;B&quot; 3/4">Prof. Asoc. "B" 3/4 Tiempo (30h)</option>
+              <option value="PROF ASOC. &quot;B&quot; 1/2">Prof. Asoc. "B" 1/2 Tiempo (20h)</option>
+              <option value="PROF ASOC. &quot;C&quot; 3/4">Prof. Asoc. "C" 3/4 Tiempo (30h)</option>
+              <option value="PROF ASOC. &quot;C&quot; 1/2">Prof. Asoc. "C" 1/2 Tiempo (20h)</option>
+            </optgroup>
+            <optgroup label="Asignatura">
+              <option value="PROF ASIG. &quot;A&quot;">Prof. de Asignatura "A"</option>
+              <option value="PROF ASIG. &quot;B&quot;">Prof. de Asignatura "B"</option>
+              <option value="PROF ASIG. &quot;C&quot;">Prof. de Asignatura "C"</option>
+            </optgroup>
+            <optgroup label="Técnico Docente">
+              <option value="TEC. DOC. ASIG. &quot;A&quot;">Téc. Doc. de Asignatura "A"</option>
+              <option value="TEC. DOC. ASIG. &quot;B&quot;">Téc. Doc. de Asignatura "B"</option>
+              <option value="TEC. DOC. ASOC. A T/C">Téc. Doc. Asoc. "A" T/C (40h)</option>
+            </optgroup>
+            <optgroup label="Otros">
+              <option value="INTERINO T/C">Interino T/C (40h)</option>
+              <option value="INTERINO 3/4">Interino 3/4 Tiempo (30h)</option>
+              <option value="INTERINO 1/2">Interino 1/2 Tiempo (20h)</option>
+              <option value="OTRO">Otro</option>
+            </optgroup>
           </select>
         </div>
       </div>
