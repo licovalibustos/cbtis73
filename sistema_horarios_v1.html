@@ -192,6 +192,7 @@ input::placeholder{color:var(--ink3);}
 .field label{display:block;font-size:.65rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.28rem;}
 .field select,.field input{width:100%;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+.btn-warn{background:#fff3cd;color:#856404;border:1.5px solid #f0c040;}
 
 /* ── PROGRESS BAR ── */
 .pbar{height:3px;background:var(--bdr);border-radius:2px;overflow:hidden;margin-top:4px;}
@@ -692,6 +693,30 @@ input::placeholder{color:var(--ink3);}
   </div>
 </div>
 
+<!-- ══ MODAL CONFIRM ══ -->
+<div class="mbg" id="modal-confirm">
+  <div class="modal" style="width:380px">
+    <div class="mh">
+      <div><div class="mt" id="mconfirm-title"></div><div class="ms" id="mconfirm-sub"></div></div>
+    </div>
+    <div class="mb" id="mconfirm-body" style="font-size:.85rem;color:var(--ink2);line-height:1.55"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" id="mconfirm-cancel">Cancelar</button>
+      <button class="btn btn-warn" id="mconfirm-ok"></button>
+    </div>
+  </div>
+</div>
+  <div class="modal">
+    <div class="mh"><div><div class="mt">Revisar sugerencia</div><div class="ms" id="apr-s"></div></div><button class="mx" onclick="closeM('modal-approve')">✕</button></div>
+    <div class="mb" id="apr-body"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-approve')">Cancelar</button>
+      <button class="btn btn-red btn-sm" onclick="rejectSug()">✗ Rechazar</button>
+      <button class="btn btn-green" onclick="approveSug()">✓ Aprobar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -854,6 +879,22 @@ function toast(msg,type=''){
   clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3000);
 }
 function closeM(id){document.getElementById(id).classList.remove('open');editCell=null;}
+
+function confirmDialog(title, subtitle, body, okLabel='Confirmar'){
+  return new Promise(resolve=>{
+    document.getElementById('mconfirm-title').textContent=title;
+    document.getElementById('mconfirm-sub').textContent=subtitle;
+    document.getElementById('mconfirm-body').textContent=body;
+    document.getElementById('mconfirm-ok').textContent=okLabel;
+    const el=document.getElementById('modal-confirm');
+    el.classList.add('open');
+    const ok=document.getElementById('mconfirm-ok');
+    const cancel=document.getElementById('mconfirm-cancel');
+    const cleanup=result=>{el.classList.remove('open');ok.onclick=null;cancel.onclick=null;resolve(result);};
+    ok.onclick=()=>cleanup(true);
+    cancel.onclick=()=>cleanup(false);
+  });
+}
 
 function go(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
@@ -3150,7 +3191,13 @@ renderMaterias=async function(){
 const _origSelDispTeacher=selDispTeacher;
 selDispTeacher=async function(tid){
   if(dispDirty&&selTeacher&&selTeacher!==tid){
-    if(!confirm('Hay cambios sin guardar en la disponibilidad de este maestro.\n¿Cambiar de maestro sin guardar?'))return;
+    const ok=await confirmDialog(
+      'Cambios sin guardar',
+      '¿Cambiar de maestro sin guardar?',
+      'La disponibilidad editada se perderá si no guardas antes.',
+      'Cambiar sin guardar'
+    );
+    if(!ok)return;
   }
   dispDirty=false;
   selTeacher=tid;
