@@ -65,6 +65,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .ag-cell.sp{background:var(--bg);border-color:var(--bdr);cursor:default;color:var(--ink3);font-size:.55rem;font-weight:400;}
 .ag-cell.sp::after{content:none;}
 .ag-span5{grid-column:span 5;}
+.ag-cell.slot-recess.neutral{background:#fff8e7;border-color:#c88840;color:#c88840;}
 
 /* ── HORARIO ── */
 .horario-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:1rem;overflow:hidden;}
@@ -132,23 +133,24 @@ const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
 const SLOTS={
   M:[
     {id:'m1',lbl:'7:00–7:50'},{id:'m2',lbl:'7:50–8:40'},{id:'m3',lbl:'8:40–9:30'},
-    {id:'r2a',lbl:'9:30–9:50',recess:true,rLbl:'☕ Receso'},
-    {id:'m4',lbl:'9:30–10:20'},
-    {id:'mx',lbl:'9:50–10:40',blocked:true},
-    {id:'r46a',lbl:'10:20–10:40',recess:true,rLbl:'☕ Receso'},
+    {id:'r2a',lbl:'9:30–9:50',recess:true,rLbl:'☕ Receso',forSem:[1,2]},
+    {id:'m4',lbl:'9:30–10:20',forSem:[3,4,5,6]},
+    {id:'mx',lbl:'9:50–10:40',forSem:[1,2]},
+    {id:'r46a',lbl:'10:20–10:40',recess:true,rLbl:'☕ Receso',forSem:[3,4,5,6]},
     {id:'m5',lbl:'10:40–11:25'},{id:'m6',lbl:'11:25–12:10'},
     {id:'m7',lbl:'12:10–12:55'},{id:'m8',lbl:'12:55–13:40'},
   ],
   V:[
     {id:'v1',lbl:'13:40–14:25'},{id:'v2',lbl:'14:25–15:10'},{id:'v3',lbl:'15:10–15:55'},
-    {id:'r2b',lbl:'15:55–16:15',recess:true,rLbl:'☕ Receso'},
-    {id:'v4',lbl:'15:55–16:40'},
-    {id:'vx',lbl:'16:15–17:00',blocked:true},
-    {id:'r46b',lbl:'16:40–17:00',recess:true,rLbl:'☕ Receso'},
+    {id:'r2b',lbl:'15:55–16:15',recess:true,rLbl:'☕ Receso',forSem:[1,2]},
+    {id:'v4',lbl:'15:55–16:40',forSem:[3,4,5,6]},
+    {id:'vx',lbl:'16:15–17:00',forSem:[1,2]},
+    {id:'r46b',lbl:'16:40–17:00',recess:true,rLbl:'☕ Receso',forSem:[3,4,5,6]},
     {id:'v5',lbl:'17:00–17:45'},{id:'v6',lbl:'17:45–18:30'},
     {id:'v7',lbl:'18:30–19:15'},{id:'v8',lbl:'19:15–20:00'},
   ]
 };
+const MUTEX_SLOTS=[['m4','mx'],['v4','vx']];
 
 const COLORS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840','#4a8810'];
 const ac=id=>COLORS[parseInt(id.replace(/\D/g,''))%COLORS.length];
@@ -244,14 +246,15 @@ function renderPage(){
     `;
     for(const slot of SLOTS[turno]){
       html+=`<div class="ag-th">${slot.lbl}</div>`;
-      if(slot.recess||slot.blocked){
-        html+=`<div class="ag-cell sp ag-span5">${slot.recess?(slot.rLbl||'☕'):'—'}</div>`;
+      if(slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5">—</div>`;
         continue;
       }
+      const extra=slot.recess?' slot-recess':'';
       for(let d=0;d<5;d++){
         const key=slot.id+'_'+d;
         const st=avail[key]||'neutral';
-        html+=`<div class="ag-cell ${st}" onclick="toggle('${key}',this)"></div>`;
+        html+=`<div class="ag-cell ${st}${extra}" onclick="toggle('${key}',this)"></div>`;
       }
     }
     html+=`</div></div>`;
@@ -270,7 +273,7 @@ function toggle(key,el){
   const cur=avail[key]||'neutral';
   const next=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
   avail[key]=next;
-  el.className='ag-cell '+next;
+  el.className='ag-cell '+next+(el.classList.contains('slot-recess')?' slot-recess':'');
 }
 
 async function renderHorario(){

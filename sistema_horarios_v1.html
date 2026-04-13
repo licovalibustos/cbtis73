@@ -122,6 +122,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .ag-cell.sp::after{content:none;}
 .ag-cell:not(.sp):hover{transform:scale(1.05);box-shadow:var(--sh);}
 .ag-span5{grid-column:span 5;}
+.ag-cell.slot-recess.neutral{background:var(--amber-lt);border-color:#c88840;color:var(--amber);}
 
 /* ── SCHED GRID ── */
 .sg{display:grid;grid-template-columns:86px repeat(5,1fr);gap:2px;min-width:520px;}
@@ -715,8 +716,8 @@ const SLOTS={
   M:[
     {id:'m1',lbl:'7:00–7:50'},{id:'m2',lbl:'7:50–8:40'},{id:'m3',lbl:'8:40–9:30'},
     {id:'r2a',lbl:'9:30–9:50',recess:true,forSem:[1,2]},
-    {id:'m4',lbl:'9:30–10:20'},
-    {id:'mx',lbl:'9:50–10:40',blocked:true},
+    {id:'m4',lbl:'9:30–10:20',forSem:[3,4,5,6]},
+    {id:'mx',lbl:'9:50–10:40',forSem:[1,2]},
     {id:'r46a',lbl:'10:20–10:40',recess:true,forSem:[3,4,5,6]},
     {id:'m5',lbl:'10:40–11:25'},{id:'m6',lbl:'11:25–12:10'},
     {id:'m7',lbl:'12:10–12:55'},{id:'m8',lbl:'12:55–13:40'},
@@ -724,13 +725,14 @@ const SLOTS={
   V:[
     {id:'v1',lbl:'13:40–14:25'},{id:'v2',lbl:'14:25–15:10'},{id:'v3',lbl:'15:10–15:55'},
     {id:'r2b',lbl:'15:55–16:15',recess:true,forSem:[1,2]},
-    {id:'v4',lbl:'15:55–16:40'},
-    {id:'vx',lbl:'16:15–17:00',blocked:true},
+    {id:'v4',lbl:'15:55–16:40',forSem:[3,4,5,6]},
+    {id:'vx',lbl:'16:15–17:00',forSem:[1,2]},
     {id:'r46b',lbl:'16:40–17:00',recess:true,forSem:[3,4,5,6]},
     {id:'v5',lbl:'17:00–17:45'},{id:'v6',lbl:'17:45–18:30'},
     {id:'v7',lbl:'18:30–19:15'},{id:'v8',lbl:'19:15–20:00'},
   ]
 };
+const MUTEX_SLOTS=[['m4','mx'],['v4','vx']];
 
 // Teachers from the real distribution file
 const TEACHERS=[];
@@ -826,7 +828,7 @@ const ini=n=>n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
 const COLS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840','#4a8810'];
 const ac=id=>COLS[parseInt(id.replace(/\D/g,''))%COLS.length];
 const allSlots=()=>[...SLOTS.M,...SLOTS.V];
-const assignable=t=>SLOTS[t].filter(s=>!s.recess&&!s.blocked);
+const assignable=(t,sem)=>SLOTS[t].filter(s=>!s.recess&&!s.blocked&&(!s.forSem||s.forSem.includes(sem)));
 const normSubj=s=>s.trim().toUpperCase();
 
 // All unique subject names across current cycle groups
@@ -923,6 +925,16 @@ function isConflict(tid,slotId,day,exGroup){
   for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
     if(gid===exGroup)continue;
     if(cells[key]&&cells[key].teacherId===tid)return true;
+  }
+  // Check mutex pairs (m4/mx and v4/vx overlap in time)
+  const mutexPair=MUTEX_SLOTS.find(p=>p.includes(slotId));
+  if(mutexPair){
+    const partner=mutexPair.find(s=>s!==slotId);
+    const pKey=partner+'_'+day;
+    for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
+      if(gid===exGroup)continue;
+      if(cells[pKey]&&cells[pKey].teacherId===tid)return true;
+    }
   }
   return false;
 }
@@ -1765,9 +1777,10 @@ function saveTeacher(){
     renderMaestrosList();
     toast('Maestro actualizado ✓');
   } else {
-    // New teacher — generate next ID
+    // New teacher — generate next ID (only consider T## format IDs, ignore UUIDs)
     const maxId=TEACHERS.reduce((max,t)=>{
-      const n=parseInt(t.id.replace(/\D/g,''))||0;
+      const m=t.id.match(/^T(\d+)$/i);
+      const n=m?parseInt(m[1]):0;
       return n>max?n:max;
     },0);
     const newId='T'+(String(maxId+1).padStart(2,'0'));
@@ -1852,14 +1865,15 @@ function renderDispGrid(tid){
     `;
     for(const slot of SLOTS[tur]){
       html+=`<div class="ag-th">${slot.lbl}</div>`;
-      if(slot.recess||slot.blocked){
-        html+=`<div class="ag-cell sp ag-span5">${slot.recess?'☕ Receso':'— Transición —'}</div>`;
+      if(slot.blocked){
+        html+=`<div class="ag-cell sp ag-span5">— Transición —</div>`;
         continue;
       }
+      const extra=slot.recess?' slot-recess':'';
       for(let d=0;d<5;d++){
         const key=slot.id+'_'+d;
         const st=av[key]||'neutral';
-        html+=`<div class="ag-cell ${st}"
+        html+=`<div class="ag-cell ${st}${extra}"
           onmousedown="dStart('${tid}','${key}','${st}')"
           onmouseenter="dMove('${tid}','${key}')"
           onclick="tglAv('${tid}','${key}')"></div>`;
@@ -1885,11 +1899,14 @@ function dMove(tid,key){
 document.addEventListener('mouseup',()=>{isDrag=false;dVal=null;});
 
 function refreshAg(key,st){
-  document.querySelectorAll(`[onmouseenter*="${key}"]`).forEach(el=>el.className='ag-cell '+st);
+  document.querySelectorAll(`[onmouseenter*="${key}"]`).forEach(el=>{
+    const isRecess=el.classList.contains('slot-recess');
+    el.className='ag-cell '+st+(isRecess?' slot-recess':'');
+  });
 }
 function setAll(tid,st){
   for(const tur of['M','V'])for(const s of SLOTS[tur]){
-    if(s.recess||s.blocked)continue;
+    if(s.blocked)continue;
     for(let d=0;d<5;d++)availability[tid][currentCicloId][s.id+'_'+d]=st;
   }
   renderDispGrid(tid);
@@ -1953,7 +1970,7 @@ async function runEngine(){
       }
 
       let hrsLeft=subj.hrs;
-      const slots=assignable(g.turno);
+      const slots=assignable(g.turno,g.sem);
 
       for(const slot of slots){
         if(hrsLeft<=0)break;
@@ -2213,12 +2230,12 @@ function renderHorario(){
   `;
 
   for(const slot of slots){
+    if(slot.forSem&&!slot.forSem.includes(g.sem))continue;
     html+=`<div class="sg-th">${slot.lbl}</div>`;
-    if(slot.recess&&slot.forSem?.includes(g.sem)){
+    if(slot.recess){
       html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl">☕ Receso · ${slot.lbl}</div></div>`;continue;
     }
-    if(slot.blocked){html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl">— Transición de recesos —</div></div>`;continue;}
-    if(slot.recess){html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl"></div></div>`;continue;}
+    if(slot.blocked){html+=`<div class="sg-cell recess" style="grid-column:span 5"><div class="rc-lbl">— Transición —</div></div>`;continue;}
 
     for(let d=0;d<5;d++){
       const key=slot.id+'_'+d;
@@ -2277,7 +2294,7 @@ function openCellEdit(gid,slotId,dayIdx){
   document.getElementById('mcell-day').value=dayIdx;
 
   const slotSel=document.getElementById('mcell-slot');
-  slotSel.innerHTML=assignable(g.turno).map(s=>`<option value="${s.id}" ${s.id===slotId?'selected':''}>${s.lbl}</option>`).join('');
+  slotSel.innerHTML=assignable(g.turno,g.sem).map(s=>`<option value="${s.id}" ${s.id===slotId?'selected':''}>${s.lbl}</option>`).join('');
 
   const subjSel=document.getElementById('mcell-subj');
   subjSel.innerHTML='<option value="">— Materia —</option>'+
@@ -2298,7 +2315,7 @@ function openCellManual(){
   const gid=document.getElementById('h-grp').value;
   if(!gid){toast('Selecciona un grupo','warn');return;}
   const g=G(gid);
-  openCellEdit(gid,assignable(g.turno)[0]?.id||'m1',0);
+  openCellEdit(gid,assignable(g.turno,g.sem)[0]?.id||'m1',0);
 }
 
 function cellAutoTeacher(){
@@ -2949,9 +2966,10 @@ saveTeacher=async function(){
       renderMaestrosList();
       toast('Maestro actualizado ✓');
     } else {
-      // New teacher — generate next ID
+      // New teacher — generate next ID (only consider T## format IDs, ignore UUIDs)
       const maxId=TEACHERS.reduce((max,t)=>{
-        const n=parseInt(t.id.replace(/\D/g,''))||0;
+        const m=t.id.match(/^T(\d+)$/i);
+        const n=m?parseInt(m[1]):0;
         return n>max?n:max;
       },0);
       const newId='T'+(String(maxId+1).padStart(2,'0'));
