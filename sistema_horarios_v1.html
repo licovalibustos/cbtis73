@@ -817,6 +817,7 @@ let suggestions=[];
 
 // UI state
 let selGroup=null, selTeacher=null, selSugIdx=null, editCell=null;
+let dispDirty=false;
 let editGrupoId=null, editMateriaIdx=null, editMateriaGid=null;
 
 // ═══════════════════════════════════════════
@@ -1829,7 +1830,15 @@ function renderMaestrosSb(){
   }).join('');
 }
 
-function selDispTeacher(tid){selTeacher=tid;renderMaestrosSb();renderDispGrid(tid);}
+function selDispTeacher(tid){
+  if(dispDirty&&selTeacher&&selTeacher!==tid){
+    if(!confirm('Hay cambios sin guardar en la disponibilidad de este maestro.\n¿Cambiar de maestro sin guardar?'))return;
+  }
+  dispDirty=false;
+  selTeacher=tid;
+  renderMaestrosSb();
+  renderDispGrid(tid);
+}
 
 function renderDispGrid(tid){
   const t=T(tid);if(!t)return;
@@ -1888,12 +1897,14 @@ function tglAv(tid,key){
   const av=availability[tid][currentCicloId];
   const cur=av[key]||'neutral';
   av[key]=cur==='neutral'?'avail':cur==='avail'?'unavail':'neutral';
+  dispDirty=true;
   refreshAg(key,av[key]);
 }
 function dStart(tid,key,cur){isDrag=true;dVal=cur==='avail'?'unavail':'avail';}
 function dMove(tid,key){
   if(!isDrag||!selTeacher)return;
   availability[selTeacher][currentCicloId][key]=dVal;
+  dispDirty=true;
   refreshAg(key,dVal);
 }
 document.addEventListener('mouseup',()=>{isDrag=false;dVal=null;});
@@ -1909,10 +1920,11 @@ function setAll(tid,st){
     if(s.blocked)continue;
     for(let d=0;d<5;d++)availability[tid][currentCicloId][s.id+'_'+d]=st;
   }
+  dispDirty=true;
   renderDispGrid(tid);
 }
 function saveDisp(){if(!selTeacher){toast('Selecciona un maestro','warn');return;}renderMaestrosSb();toast('Disponibilidad guardada ✓');}
-function clearDisp(){if(!selTeacher)return;availability[selTeacher][currentCicloId]={};renderDispGrid(selTeacher);renderMaestrosSb();toast('Limpiado','warn');}
+function clearDisp(){if(!selTeacher)return;availability[selTeacher][currentCicloId]={};dispDirty=false;renderDispGrid(selTeacher);renderMaestrosSb();toast('Limpiado','warn');}
 
 // ═══════════════════════════════════════════
 //  5. MOTOR DE ASIGNACIÓN
@@ -2938,6 +2950,7 @@ saveDisp=async function(){
       });
     }
     renderMaestrosSb();
+    dispDirty=false;
     toast('Disponibilidad guardada ✓');
   }catch(e){toast('Error guardando disponibilidad','err');}
   hideLoading();
