@@ -3149,6 +3149,10 @@ renderMaterias=async function(){
 
 const _origSelDispTeacher=selDispTeacher;
 selDispTeacher=async function(tid){
+  if(dispDirty&&selTeacher&&selTeacher!==tid){
+    if(!confirm('Hay cambios sin guardar en la disponibilidad de este maestro.\n¿Cambiar de maestro sin guardar?'))return;
+  }
+  dispDirty=false;
   selTeacher=tid;
   await ensureDisponibilidad(tid);
   renderMaestrosSb();renderDispGrid(tid);
