@@ -671,11 +671,62 @@ input::placeholder{color:var(--ink3);}
       <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.65rem .85rem;font-size:.72rem;color:var(--blue)">
         ℹ La <b>carga reglamentaria</b> es el máximo de horas frente a grupo. El motor no asignará más allá de ese límite.
       </div>
+      <div style="margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--bdr)">
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:.55rem">Datos del expediente <span style="font-weight:400;text-transform:none">(opcional)</span></div>
+        <div class="frow">
+          <div class="field"><label>Grado máximo de estudios</label><input type="text" id="mte-grado" placeholder="Ej: LICENCIATURA" style="width:100%;text-transform:uppercase"></div>
+          <div class="field"><label>Egresado de</label><input type="text" id="mte-egresado" placeholder="Ej: UMAN" style="width:100%;text-transform:uppercase"></div>
+        </div>
+        <div class="field"><label>Especialidad académica</label><input type="text" id="mte-especialidad-acad" placeholder="Ej: LIC. EN RELACIONES INDUSTRIALES" style="width:100%;text-transform:uppercase"></div>
+        <div class="field"><label>Departamento / Academia</label><input type="text" id="mte-departamento" placeholder="Ej: DOCENTES" style="width:100%;text-transform:uppercase"></div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-teacher')">Cancelar</button>
       <button class="btn btn-red btn-sm" id="mte-del-btn" style="display:none" onclick="deleteTeacher()">Eliminar maestro</button>
       <button class="btn btn-green" onclick="saveTeacher()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PLAZA ══ -->
+<div class="mbg" id="modal-plaza">
+  <div class="modal" style="max-width:420px">
+    <div class="mh">
+      <div><div class="mt" id="plz-title">Plaza presupuestal</div><div class="ms" id="plz-sub"></div></div>
+      <button class="mx" onclick="closeM('modal-plaza')">✕</button>
+    </div>
+    <div class="mb">
+      <div class="field"><label>Clave de plaza <span style="color:var(--red)">*</span></label><input type="text" id="plz-codigo" placeholder="Ej: 001234" style="width:100%;text-transform:uppercase"></div>
+      <div class="frow">
+        <div class="field"><label>Condición de nombramiento</label>
+          <select id="plz-condicion" style="width:100%">
+            <option value="">— Sin especificar —</option>
+            <option value="1">Base</option>
+            <option value="2">Interinato</option>
+            <option value="3">Otro</option>
+          </select>
+        </div>
+        <div class="field"><label>Turno</label>
+          <select id="plz-turno" style="width:100%">
+            <option value="">— Sin especificar —</option>
+            <option value="M">Matutino</option>
+            <option value="V">Vespertino</option>
+            <option value="A">Ambos</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Fecha ingreso SEP <span style="font-size:.65rem;color:var(--ink3)">(AAAA MM)</span></label><input type="text" id="plz-sep" placeholder="202001" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
+        <div class="field"><label>Fecha ingreso DGETI <span style="font-size:.65rem;color:var(--ink3)">(AAAA MM)</span></label><input type="text" id="plz-dgeti" placeholder="202006" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
+      </div>
+      <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.55rem .8rem;font-size:.7rem;color:var(--blue)">
+        ℹ Las fechas se ingresan como 6 dígitos: año (4) + mes (2). Ej: <b>202306</b> = junio 2023.
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-plaza')">Cancelar</button>
+      <button class="btn btn-green" onclick="savePlaza()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1583,6 +1634,18 @@ function renderMaestroDetail(tid){
       <button class="btn btn-blue btn-sm" onclick="copyTeacherLink('${tid}')" title="Copiar link de disponibilidad para enviar al maestro">🔗 Copiar link</button>
     </div>
 
+    <!-- ── EXPEDIENTE ── -->
+    ${(t.grado||t.egresado_de||t.especialidad_acad||t.departamento)?`
+    <div class="card" style="margin-bottom:.75rem">
+      <div class="ch">Datos del expediente</div>
+      <div class="cb" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.45rem .9rem;font-size:.72rem">
+        ${t.grado?`<div><span style="color:var(--ink3);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em">Grado</span><br><b>${t.grado}</b></div>`:''}
+        ${t.egresado_de?`<div><span style="color:var(--ink3);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em">Egresado de</span><br><b>${t.egresado_de}</b></div>`:''}
+        ${t.especialidad_acad?`<div style="grid-column:1/-1"><span style="color:var(--ink3);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em">Especialidad académica</span><br><b>${t.especialidad_acad}</b></div>`:''}
+        ${t.departamento?`<div style="grid-column:1/-1"><span style="color:var(--ink3);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em">Departamento</span><br><b>${t.departamento}</b></div>`:''}
+      </div>
+    </div>`:''}
+
     <!-- ── HORAS ── -->
     <div class="card" style="margin-bottom:.75rem">
       <div class="ch">Horas</div>
@@ -1664,6 +1727,37 @@ function renderMaestroDetail(tid){
             </div>`;
           }).join('')
         : `<div class="cb" style="color:var(--ink3);font-size:.75rem">Sin asignaciones en este ciclo</div>`}
+    </div>
+
+    <!-- ── PLAZAS PRESUPUESTALES ── -->
+    <div class="card" style="margin-top:.75rem">
+      <div class="ch">
+        Plazas presupuestales
+        <span class="tag ${(t.plazas||[]).length?'t-blue':'t-red'}">${(t.plazas||[]).length}</span>
+        <button class="btn btn-green btn-xs" onclick="openNewPlaza('${tid}')">+ Agregar</button>
+      </div>
+      <div class="cb" style="padding:0">
+        ${(t.plazas||[]).length
+          ? (t.plazas||[]).map(p=>{
+              const cond=['','Base','Interinato','Otro'][p.condicion_nom||0]||'—';
+              const turnoMap={'M':'Matutino','V':'Vespertino','A':'Ambos'};
+              const tur=turnoMap[p.turno]||'—';
+              const fmtD=s=>s&&/^\d{6}$/.test(s)?s.slice(4,6)+'/'+s.slice(0,4):'—';
+              return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem;border-bottom:1px solid var(--bdr)">
+                <span class="tag t-blue" style="font-size:.65rem;font-family:var(--fm);flex-shrink:0">${p.plaza}</span>
+                <div style="flex:1;font-size:.7rem">
+                  <div><b>${cond}</b> · ${tur}</div>
+                  <div style="color:var(--ink2);font-size:.65rem">SEP: ${fmtD(p.fecha_ingreso_sep)} · DGETI: ${fmtD(p.fecha_ingreso_dgeti)}</div>
+                </div>
+                <button class="btn btn-xs" onclick="openEditPlaza('${tid}','${p.id}')" title="Editar">✏</button>
+                <button class="btn btn-xs btn-red" onclick="deletePlaza('${tid}','${p.id}')" title="Eliminar">✕</button>
+              </div>`;
+            }).join('')
+          : `<div style="color:var(--ink3);font-size:.75rem;text-align:center;padding:.75rem 0">
+              Sin plazas registradas.<br>
+              <button class="btn btn-green btn-sm" style="margin-top:.5rem" onclick="openNewPlaza('${tid}')">+ Agregar plaza</button>
+            </div>`}
+      </div>
     </div>
   `;
 }
@@ -1766,6 +1860,10 @@ function openNewTeacher(){
   document.getElementById('mte-nom').value='';
   document.getElementById('mte-carga').value='';
   document.getElementById('mte-obs').value='';
+  document.getElementById('mte-grado').value='';
+  document.getElementById('mte-egresado').value='';
+  document.getElementById('mte-especialidad-acad').value='';
+  document.getElementById('mte-departamento').value='';
   document.getElementById('mte-del-btn').style.display='none';
   document.getElementById('modal-teacher').classList.add('open');
 }
@@ -1781,6 +1879,10 @@ function openEditTeacher(tid){
   document.getElementById('mte-nom').value=t.hrs_nom;
   document.getElementById('mte-carga').value=t.hrs_carga;
   document.getElementById('mte-obs').value=t.obs||'';
+  document.getElementById('mte-grado').value=t.grado||'';
+  document.getElementById('mte-egresado').value=t.egresado_de||'';
+  document.getElementById('mte-especialidad-acad').value=t.especialidad_acad||'';
+  document.getElementById('mte-departamento').value=t.departamento||'';
   document.getElementById('mte-del-btn').style.display='inline-flex';
   document.getElementById('modal-teacher').classList.add('open');
 }
@@ -1807,13 +1909,17 @@ function saveTeacher(){
   const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
   const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
   const obs=document.getElementById('mte-obs').value.trim()||null;
+  const grado=document.getElementById('mte-grado').value.trim().toUpperCase()||null;
+  const egresado_de=document.getElementById('mte-egresado').value.trim().toUpperCase()||null;
+  const especialidad_acad=document.getElementById('mte-especialidad-acad').value.trim().toUpperCase()||null;
+  const departamento=document.getElementById('mte-departamento').value.trim().toUpperCase()||null;
   if(!name){toast('El nombre no puede estar vacío','err');return;}
   if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
 
   if(editTeacherId){
     // Edit existing
     const t=T(editTeacherId);
-    if(t) Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+    if(t) Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento});
     closeM('modal-teacher');
     renderMaestroDetail(editTeacherId);
     renderMaestrosList();
@@ -1826,7 +1932,7 @@ function saveTeacher(){
       return n>max?n:max;
     },0);
     const newId='T'+(String(maxId+1).padStart(2,'0'));
-    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
+    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,plazas:[],_loaded:true});
     selTeacher=newId;
     closeM('modal-teacher');
     renderMaestrosList();
@@ -2741,9 +2847,22 @@ async function ensureSchedule(groupDbId){
 async function ensureTeachers(){
   if(TEACHERS.length>0&&TEACHERS[0]._loaded)return;
   try{
-    const rows=await dbGet('maestros','order=nombre.asc');
+    const [rows,plazas]=await Promise.all([
+      dbGet('maestros','order=nombre.asc'),
+      dbGet('maestros_plazas')
+    ]);
     TEACHERS.length=0;
-    rows.forEach(r=>TEACHERS.push({id:r.id,name:r.nombre,rfc:r.rfc||null,categoria:r.categoria||null,hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,_loaded:true}));
+    rows.forEach(r=>TEACHERS.push({
+      id:r.id,name:r.nombre,rfc:r.rfc||null,categoria:r.categoria||null,
+      hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,
+      grado:r.grado||null,egresado_de:r.egresado_de||null,
+      especialidad_acad:r.especialidad_acad||null,departamento:r.departamento||null,
+      plazas:[],_loaded:true
+    }));
+    plazas.forEach(p=>{
+      const t=TEACHERS.find(x=>x.id===p.maestro_id);
+      if(t)t.plazas.push(p);
+    });
   }catch(e){console.warn('Using local TEACHERS fallback');}
 }
 
@@ -2969,6 +3088,93 @@ delComp=async function(tid,enc){
   hideLoading();
 };
 
+// ══════════════════════════════════════════════
+// PLAZAS PRESUPUESTALES — CRUD
+// ══════════════════════════════════════════════
+
+let editPlazaId=null; // null = nueva plaza
+let editPlazaMaestroId=null;
+
+function openNewPlaza(tid){
+  editPlazaId=null;
+  editPlazaMaestroId=tid;
+  document.getElementById('plz-title').textContent='Nueva plaza';
+  document.getElementById('plz-sub').textContent=T(tid)?.name||tid;
+  document.getElementById('plz-codigo').value='';
+  document.getElementById('plz-condicion').value='';
+  document.getElementById('plz-turno').value='';
+  document.getElementById('plz-sep').value='';
+  document.getElementById('plz-dgeti').value='';
+  document.getElementById('modal-plaza').classList.add('open');
+}
+
+function openEditPlaza(tid,plazaId){
+  const t=T(tid); if(!t) return;
+  const p=(t.plazas||[]).find(x=>x.id===plazaId); if(!p) return;
+  editPlazaId=plazaId;
+  editPlazaMaestroId=tid;
+  document.getElementById('plz-title').textContent='Editar plaza';
+  document.getElementById('plz-sub').textContent=t.name;
+  document.getElementById('plz-codigo').value=p.plaza||'';
+  document.getElementById('plz-condicion').value=p.condicion_nom||'';
+  document.getElementById('plz-turno').value=p.turno||'';
+  document.getElementById('plz-sep').value=p.fecha_ingreso_sep||'';
+  document.getElementById('plz-dgeti').value=p.fecha_ingreso_dgeti||'';
+  document.getElementById('modal-plaza').classList.add('open');
+}
+
+async function savePlaza(){
+  const tid=editPlazaMaestroId;
+  const t=T(tid); if(!t){toast('Maestro no encontrado','err');return;}
+  const plaza=document.getElementById('plz-codigo').value.trim().toUpperCase();
+  const condicion_nom=parseInt(document.getElementById('plz-condicion').value)||null;
+  const turno=document.getElementById('plz-turno').value||null;
+  const fecha_ingreso_sep=document.getElementById('plz-sep').value.trim()||null;
+  const fecha_ingreso_dgeti=document.getElementById('plz-dgeti').value.trim()||null;
+
+  if(!plaza){toast('La clave de plaza es obligatoria','err');return;}
+  if(fecha_ingreso_sep&&!/^\d{6}$/.test(fecha_ingreso_sep)){
+    toast('Fecha SEP inválida — usa 6 dígitos: YYYYMM','err');return;
+  }
+  if(fecha_ingreso_dgeti&&!/^\d{6}$/.test(fecha_ingreso_dgeti)){
+    toast('Fecha DGETI inválida — usa 6 dígitos: YYYYMM','err');return;
+  }
+
+  showLoading('Guardando…');
+  try{
+    if(editPlazaId){
+      // Update
+      await dbPatch('maestros_plazas',`id=eq.${editPlazaId}`,{plaza,condicion_nom,turno,fecha_ingreso_sep,fecha_ingreso_dgeti});
+      const p=(t.plazas||[]).find(x=>x.id===editPlazaId);
+      if(p) Object.assign(p,{plaza,condicion_nom,turno,fecha_ingreso_sep,fecha_ingreso_dgeti});
+      toast('Plaza actualizada ✓');
+    } else {
+      // Create
+      const rows=await dbPost('maestros_plazas',{maestro_id:tid,plaza,condicion_nom,turno,fecha_ingreso_sep,fecha_ingreso_dgeti});
+      const newRow=Array.isArray(rows)?rows[0]:rows;
+      if(!t.plazas) t.plazas=[];
+      t.plazas.push(newRow);
+      toast('Plaza agregada ✓');
+    }
+    closeM('modal-plaza');
+    renderMaestroDetail(tid);
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+}
+
+async function deletePlaza(tid,plazaId){
+  const t=T(tid); if(!t) return;
+  if(!confirm('¿Eliminar esta plaza?')) return;
+  showLoading('Eliminando…');
+  try{
+    await dbDel('maestros_plazas',`id=eq.${plazaId}`);
+    if(t.plazas) t.plazas=t.plazas.filter(p=>p.id!==plazaId);
+    renderMaestroDetail(tid);
+    toast('Plaza eliminada','warn');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+}
+
 // ── Save disponibilidad to DB ──
 const _origSaveDisp=saveDisp;
 saveDisp=async function(){
@@ -3006,15 +3212,19 @@ saveTeacher=async function(){
   const hrs_nom=parseInt(document.getElementById('mte-nom').value)||0;
   const hrs_carga=parseInt(document.getElementById('mte-carga').value)||0;
   const obs=document.getElementById('mte-obs').value.trim()||null;
+  const grado=document.getElementById('mte-grado').value.trim().toUpperCase()||null;
+  const egresado_de=document.getElementById('mte-egresado').value.trim().toUpperCase()||null;
+  const especialidad_acad=document.getElementById('mte-especialidad-acad').value.trim().toUpperCase()||null;
+  const departamento=document.getElementById('mte-departamento').value.trim().toUpperCase()||null;
   if(!name){toast('El nombre no puede estar vacío','err');return;}
   if(!hrs_nom||!hrs_carga){toast('Define las horas de nombramiento y carga','err');return;}
   showLoading('Guardando…');
   try{
     if(editTeacherId){
       // Update existing
-      await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
+      await dbPatch('maestros',`id=eq.${editTeacherId}`,{nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento});
       const t=T(editTeacherId);
-      if(t)Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs});
+      if(t)Object.assign(t,{name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento});
       closeM('modal-teacher');
       renderMaestroDetail(editTeacherId);
       renderMaestrosList();
@@ -3027,8 +3237,8 @@ saveTeacher=async function(){
         return n>max?n:max;
       },0);
       const newId='T'+(String(maxId+1).padStart(2,'0'));
-      await dbPost('maestros',{id:newId,nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs});
-      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,_loaded:true});
+      await dbPost('maestros',{id:newId,nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento});
+      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,plazas:[],_loaded:true});
       selTeacher=newId;
       closeM('modal-teacher');
       renderMaestrosList();
