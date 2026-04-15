@@ -65,7 +65,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .ag-cell.sp{background:var(--bg);border-color:var(--bdr);cursor:default;color:var(--ink3);font-size:.55rem;font-weight:400;}
 .ag-cell.sp::after{content:none;}
 .ag-span5{grid-column:span 5;}
-.ag-cell.slot-recess.neutral{background:#fff8e7;border-color:#c88840;color:#c88840;}
+.ag-cell.slot-recess.neutral{background:var(--amber-lt);border-color:#c88840;color:var(--amber);}
 
 /* ── HORARIO ── */
 .horario-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:1rem;overflow:hidden;}
@@ -150,7 +150,7 @@ const SLOTS={
     {id:'v7',lbl:'18:30–19:15'},{id:'v8',lbl:'19:15–20:00'},
   ]
 };
-const MUTEX_SLOTS=[['m4','mx'],['v4','vx']];
+const MUTEX_SLOTS=[['m4','mx'],['v4','vx']]; // referencia del modelo; no se usa en este archivo
 
 const COLORS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840','#4a8810'];
 const ac=id=>COLORS[parseInt(id.replace(/\D/g,''))%COLORS.length];
