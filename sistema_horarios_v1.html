@@ -2093,6 +2093,36 @@ function subjectsFromAsignaciones(g){
   }).sort((a,b)=>a.name.localeCompare(b.name,'es'));
 }
 
+// Helper: returns best teacher for a pair of slots on a given day, or null
+function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
+  const keyA=slotA.id+'_'+d, keyB=slotB.id+'_'+d;
+  let bestT=null, bestScore=-1;
+  // Pass 1: prefer available teachers
+  for(const cand of candidates){
+    const avA=((availability[cand.id]||{})[currentCicloId]||{})[keyA]||'neutral';
+    const avB=((availability[cand.id]||{})[currentCicloId]||{})[keyB]||'neutral';
+    if(avA==='unavail'||avB==='unavail')continue;
+    if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
+    if(isUnavail(cand.id,slotA.id,d)||isUnavail(cand.id,slotB.id,d))continue;
+    const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
+    if(usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
+    const minAv=Math.min(avA==='avail'?100:65, avB==='avail'?100:65);
+    const score=minAv-(usedHrs/cand.hrs_carga*20);
+    if(score>bestScore){bestScore=score;bestT=cand;}
+  }
+  // Pass 2: fallback — allow unavail slots
+  if(!bestT){
+    for(const cand of candidates){
+      if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
+      const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
+      if(usedHrs+2>cand.hrs_carga+1)continue;
+      const score=20-(usedHrs/cand.hrs_carga*20);
+      if(score>bestScore){bestScore=score;bestT=cand;}
+    }
+  }
+  return bestT?{teacher:bestT, score:Math.round(Math.max(0,bestScore))}:null;
+}
+
 async function runEngine(){
   suggestions=[];
   const semF=document.getElementById('asig-sem').value;
@@ -2125,35 +2155,69 @@ async function runEngine(){
       const candidates=competentTeachers(subj.plantilla_id);
       if(!candidates.length){
         // No competent teacher — add warning suggestion
-        suggestions.push({groupId:g.id,subjectName:subj.name,slotId:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
         continue;
       }
 
       let hrsLeft=subj.hrs;
       const slots=assignable(g.turno,g.sem);
 
+      // --- Phase 1: place blocks (slotA + slotB consecutive) ---
+      // Outer loop: day; inner loop: find first available pair on that day
+      let daysWithBlock=0;
+      for(let d=0;d<5&&hrsLeft>=2;d++){
+        // Find first pair [slots[i], slots[i+1]] both free for this group
+        let placed=false;
+        for(let i=0;i<slots.length-1;i++){
+          const sA=slots[i], sB=slots[i+1];
+          const keyA=sA.id+'_'+d, keyB=sB.id+'_'+d;
+          // Both cells must be free in schedule
+          if((sched[g.id]||{})[keyA]||(sched[g.id]||{})[keyB])continue;
+          // Not already suggested for this group+key
+          if(suggestions.some(s=>s.groupId===g.id&&s.slotA===sA.id&&s.dayIdx===d&&s.status==='pending'))continue;
+          if(suggestions.some(s=>s.groupId===g.id&&s.slotA===sB.id&&s.dayIdx===d&&s.status==='pending'))continue;
+          // Find a teacher available for both slots
+          const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs);
+          if(!res)continue;
+          const {teacher:bestT,score}=res;
+          const avA=((availability[bestT.id]||{})[currentCicloId]||{})[keyA]||'neutral';
+          const avB=((availability[bestT.id]||{})[currentCicloId]||{})[keyB]||'neutral';
+          const availState=(avA==='unavail'||avB==='unavail')?'unavail':(avA==='avail'&&avB==='avail')?'avail':'neutral';
+          if(!tmpHrs[bestT.id])tmpHrs[bestT.id]=0;
+          tmpHrs[bestT.id]+=2;
+          suggestions.push({
+            groupId:g.id,subjectName:subj.name,
+            slotA:sA.id,slotB:sB.id,dayIdx:d,
+            teacherId:bestT.id,
+            score,availState,status:'pending'
+          });
+          hrsLeft-=2;
+          placed=true;
+          break;
+        }
+        if(placed)daysWithBlock++;
+      }
+
+      // --- Phase 2: fallback — place remaining hours one by one (original loop) ---
       for(const slot of slots){
         if(hrsLeft<=0)break;
         for(let d=0;d<5;d++){
           if(hrsLeft<=0)break;
           const key=slot.id+'_'+d;
           if((sched[g.id]||{})[key])continue;
-          // Already suggested for this group+key?
-          if(suggestions.some(s=>s.groupId===g.id&&s.slotId===slot.id&&s.dayIdx===d&&s.status==='pending'))continue;
+          // Skip cells already covered by an approved block
+          if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===slot.id||s.slotB===slot.id)&&s.dayIdx===d&&s.status==='pending'))continue;
 
-          // Score each candidate teacher
           let bestT=null,bestScore=-1;
           for(const cand of candidates){
             const av=((availability[cand.id]||{})[currentCicloId]||{})[key]||'neutral';
-            if(av==='unavail')continue; // skip hard unavailable unless no choice
+            if(av==='unavail')continue;
             if(isConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-            if(usedHrs>=cand.hrs_carga)continue; // carga llena
+            if(usedHrs>=cand.hrs_carga)continue;
             const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
             if(score>bestScore){bestScore=score;bestT=cand;}
           }
-
-          // If no avail candidate, try unavail ones (mark as warn)
           if(!bestT){
             for(const cand of candidates){
               if(isConflict(cand.id,slot.id,d,g.id))continue;
@@ -2163,16 +2227,14 @@ async function runEngine(){
               if(score>bestScore){bestScore=score;bestT=cand;}
             }
           }
-
           if(!bestT)continue;
 
           const availState=((availability[bestT.id]||{})[currentCicloId]||{})[key]||'neutral';
           if(!tmpHrs[bestT.id])tmpHrs[bestT.id]=0;
           tmpHrs[bestT.id]++;
-
           suggestions.push({
             groupId:g.id,subjectName:subj.name,
-            slotId:slot.id,dayIdx:d,
+            slotA:slot.id,slotB:null,dayIdx:d,
             teacherId:bestT.id,
             score:Math.round(Math.max(0,bestScore)),
             availState,status:'pending'
@@ -2180,9 +2242,10 @@ async function runEngine(){
           hrsLeft--;
         }
       }
+
       if(hrsLeft>0){
         // Some hours couldn't be placed
-        suggestions.push({groupId:g.id,subjectName:subj.name,slotId:null,dayIdx:null,teacherId:null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
       }
     }
   }
@@ -2207,12 +2270,24 @@ function renderSugList(){
     const sc=s.score>=80?'sc-hi':s.score>=50?'sc-md':'sc-lo';
     const stTag=s.status==='approved'?'<span class="tag t-green">✓</span>':s.status==='rejected'?'<span class="tag t-red">✗</span>':s.status==='no_teacher'?'<span class="tag t-red">Sin maestro competente</span>':s.status==='unplaceable'?'<span class="tag t-amber">Sin hueco</span>':'';
     const isProblem=s.status==='no_teacher'||s.status==='unplaceable';
+    const slotLbl=(()=>{
+      if(!s.slotA)return '';
+      const sA=allSlots().find(sl=>sl.id===s.slotA);
+      if(s.slotB){
+        const sB=allSlots().find(sl=>sl.id===s.slotB);
+        const start=sA?.lbl?.split('–')[0]||'';
+        const end=sB?.lbl?.split('–')[1]||'';
+        return start&&end?`${start}–${end}`:sA?.lbl||s.slotA;
+      }
+      return sA?.lbl||s.slotA;
+    })();
     return `<div class="sug-item ${selSugIdx===i?'sel':''} ${s.status!=='pending'?'done':''}" onclick="selSug(${i})" style="${isProblem?'background:var(--red-lt)':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.35rem">
         <div>
           <div style="font-family:var(--fh);font-weight:700;font-size:.74rem">${s.groupId}${s.dayIdx!==null?' · '+DAYS[s.dayIdx].slice(0,3):''}</div>
           <div style="font-size:.62rem;color:var(--ink2);margin-top:1px">${s.subjectName}</div>
           ${t?`<div style="font-size:.58rem;color:var(--ink3);margin-top:1px">${t.name.split(' ').slice(0,3).join(' ')}</div>`:''}
+          ${slotLbl?`<div style="font-size:.58rem;color:var(--ink3);margin-top:1px">${slotLbl}${s.slotB?' 📦':''}</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
           ${!isProblem?`<span class="score ${sc}">${s.score}%</span>`:''}
@@ -2229,13 +2304,26 @@ function selSug(i){
   const s=suggestions[i];
   if(!s||s.status!=='pending')return;
   const t=T(s.teacherId);
-  const slot=allSlots().find(sl=>sl.id===s.slotId);
-  const conflict=s.teacherId?isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId):false;
-  document.getElementById('apr-s').textContent=`${s.groupId} · ${s.slotId?DAYS[s.dayIdx]+' · '+slot?.lbl:''}`;
+  const slotA=allSlots().find(sl=>sl.id===s.slotA);
+  const slotB=s.slotB?allSlots().find(sl=>sl.id===s.slotB):null;
+  const slotRangeStr=(()=>{
+    if(!slotA)return '';
+    if(slotB){
+      const start=slotA.lbl?.split('–')[0]||'';
+      const end=slotB.lbl?.split('–')[1]||'';
+      return start&&end?`${start}–${end}`:slotA.lbl;
+    }
+    return slotA.lbl||'';
+  })();
+  const conflict=s.teacherId?(
+    isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId)||
+    (s.slotB?isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId):false)
+  ):false;
+  document.getElementById('apr-s').textContent=`${s.groupId} · ${s.slotA?DAYS[s.dayIdx]+' · '+slotRangeStr:''}`;
   document.getElementById('apr-body').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem">
       <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Grupo</div><div style="font-family:var(--fh);font-weight:800;font-size:1.05rem">${s.groupId}</div></div>
-      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Horario</div><div style="font-family:var(--fh);font-weight:700;font-size:.9rem">${s.slotId?DAYS[s.dayIdx]:'—'}</div><div style="font-size:.7rem;color:var(--ink2)">${slot?.lbl||''}</div></div>
+      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Horario</div><div style="font-family:var(--fh);font-weight:700;font-size:.9rem">${s.slotA?DAYS[s.dayIdx]:'—'}</div><div style="font-size:.7rem;color:var(--ink2)">${slotRangeStr}${slotB?' (bloque 2h)':''}</div></div>
     </div>
     <div class="card cb" style="margin-bottom:.75rem">
       <div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Materia</div>
@@ -2258,14 +2346,20 @@ function selSug(i){
 function approveSug(){
   if(selSugIdx===null)return;
   const s=suggestions[selSugIdx];
-  if(!s.slotId||!s.teacherId){toast('No se puede aprobar esta sugerencia','err');return;}
+  if(!s.slotA||!s.teacherId){toast('No se puede aprobar esta sugerencia','err');return;}
   s.status='approved';
   if(!schedule[currentCicloId])schedule[currentCicloId]={};
   if(!schedule[currentCicloId][s.groupId])schedule[currentCicloId][s.groupId]={};
-  const key=s.slotId+'_'+s.dayIdx;
-  const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
-  const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
-  schedule[currentCicloId][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+  const keyA=s.slotA+'_'+s.dayIdx;
+  const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
+  const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
+  schedule[currentCicloId][s.groupId][keyA]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflictA?'conflict':unavailA?'warn':'ok'};
+  if(s.slotB){
+    const keyB=s.slotB+'_'+s.dayIdx;
+    const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
+    const unavailB=isUnavail(s.teacherId,s.slotB,s.dayIdx);
+    schedule[currentCicloId][s.groupId][keyB]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflictB?'conflict':unavailB?'warn':'ok'};
+  }
   closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
   if(selTeacher)renderMaestroDetail(selTeacher);
   toast('Aprobada ✓');
@@ -2278,16 +2372,22 @@ function rejectSug(){
 }
 
 function approveAll(){
-  const pend=suggestions.filter(s=>s.status==='pending'&&s.slotId&&s.teacherId);
+  const pend=suggestions.filter(s=>s.status==='pending'&&s.slotA&&s.teacherId);
   if(!pend.length){toast('Sin sugerencias válidas pendientes','warn');return;}
   if(!schedule[currentCicloId])schedule[currentCicloId]={};
   for(const s of pend){
     s.status='approved';
     if(!schedule[currentCicloId][s.groupId])schedule[currentCicloId][s.groupId]={};
-    const key=s.slotId+'_'+s.dayIdx;
-    const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
-    const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
-    schedule[currentCicloId][s.groupId][key]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
+    const keyA=s.slotA+'_'+s.dayIdx;
+    const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
+    const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
+    schedule[currentCicloId][s.groupId][keyA]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflictA?'conflict':unavailA?'warn':'ok'};
+    if(s.slotB){
+      const keyB=s.slotB+'_'+s.dayIdx;
+      const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
+      const unavailB=isUnavail(s.teacherId,s.slotB,s.dayIdx);
+      schedule[currentCicloId][s.groupId][keyB]={subjectName:s.subjectName,teacherId:s.teacherId,status:conflictB?'conflict':unavailB?'warn':'ok'};
+    }
   }
   renderSugList();renderAsigStats();updConflict();
   toast(`${pend.length} aprobadas ✓`);
@@ -3317,24 +3417,38 @@ const _origApproveSug=approveSug;
 approveSug=async function(){
   if(selSugIdx===null)return;
   const s=suggestions[selSugIdx];
-  if(!s.slotId||!s.teacherId){toast('No se puede aprobar','err');return;}
+  if(!s.slotA||!s.teacherId){toast('No se puede aprobar','err');return;}
   const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId);
   if(!g){toast('Grupo no encontrado','err');return;}
-  const conflict=isConflict(s.teacherId,s.slotId,s.dayIdx,s.groupId);
-  const unavail=isUnavail(s.teacherId,s.slotId,s.dayIdx);
-  const status=conflict?'conflict':unavail?'warn':'ok';
+  const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
+  const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
+  const statusA=conflictA?'conflict':unavailA?'warn':'ok';
   showLoading('Aprobando…');
   try{
-    const [row]=await fetch(SUPA_URL+'/rest/v1/horario',{
+    // Write slotA row
+    const [rowA]=await fetch(SUPA_URL+'/rest/v1/horario',{
       method:'POST',
       headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
         'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotId,dia:s.dayIdx,status})
+      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
     }).then(r=>r.json());
     s.status='approved';
     if(!schedule[currentCicloId])schedule[currentCicloId]={};
     if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
-    schedule[currentCicloId][g.id][s.slotId+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status,horarioId:row.id};
+    schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
+    // Write slotB row (block)
+    if(s.slotB){
+      const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
+      const unavailB=isUnavail(s.teacherId,s.slotB,s.dayIdx);
+      const statusB=conflictB?'conflict':unavailB?'warn':'ok';
+      const [rowB]=await fetch(SUPA_URL+'/rest/v1/horario',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
+      }).then(r=>r.json());
+      schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
+    }
     closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
     toast('Aprobada ✓');
   }catch(e){toast('Error: '+e.message,'err');}
