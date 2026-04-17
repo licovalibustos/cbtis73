@@ -717,11 +717,11 @@ input::placeholder{color:var(--ink3);}
         </div>
       </div>
       <div class="frow">
-        <div class="field"><label>Fecha ingreso SEP <span style="font-size:.65rem;color:var(--ink3)">(AAAA MM)</span></label><input type="text" id="plz-sep" placeholder="202001" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
-        <div class="field"><label>Fecha ingreso DGETI <span style="font-size:.65rem;color:var(--ink3)">(AAAA MM)</span></label><input type="text" id="plz-dgeti" placeholder="202006" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
+        <div class="field"><label>Fecha ingreso SEP <span style="font-size:.65rem;color:var(--ink3)">(AAAA QN)</span></label><input type="text" id="plz-sep" placeholder="202001" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
+        <div class="field"><label>Fecha ingreso DGETI <span style="font-size:.65rem;color:var(--ink3)">(AAAA QN)</span></label><input type="text" id="plz-dgeti" placeholder="202006" maxlength="6" style="width:100%;font-family:var(--fm)"></div>
       </div>
       <div style="background:var(--blue-lt);border:1px solid #b0c4f0;border-radius:8px;padding:.55rem .8rem;font-size:.7rem;color:var(--blue)">
-        ℹ Las fechas se ingresan como 6 dígitos: año (4) + mes (2). Ej: <b>202306</b> = junio 2023.
+        ℹ Las fechas se ingresan como 6 dígitos: año (4) + quincena (2). Ej: <b>202301</b> = 1ª quincena 2023.
       </div>
     </div>
     <div class="mf">
@@ -1583,7 +1583,8 @@ function renderMaestrosList(){
         <div class="ln" style="font-size:.72rem">${t.name}</div>
         <div class="ls">${t.hrs_carga}h carga${t.obs?' · '+t.obs:''}</div>
       </div>
-      <span class="tag ${cnt?'t-green':'t-red'}">${cnt} comp.</span>
+      <span class="tag ${cnt?'t-green':'t-gray'}">${cnt} comp.</span>
+      <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length} plz.</span>
       <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditTeacher('${t.id}')" title="Editar maestro">✏️</button>
     </div>`;
   }).join('');
@@ -1733,7 +1734,7 @@ function renderMaestroDetail(tid){
     <div class="card" style="margin-top:.75rem">
       <div class="ch">
         Plazas presupuestales
-        <span class="tag ${(t.plazas||[]).length?'t-blue':'t-red'}">${(t.plazas||[]).length}</span>
+        <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length}</span>
         <button class="btn btn-green btn-xs" onclick="openNewPlaza('${tid}')">+ Agregar</button>
       </div>
       <div class="cb" style="padding:0">
@@ -1749,8 +1750,8 @@ function renderMaestroDetail(tid){
                   <div><b>${cond}</b> · ${tur}</div>
                   <div style="color:var(--ink2);font-size:.65rem">SEP: ${fmtD(p.fecha_ingreso_sep)} · DGETI: ${fmtD(p.fecha_ingreso_dgeti)}</div>
                 </div>
-                <button class="btn btn-xs" onclick="openEditPlaza('${tid}','${p.id}')" title="Editar">✏</button>
-                <button class="btn btn-xs btn-red" onclick="deletePlaza('${tid}','${p.id}')" title="Eliminar">✕</button>
+                <button class="btn btn-ghost btn-xs" onclick="openEditPlaza('${tid}','${p.id}')" title="Editar">✏️</button>
+                <button class="btn btn-ghost btn-xs" onclick="deletePlaza('${tid}','${p.id}')" title="Eliminar">🗑</button>
               </div>`;
             }).join('')
           : `<div style="color:var(--ink3);font-size:.75rem;text-align:center;padding:.75rem 0">
@@ -3134,10 +3135,10 @@ async function savePlaza(){
 
   if(!plaza){toast('La clave de plaza es obligatoria','err');return;}
   if(fecha_ingreso_sep&&!/^\d{6}$/.test(fecha_ingreso_sep)){
-    toast('Fecha SEP inválida — usa 6 dígitos: YYYYMM','err');return;
+    toast('Fecha SEP inválida — usa 6 dígitos: AAAAQN','err');return;
   }
   if(fecha_ingreso_dgeti&&!/^\d{6}$/.test(fecha_ingreso_dgeti)){
-    toast('Fecha DGETI inválida — usa 6 dígitos: YYYYMM','err');return;
+    toast('Fecha DGETI inválida — usa 6 dígitos: AAAAQN','err');return;
   }
 
   showLoading('Guardando…');
