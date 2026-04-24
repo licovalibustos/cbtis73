@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Vinculación de grupos a materias del catálogo
 El sistema SHALL mantener registros en `asignaciones` que vinculan cada materia del catálogo con los grupos que la reciben, como base para el motor de asignación automática.
@@ -27,51 +27,22 @@ El sistema SHALL mantener registros en `asignaciones` que vinculan cada materia 
 - **WHEN** el admin navega al detalle de un grupo
 - **THEN** el sistema muestra las materias asignadas a ese grupo (consultando `asignaciones` + `materias_catalogo`), con el maestro asignado por el motor a cada una
 
----
-
-### Requirement: Motor de horarios usa asignaciones
-El sistema SHALL leer el semestre del grupo al construir la lista de slots candidatos, invocando `assignable(turno, sem)` donde `sem` es el semestre del grupo objetivo. El motor SHALL generar sugerencias de **bloque** (dos franjas consecutivas del mismo día con el mismo maestro) como unidad primaria. Cuando no sea posible armar un bloque, el motor SHALL degradar a sugerencias de hora suelta. El motor SHALL continuar aplicando la regla de exclusión mutua entre los pares `(m4, mx)` y `(v4, vx)` en ambas franjas del bloque.
-
-#### Scenario: Motor genera sugerencias para grupo de 1°
-- **WHEN** se ejecuta el motor de asignación de slots para un grupo de 1° semestre matutino
-- **THEN** el motor incluye `mx` como slot candidato y excluye `m4` para ese grupo (por `forSem`)
-
-#### Scenario: Motor genera sugerencias para grupo de 4°
-- **WHEN** se ejecuta el motor de asignación de slots para un grupo de 4° semestre matutino
-- **THEN** el motor incluye `m4` como slot candidato y excluye `mx` para ese grupo (por `forSem`)
-
-#### Scenario: Motor respeta exclusión mutua en bloques
-- **WHEN** el maestro T05 ya tiene asignación en `m4` el lunes y el motor evalúa un bloque con slot candidato `mx` para T05 en otro grupo de 1°
-- **THEN** el motor descarta ese bloque para T05 el lunes
-
-#### Scenario: Motor respeta exclusión mutua (caso inverso)
-- **WHEN** el maestro T05 ya tiene asignación en `mx` el martes y el motor evalúa slots para un grupo de 4° con T05
-- **THEN** el motor descarta `m4` el martes para T05
-
-#### Scenario: Motor usa asignaciones (comportamiento existente)
+#### Scenario: Motor de horarios usa asignaciones
 - **WHEN** se ejecuta el motor de asignación de slots para un grupo
 - **THEN** el motor lee las materias y maestros desde `asignaciones` vinculadas al grupo, en lugar de la tabla `materias`
 
-#### Scenario: Sugerencia de bloque - aprobación escribe 2 celdas
-- **WHEN** el admin aprueba una sugerencia de bloque (`slotB` presente)
-- **THEN** el sistema SHALL escribir dos entradas en `schedule[cicloId][grupoId]`: una para `slotA_día` y otra para `slotB_día`, ambas con la misma materia y maestro
-
-#### Scenario: Sugerencia de bloque - UI muestra rango horario
-- **WHEN** se renderiza la lista de sugerencias y una sugerencia tiene `slotB`
-- **THEN** el sistema SHALL mostrar el rango completo (ej. "7:00–8:40") en lugar de solo la hora de inicio del primer slot
-
----
+## ADDED Requirements
 
 ### Requirement: Competencias de maestros vinculadas a plantillas globales
 El sistema SHALL almacenar las competencias de cada maestro como referencias a `materias_plantilla` (por `plantilla_id`) en lugar de strings de texto libre, garantizando que el match con el catálogo sea exacto y no se rompa ante correcciones de nombre.
 
-#### Scenario: Agregar competencia desde selector
-- **WHEN** el admin abre el modal de competencias de un maestro y escribe en el campo de búsqueda
-- **THEN** el sistema muestra chips filtrables con los registros de `materias_plantilla` que coinciden; el admin selecciona uno y se guarda `{ maestro_id, plantilla_id }` en `competencias`
+#### Scenario: Agregar competencia desde picker
+- **WHEN** el admin abre el modal de competencias de un maestro
+- **THEN** el sistema muestra un picker filtrable con todos los registros de `materias_plantilla`; el admin selecciona uno y se guarda `{ maestro_id, plantilla_id }` en `competencias`
 
-#### Scenario: Intentar agregar una materia que no existe en el catálogo
-- **WHEN** el admin escribe un nombre que no corresponde a ningún registro en `materias_plantilla` y presiona guardar
-- **THEN** el sistema muestra un mensaje de error "Materia no encontrada. Agrégala primero en el catálogo." y no crea el registro; para agregar esa materia, el admin debe ir al catálogo primero
+#### Scenario: Agregar competencia con nombre nuevo
+- **WHEN** el admin escribe un nombre que no existe en `materias_plantilla`
+- **THEN** el sistema crea el registro en `materias_plantilla` y luego registra la competencia con el nuevo `plantilla_id`
 
 #### Scenario: Motor encuentra maestros competentes por plantilla_id
 - **WHEN** el motor busca maestros para una materia del catálogo con `plantilla_id = X`

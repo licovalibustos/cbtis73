@@ -1,0 +1,61 @@
+﻿schema: spec-driven
+
+context: |
+  ## Proyecto: Sistema de Horarios CBTis 73
+
+  ### Stack
+  - Single-file SPA: `sistema_horarios_v1.html` (HTML + JS vanilla, sin frameworks ni bundler)
+  - Backend: Supabase REST API (sin SDK, fetch directo con anon key)
+  - DB: PostgreSQL en Supabase
+
+  ### Tablas principales (Supabase)
+  - `ciclos` — ciclos escolares (Feb-Jul Pares / Ago-Ene Nones)
+  - `grupos` — grupos por ciclo; `id` uuid, `clave` text (ej. "3AML"), `semestre` int, `turno` M|V, `especialidad` text (A/C/L/M/P/S o null para TC)
+  - `maestros` — `id` text (formato T01, T02), `name`, `hrs_nom`, `hrs_carga`, `rfc`, `categoria`, `obs`
+  - `materias_catalogo` — catalogo por ciclo; `id` uuid, `ciclo_id`, `semestre`, `tipo` (troncal/optativa/cfp), `especialidad` nullable, `nombre`, `hrs`, `hrs_lab`
+  - `asignaciones` — vincula materia x grupo; `materia_id` uuid, `grupo_id` uuid, `maestro_id` text nullable, `maestro_lab_id` text nullable
+  - `disponibilidad` — disponibilidad de maestros por slot/dia/ciclo; keyed por (maestro_id, ciclo_id)
+  - `horario` — slots asignados; guarda `materia_nombre` (text, no FK), `maestro_id`, `slot_id`, `dia`, `status`
+  - `competencias` — materias que puede impartir cada maestro
+
+  ### Patrones de codigo
+  - Datos en memoria: objetos globales keyed por cicloId (`groups`, `catalogo`, `asignDet`, `asignGrupo`, `availability`, `schedule`)
+  - Loaders: patron `ensure*(cicloId)` — carga lazy desde Supabase y cachea; nunca recargar si ya existe
+  - Overrides: funciones base definidas primero, luego reemplazadas con version async que persiste en DB (`const _origX=X; X=async function(){...}`)
+  - IDs: `grupos.id` es uuid, `maestros.id` es text (T01, T02); NUNCA intercambiar
+  - `availability` se keyea por [maestro_id][currentCicloId][slot_id+'_'+diaIdx]; NO usar la variable `cycle` (string del ciclo)
+  - Especialidades: A=Administracion, C=Contabilidad, L=Lab.Clinico, M=Mecatronica, P=Programacion, S=Soporte; null=Tronco Comun
+
+  ### Dominio escolar
+  - 6 semestres, turnos Matutino (M) / Vespertino (V)
+  - Tipos de materia: troncal (todos los grupos del semestre), cfp (solo grupos de la especialidad), optativa (grupos seleccionados manualmente)
+  - El catalogo es por ciclo (no global); al copiar ciclo se copia catalogo, asignaciones empiezan vacias
+  - Al crear un grupo nuevo, se auto-crean asignaciones para todas las materias troncales/CFP del semestre
+  - Al crear una materia troncal/CFP, se auto-crean asignaciones para todos los grupos existentes del semestre
+  - Motor de asignacion: genera sugerencias de slots basado en disponibilidad y carga horaria; el admin aprueba
+
+  ### Convenciones UI
+  - Boton editar: icono con emoji (btn-ghost btn-xs) dentro del item de lista, sin texto, no en el panel de detalle
+  - Toasts para feedback; showLoading/hideLoading para operaciones async
+  - Modales con clase `mbg` + `open`
+  - Chips de conteo en lista: clase `tag t-green` si hay datos, `t-gray` si vacio
+
+rules:
+  proposal:
+    - Incluir siempre secciones Goals y Non-Goals
+    - Referenciar tablas de Supabase afectadas
+    - Maximo 400 palabras
+  design:
+    - Documentar decisiones con formato D1/D2... incluyendo alternativas descartadas
+    - Incluir seccion Risks / Trade-offs
+    - Si hay cambios de DB, incluir Migration Plan
+    - Considerar impacto en el patron ensure*/override existente
+  specs:
+    - Escribir requirements en español
+    - Usar formato "El sistema SHALL..."
+    - Incluir escenarios WHEN/THEN para cada requirement
+  tasks:
+    - Una tarea = maximo 1-2 horas de trabajo
+    - Numerar por seccion (1.1, 1.2, 2.1...)
+    - Separar tareas de DB, JS, UI y validacion en secciones distintas
+    - La ultima seccion siempre es validacion y limpieza con pruebas manuales
