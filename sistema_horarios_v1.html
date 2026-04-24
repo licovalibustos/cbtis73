@@ -3484,7 +3484,7 @@ go=async function(name){
   _origGo(name);
   if(name==='disponibilidad'&&currentCicloId){
     try{
-      const rows=await dbGet('disponibilidad',`ciclo_id=eq.${currentCicloId}`);
+      const rows=await dbGet('disponibilidad',`ciclo_id=eq.${currentCicloId}&limit=20000`);
       rows.forEach(r=>{
         if(!availability[r.maestro_id])availability[r.maestro_id]={};
         if(!availability[r.maestro_id][currentCicloId])availability[r.maestro_id][currentCicloId]={};
