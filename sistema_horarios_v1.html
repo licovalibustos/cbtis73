@@ -3477,6 +3477,24 @@ fillSemSels=function(){
 // ═══════════════════════════════════════════
 //  PATCH RENDER FUNCTIONS for DB-backed data
 // ═══════════════════════════════════════════
+
+// ── Bulk-load all disponibilidad for the current ciclo ──
+const _origGo=go;
+go=async function(name){
+  _origGo(name);
+  if(name==='disponibilidad'&&currentCicloId){
+    try{
+      const rows=await dbGet('disponibilidad',`ciclo_id=eq.${currentCicloId}`);
+      rows.forEach(r=>{
+        if(!availability[r.maestro_id])availability[r.maestro_id]={};
+        if(!availability[r.maestro_id][currentCicloId])availability[r.maestro_id][currentCicloId]={};
+        availability[r.maestro_id][currentCicloId][r.slot_id+'_'+r.dia]=r.estado;
+      });
+      renderMaestrosSb();
+    }catch(e){console.warn('Disponibilidad bulk load:',e);}
+  }
+};
+
 const _origRenderGrupos=renderGrupos;
 renderGrupos=async function(){
   await ensureGroups();
