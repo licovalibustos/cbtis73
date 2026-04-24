@@ -2094,6 +2094,18 @@ function subjectsFromAsignaciones(g){
 }
 
 // Helper: returns best teacher for a pair of slots on a given day, or null
+// Returns true if teacher has a pending suggestion (same engine run) that uses
+// the mutex partner of slotId on the same day for a different group
+function hasPendingMutexConflict(tid, slotId, day, exGroupId){
+  const mutexPair=MUTEX_SLOTS.find(p=>p.includes(slotId));
+  if(!mutexPair)return false;
+  const partner=mutexPair.find(s=>s!==slotId);
+  return suggestions.some(s=>
+    s.status==='pending'&&s.teacherId===tid&&s.groupId!==exGroupId&&s.dayIdx===day&&
+    (s.slotA===partner||s.slotB===partner)
+  );
+}
+
 function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
   const keyA=slotA.id+'_'+d, keyB=slotB.id+'_'+d;
   let bestT=null, bestScore=-1;
@@ -2104,6 +2116,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
     if(avA==='unavail'||avB==='unavail')continue;
     if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
     if(isUnavail(cand.id,slotA.id,d)||isUnavail(cand.id,slotB.id,d))continue;
+    if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
     const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
     if(usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
     const minAv=Math.min(avA==='avail'?100:65, avB==='avail'?100:65);
@@ -2114,6 +2127,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
   if(!bestT){
     for(const cand of candidates){
       if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
+      if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
       const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
       if(usedHrs+2>cand.hrs_carga+1)continue;
       const score=20-(usedHrs/cand.hrs_carga*20);
@@ -2213,6 +2227,7 @@ async function runEngine(){
             const av=((availability[cand.id]||{})[currentCicloId]||{})[key]||'neutral';
             if(av==='unavail')continue;
             if(isConflict(cand.id,slot.id,d,g.id))continue;
+            if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
             if(usedHrs>=cand.hrs_carga)continue;
             const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
@@ -2221,6 +2236,7 @@ async function runEngine(){
           if(!bestT){
             for(const cand of candidates){
               if(isConflict(cand.id,slot.id,d,g.id))continue;
+              if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
               const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
               if(usedHrs>=cand.hrs_carga)continue;
               const score=20-(usedHrs/cand.hrs_carga*20);
@@ -2281,10 +2297,11 @@ function renderSugList(){
       }
       return sA?.lbl||s.slotA;
     })();
+    const grpClave=G(s.groupId)?.clave||s.groupId;
     return `<div class="sug-item ${selSugIdx===i?'sel':''} ${s.status!=='pending'?'done':''}" onclick="selSug(${i})" style="${isProblem?'background:var(--red-lt)':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.35rem">
         <div>
-          <div style="font-family:var(--fh);font-weight:700;font-size:.74rem">${s.groupId}${s.dayIdx!==null?' · '+DAYS[s.dayIdx].slice(0,3):''}</div>
+          <div style="font-family:var(--fh);font-weight:700;font-size:.74rem">${grpClave}${s.dayIdx!==null?' · '+DAYS[s.dayIdx].slice(0,3):''}</div>
           <div style="font-size:.62rem;color:var(--ink2);margin-top:1px">${s.subjectName}</div>
           ${t?`<div style="font-size:.58rem;color:var(--ink3);margin-top:1px">${t.name.split(' ').slice(0,3).join(' ')}</div>`:''}
           ${slotLbl?`<div style="font-size:.58rem;color:var(--ink3);margin-top:1px">${slotLbl}${s.slotB?' 📦':''}</div>`:''}
@@ -3418,7 +3435,7 @@ approveSug=async function(){
   if(selSugIdx===null)return;
   const s=suggestions[selSugIdx];
   if(!s.slotA||!s.teacherId){toast('No se puede aprobar','err');return;}
-  const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId);
+  const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId||x.id===s.groupId);
   if(!g){toast('Grupo no encontrado','err');return;}
   const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
   const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
