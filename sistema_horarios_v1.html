@@ -3478,13 +3478,25 @@ fillSemSels=function(){
 //  PATCH RENDER FUNCTIONS for DB-backed data
 // ═══════════════════════════════════════════
 
-// ── Bulk-load all disponibilidad for the current ciclo ──
+// ── Bulk-load all disponibilidad for the current ciclo (paginated) ──
+async function fetchAllDispCiclo(cicloId){
+  const PAGE=1000;
+  let offset=0, all=[];
+  while(true){
+    const page=await dbGet('disponibilidad',
+      `ciclo_id=eq.${cicloId}&select=maestro_id,slot_id,dia,estado&limit=${PAGE}&offset=${offset}`);
+    all=all.concat(page);
+    if(page.length<PAGE)break;
+    offset+=PAGE;
+  }
+  return all;
+}
 const _origGo=go;
 go=async function(name){
   _origGo(name);
   if(name==='disponibilidad'&&currentCicloId){
     try{
-      const rows=await dbGet('disponibilidad',`ciclo_id=eq.${currentCicloId}&limit=20000`);
+      const rows=await fetchAllDispCiclo(currentCicloId);
       rows.forEach(r=>{
         if(!availability[r.maestro_id])availability[r.maestro_id]={};
         if(!availability[r.maestro_id][currentCicloId])availability[r.maestro_id][currentCicloId]={};
