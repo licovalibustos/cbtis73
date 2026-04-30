@@ -237,7 +237,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.3</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.4</span></div>
     </div>
   </div>
   <div class="cycle-bar" style="gap:.5rem">
@@ -588,6 +588,39 @@ input::placeholder{color:var(--ink3);}
   </div>
 </div>
 
+<!-- ══ MODAL PREFERENCIA (grupo preferido) ══ -->
+<div class="mbg" id="modal-pref">
+  <div class="modal" style="width:460px">
+    <div class="mh">
+      <div><div class="mt">Agregar grupo preferido</div><div class="ms" id="mpref-s"></div></div>
+      <button class="mx" onclick="closeM('modal-pref')">✕</button>
+    </div>
+    <div class="mb">
+      <div class="frow" style="gap:.6rem">
+        <div class="field" style="flex:1">
+          <label>Materia (de las competencias del maestro)</label>
+          <select id="mpref-plantilla" style="width:100%" onchange="prefCheck()">
+            <option value="">— Selecciona —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:.5rem">
+        <label>Clave del grupo (ej. 1AVS, 3BTM)</label>
+        <input id="mpref-clave" type="text" maxlength="8" placeholder="1AVS" style="width:100%;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase();prefCheck()">
+      </div>
+      <div id="mpref-warn" style="font-size:.72rem;color:var(--danger);margin-top:.25rem"></div>
+      <div style="font-size:.72rem;color:var(--ink2);margin-top:.4rem">
+        💡 El motor tratará esta regla como restricción dura: sólo este maestro podrá impartir esta materia en ese grupo.
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('modal-pref')">Cancelar</button>
+      <button id="btn-save-pref" class="btn btn-green" onclick="guardarPreferencia()" disabled>Guardar preferencia</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL CELL ══ -->
 <div class="mbg" id="modal-cell">
   <div class="modal">
@@ -890,6 +923,9 @@ let schedule={};
 
 // suggestions list
 let suggestions=[];
+
+// preferencias[maestroId] = [{id,maestro_id,plantilla_id,grupo_clave}]
+let preferencias={};
 
 // UI state
 let selGroup=null, selTeacher=null, selSugIdx=null, editCell=null;
@@ -1585,6 +1621,7 @@ function renderMaestrosList(){
       </div>
       <span class="tag ${cnt?'t-green':'t-gray'}">${cnt} comp.</span>
       <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length} plz.</span>
+      <span class="tag ${(t.prefCount||0)?'t-green':'t-gray'}" title="Grupos preferidos">${t.prefCount||0} pref.</span>
       <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditTeacher('${t.id}')" title="Editar maestro">✏️</button>
     </div>`;
   }).join('');
@@ -1596,7 +1633,7 @@ function selMaestro(tid){
   renderMaestroDetail(tid);
 }
 
-function renderMaestroDetail(tid){
+async function renderMaestroDetail(tid){
   const t=T(tid);
   if(!t){
     document.getElementById('maest-detail').innerHTML=`<div class="empty"><div class="ico">⏳</div><div>Cargando datos del maestro…</div></div>`;
@@ -1604,6 +1641,7 @@ function renderMaestroDetail(tid){
     setTimeout(()=>{ if(T(tid)) renderMaestroDetail(tid); },1000);
     return;
   }
+  await ensurePreferencias(tid);
   if(!competencias[tid])competencias[tid]=new Set();
   const comps=[...competencias[tid]].map(pid=>{const p=plantillas.find(x=>x.id===pid);return{id:pid,nombre:p?.nombre||pid};}).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   const assigned=assignedHrs(tid);
@@ -1760,6 +1798,33 @@ function renderMaestroDetail(tid){
             </div>`}
       </div>
     </div>
+
+    <!-- ── GRUPOS PREFERIDOS ── -->
+    ${(()=>{
+      const prefs=preferencias[tid]||[];
+      return `<div class="card" style="margin-top:.75rem">
+        <div class="ch">
+          Grupos preferidos
+          <span class="tag ${prefs.length?'t-green':'t-gray'}">${prefs.length}</span>
+          <button class="btn btn-green btn-xs" onclick="openPrefModal('${tid}')">+ Agregar</button>
+        </div>
+        <div class="cb" style="padding:0">
+          ${prefs.length
+            ? prefs.map(p=>{
+                const pl=plantillas.find(x=>x.id===p.plantilla_id);
+                return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
+                  <span class="tag t-blue" style="flex-shrink:0;min-width:52px;text-align:center;font-family:var(--fm);font-size:.65rem">${p.grupo_clave}</span>
+                  <span style="font-weight:700;flex:1;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
+                  <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar">✕</button>
+                </div>`;
+              }).join('')
+            : `<div style="color:var(--ink3);font-size:.75rem;text-align:center;padding:.75rem 0">
+                Sin grupos preferidos.<br>
+                <span style="font-size:.7rem">El motor usará competencias para asignar grupos libremente.</span>
+              </div>`}
+        </div>
+      </div>`;
+    })()}
   `;
 }
 
@@ -1850,6 +1915,84 @@ function delComp(tid,enc){
 }
 
 let editTeacherId=null;
+
+// ─── Preferencias de grupo ────────────────────────────────────────────────
+let _prefTid=null; // maestro_id activo en el modal de preferencias
+
+async function openPrefModal(tid){
+  _prefTid=tid;
+  document.getElementById('mpref-s').textContent=T(tid)?.name||tid;
+  document.getElementById('mpref-clave').value='';
+  document.getElementById('mpref-warn').textContent='';
+  document.getElementById('btn-save-pref').disabled=true;
+  await ensurePlantillas();
+  await ensurePreferencias(tid);
+  // Solo las competencias del maestro
+  const myComp=competencias[tid]||new Set();
+  const opts=plantillas
+    .filter(p=>myComp.has(p.id))
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
+    .map(p=>`<option value="${p.id}">${p.nombre}</option>`)
+    .join('');
+  document.getElementById('mpref-plantilla').innerHTML='<option value="">— Selecciona —</option>'+opts;
+  document.getElementById('modal-pref').classList.add('open');
+}
+
+function prefCheck(){
+  const pid=document.getElementById('mpref-plantilla').value;
+  const clave=(document.getElementById('mpref-clave').value||'').trim().toUpperCase();
+  const warn=document.getElementById('mpref-warn');
+  warn.textContent='';
+  if(!pid||!clave){document.getElementById('btn-save-pref').disabled=true;return;}
+  // Validate clave pattern: digit + letters (e.g. 1AVS, 3BTM)
+  if(!/^\d[A-Z]{2,5}$/.test(clave)){
+    warn.textContent='Formato inválido. Ejemplo: 1AVS, 3BTM';
+    document.getElementById('btn-save-pref').disabled=true;
+    return;
+  }
+  // Check duplicate
+  const exists=(preferencias[_prefTid]||[]).some(p=>p.plantilla_id===pid&&p.grupo_clave===clave);
+  if(exists){warn.textContent='Ya existe esta preferencia.';document.getElementById('btn-save-pref').disabled=true;return;}
+  document.getElementById('btn-save-pref').disabled=false;
+}
+
+async function guardarPreferencia(){
+  const tid=_prefTid;
+  const pid=document.getElementById('mpref-plantilla').value;
+  const clave=(document.getElementById('mpref-clave').value||'').trim().toUpperCase();
+  if(!pid||!clave)return;
+  document.getElementById('btn-save-pref').disabled=true;
+  try{
+    const row=await dbPost('maestro_preferencias',{maestro_id:tid,plantilla_id:pid,grupo_clave:clave});
+    const rec=Array.isArray(row)?row[0]:row;
+    if(!preferencias[tid])preferencias[tid]=[];
+    preferencias[tid].push({id:rec.id,maestro_id:tid,plantilla_id:pid,grupo_clave:clave});
+    preferencias[tid].sort((a,b)=>a.grupo_clave.localeCompare(b.grupo_clave,'es'));
+    const t=T(tid);if(t)t.prefCount=(preferencias[tid]||[]).length;
+    closeM('modal-pref');
+    renderMaestroDetail(tid);
+    renderMaestrosList();
+    toast('Preferencia guardada ✓');
+  }catch(e){toast('Error al guardar preferencia','err');document.getElementById('btn-save-pref').disabled=false;}
+}
+
+async function eliminarPreferencia(tid,id){
+  const confirmed=await confirmDialog(
+    'Quitar preferencia','',
+    '¿Quitar esta regla de grupo preferido? El maestro seguirá teniendo la competencia; solo se elimina la regla permanente.',
+    'Quitar'
+  );
+  if(!confirmed)return;
+  try{
+    await dbDel('maestro_preferencias',`id=eq.${id}`);
+    if(preferencias[tid])preferencias[tid]=preferencias[tid].filter(p=>p.id!==id);
+    const t=T(tid);if(t)t.prefCount=(preferencias[tid]||[]).length;
+    renderMaestroDetail(tid);
+    renderMaestrosList();
+    toast('Preferencia eliminada','warn');
+  }catch(e){toast('Error al eliminar preferencia','err');}
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 function openNewTeacher(){
   editTeacherId=null;
@@ -1945,7 +2088,12 @@ function saveTeacher(){
 async function deleteTeacher(){
   if(!editTeacherId)return;
   const t=T(editTeacherId);
-  if(!confirm(`¿Eliminar a ${t?.name}? Esta acción no se puede deshacer.`))return;
+  const confirmed=await confirmDialog(
+    'Eliminar maestro','',
+    `¿Eliminar a ${t?.name||editTeacherId}? Esta acción no se puede deshacer.`,
+    'Eliminar'
+  );
+  if(!confirmed)return;
   showLoading('Eliminando…');
   try{
     await dbDel('maestros',`id=eq.${editTeacherId}`);
@@ -1978,10 +2126,7 @@ function renderMaestrosSb(){
   }).join('');
 }
 
-function selDispTeacher(tid){
-  if(dispDirty&&selTeacher&&selTeacher!==tid){
-    if(!confirm('Hay cambios sin guardar en la disponibilidad de este maestro.\n¿Cambiar de maestro sin guardar?'))return;
-  }
+async function selDispTeacher(tid){
   dispDirty=false;
   selTeacher=tid;
   renderMaestrosSb();
@@ -2165,8 +2310,10 @@ async function runEngine(){
     if(!subjs.length)continue;
 
     for(const subj of subjs){
-      // Find all teachers competent for this subject
-      const candidates=competentTeachers(subj.plantilla_id);
+      // Hard constraint: if subj.teacherId is already set, only that teacher is a candidate
+      const candidates = subj.teacherId
+        ? [T(subj.teacherId)].filter(Boolean)
+        : competentTeachers(subj.plantilla_id);
       if(!candidates.length){
         // No competent teacher — add warning suggestion
         suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
@@ -2260,8 +2407,8 @@ async function runEngine(){
       }
 
       if(hrsLeft>0){
-        // Some hours couldn't be placed
-        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
+        // Some hours couldn't be placed — preserve fixed teacherId if there was one
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:subj.teacherId||null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
       }
     }
   }
@@ -2817,7 +2964,7 @@ function openNuevoCiclo(){
           <div class="field"><label>Fecha fin</label><input type="date" id="nc-fin" style="width:100%"></div>
         </div>
         <div style="font-size:.72rem;color:var(--ink2);background:var(--green-lt);border:1px solid #80c8a0;border-radius:8px;padding:.65rem .85rem">
-          ✓ Si copias grupos de un ciclo anterior, se duplican los grupos y el catálogo de materias. Las asignaciones de maestros, horarios y disponibilidad empiezan limpios.
+          ✓ Al copiar grupos: se duplican grupos y catálogo. Los grupos de <b>1° semestre</b> reciben maestros desde las <b>preferencias configuradas</b>. Los grupos de <b>2°–6°</b> heredan las asignaciones de maestros del ciclo anterior. Horarios y disponibilidad empiezan limpios.
         </div>
       </div>
       <div class="mf">
@@ -2862,13 +3009,68 @@ async function saveNuevoCiclo(){
     if(copyFrom){
       showLoading('Copiando grupos y catálogo de materias…');
       const oldGrupos=await dbGet('grupos',`ciclo_id=eq.${copyFrom}`);
+      // Track new grupo IDs (oldClave → newUUID)
+      const grupoClaveToNewId={};
       for(const g of oldGrupos){
-        await dbPost('grupos',{ciclo_id:newCiclo.id,clave:g.clave,semestre:g.semestre,turno:g.turno,especialidad:g.especialidad});
+        const [ng]=await dbPost('grupos',{ciclo_id:newCiclo.id,clave:g.clave,semestre:g.semestre,turno:g.turno,especialidad:g.especialidad});
+        grupoClaveToNewId[g.clave]={id:ng.id,semestre:g.semestre,especialidad:g.especialidad};
       }
       const oldCat=await dbGet('materias_catalogo',`ciclo_id=eq.${copyFrom}&order=semestre.asc,nombre.asc`);
+      // Track new catalog IDs (with plantilla_id for propagation)
+      const newCatRows=[];
       for(const m of oldCat){
-        await dbPost('materias_catalogo',{ciclo_id:newCiclo.id,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab});
+        const [nm]=await dbPost('materias_catalogo',{ciclo_id:newCiclo.id,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab,plantilla_id:m.plantilla_id||null});
+        newCatRows.push({id:nm.id,plantilla_id:m.plantilla_id||null,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad});
       }
+
+      // ── Propagate teacher assignments ─────────────────────────────────
+      showLoading('Propagando asignaciones de maestros…');
+
+      // For sem 2-6: inherit maestro_id from copyFrom cycle by grupo_clave × plantilla_id
+      const oldGrupoIds=oldGrupos.map(g=>g.id);
+      const oldAsig=oldGrupoIds.length
+        ? await dbGet('asignaciones',`grupo_id=in.(${oldGrupoIds.join(',')})&select=maestro_id,grupo_id,materias_catalogo(plantilla_id)`)
+        : [];
+      const oldGrupoMap=Object.fromEntries(oldGrupos.map(g=>[g.id,g]));
+      const inheritMap={}; // `${grupo_clave}::${plantilla_id}` → maestro_id
+      for(const a of oldAsig){
+        const g=oldGrupoMap[a.grupo_id];
+        const pid=a.materias_catalogo?.plantilla_id;
+        if(!g||!pid||!a.maestro_id)continue;
+        inheritMap[`${g.clave}::${pid}`]=a.maestro_id;
+      }
+
+      // For sem 1: apply maestro_preferencias by grupo_clave × plantilla_id
+      const allPrefs=await dbGet('maestro_preferencias','');
+      const prefMap={}; // `${grupo_clave}::${plantilla_id}` → maestro_id
+      for(const p of (allPrefs||[])){
+        prefMap[`${p.grupo_clave}::${p.plantilla_id}`]=p.maestro_id;
+      }
+
+      // Create asignaciones for each new grupo × matching catalog entry
+      for(const g of oldGrupos){
+        const ngInfo=grupoClaveToNewId[g.clave];
+        if(!ngInfo)continue;
+        const matsForGrupo=newCatRows.filter(m=>{
+          if(m.semestre!=g.semestre)return false;
+          if(m.tipo==='troncal')return true;
+          if(m.tipo==='cfp')return m.especialidad===g.especialidad;
+          return false;
+        });
+        for(const m of matsForGrupo){
+          const sem=parseInt(g.semestre);
+          // For sem 2-6: inherit from the predecessor group (sem-1, same root clave)
+          const predClave=sem>1 ? String(sem-1)+g.clave.slice(1) : g.clave;
+          const key=sem===1 ? `${g.clave}::${m.plantilla_id}` : `${predClave}::${m.plantilla_id}`;
+          const maestro_id=sem===1
+            ? (m.plantilla_id ? (prefMap[key]||null) : null)
+            : (m.plantilla_id ? (inheritMap[key]||null) : null);
+          try{
+            await dbPost('asignaciones',{materia_id:m.id,grupo_id:ngInfo.id,maestro_id,maestro_lab_id:null});
+          }catch(e){/* duplicate key, ignore */}
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
     }
 
     ciclos.unshift(newCiclo);
@@ -2885,7 +3087,7 @@ async function saveNuevoCiclo(){
     fillSemSels();
     await ensureGroups();
     renderGrupos();fillGrpSel();renderAsigStats();filterHorGrp();fillPrSel();
-    toast(`Ciclo "${nombre}" creado ✓`);
+    toast(`Ciclo "${nombre}" creado${copyFrom?' · asignaciones propagadas':''} ✓`);
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
 }
@@ -2975,7 +3177,7 @@ async function ensureTeachers(){
       hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,
       grado:r.grado||null,egresado_de:r.egresado_de||null,
       especialidad_acad:r.especialidad_acad||null,departamento:r.departamento||null,
-      plazas:[],_loaded:true
+      plazas:[],prefCount:0,_loaded:true
     }));
     plazas.forEach(p=>{
       const t=TEACHERS.find(x=>x.id===p.maestro_id);
@@ -3001,6 +3203,17 @@ async function ensurePlantillas(){
     const rows=await dbGet('materias_plantilla','order=nombre.asc');
     plantillas=rows;
   }catch(e){console.warn('Plantillas not loaded');}
+}
+
+async function ensurePreferencias(maestroId){
+  if(preferencias[maestroId]!==undefined)return;
+  try{
+    const rows=await dbGet('maestro_preferencias',`maestro_id=eq.${maestroId}&order=grupo_clave.asc`);
+    preferencias[maestroId]=rows||[];
+    // Update prefCount on teacher object
+    const t=T(maestroId);
+    if(t)t.prefCount=(rows||[]).length;
+  }catch(e){preferencias[maestroId]=[];}
 }
 
 async function ensureDisponibilidad(tid){
@@ -3282,7 +3495,12 @@ async function savePlaza(){
 
 async function deletePlaza(tid,plazaId){
   const t=T(tid); if(!t) return;
-  if(!confirm('¿Eliminar esta plaza?')) return;
+  const confirmed=await confirmDialog(
+    'Eliminar plaza','',
+    '¿Eliminar esta plaza presupuestal? Esta acción no se puede deshacer.',
+    'Eliminar'
+  );
+  if(!confirmed)return;
   showLoading('Eliminando…');
   try{
     await dbDel('maestros_plazas',`id=eq.${plazaId}`);
