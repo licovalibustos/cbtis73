@@ -1618,10 +1618,12 @@ function renderMaestrosList(){
       <div style="flex:1;min-width:0">
         <div class="ln" style="font-size:.72rem">${t.name}</div>
         <div class="ls">${t.hrs_carga}h carga${t.obs?' · '+t.obs:''}</div>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.25rem">
+          <span class="tag ${cnt?'t-green':'t-gray'}">${cnt} comp.</span>
+          <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length} plz.</span>
+          <span class="tag ${(t.prefCount||0)?'t-green':'t-gray'}" title="Grupos preferidos">${t.prefCount||0} pref.</span>
+        </div>
       </div>
-      <span class="tag ${cnt?'t-green':'t-gray'}">${cnt} comp.</span>
-      <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length} plz.</span>
-      <span class="tag ${(t.prefCount||0)?'t-green':'t-gray'}" title="Grupos preferidos">${t.prefCount||0} pref.</span>
       <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditTeacher('${t.id}')" title="Editar maestro">✏️</button>
     </div>`;
   }).join('');
