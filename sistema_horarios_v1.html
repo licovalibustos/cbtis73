@@ -599,15 +599,16 @@ input::placeholder{color:var(--ink3);}
       <div class="frow" style="gap:.6rem">
         <div class="field" style="flex:1">
           <label>Materia (de las competencias del maestro)</label>
-          <select id="mpref-plantilla" style="width:100%" onchange="prefCheck()">
+          <select id="mpref-plantilla" style="width:100%" onchange="prefUpdateGrupos()">
             <option value="">— Selecciona —</option>
           </select>
         </div>
       </div>
       <div class="field" style="margin-top:.5rem">
-        <label>Clave del grupo (ej. 1AVS, 3BTM)</label>
-        <input id="mpref-clave" type="text" maxlength="8" placeholder="1AVS" style="width:100%;text-transform:uppercase"
-          oninput="this.value=this.value.toUpperCase();prefCheck()">
+        <label>Grupo</label>
+        <select id="mpref-grupo" style="width:100%" onchange="prefCheck()" disabled>
+          <option value="">— Primero selecciona una materia —</option>
+        </select>
       </div>
       <div id="mpref-warn" style="font-size:.72rem;color:var(--danger);margin-top:.25rem"></div>
       <div style="font-size:.72rem;color:var(--ink2);margin-top:.4rem">
@@ -1817,7 +1818,7 @@ async function renderMaestroDetail(tid){
                 return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
                   <span class="tag t-blue" style="flex-shrink:0;min-width:52px;text-align:center;font-family:var(--fm);font-size:.65rem">${p.grupo_clave}</span>
                   <span style="font-weight:700;flex:1;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
-                  <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar">✕</button>
+                  <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar" style="color:var(--red);padding:.18rem .38rem">🗑</button>
                 </div>`;
               }).join('')
             : `<div style="color:var(--ink3);font-size:.75rem;text-align:center;padding:.75rem 0">
@@ -1924,11 +1925,12 @@ let _prefTid=null; // maestro_id activo en el modal de preferencias
 async function openPrefModal(tid){
   _prefTid=tid;
   document.getElementById('mpref-s').textContent=T(tid)?.name||tid;
-  document.getElementById('mpref-clave').value='';
   document.getElementById('mpref-warn').textContent='';
   document.getElementById('btn-save-pref').disabled=true;
   await ensurePlantillas();
   await ensurePreferencias(tid);
+  await ensureGroups();
+  await ensureCatalogo(currentCicloId);
   // Solo las competencias del maestro
   const myComp=competencias[tid]||new Set();
   const opts=plantillas
@@ -1937,21 +1939,61 @@ async function openPrefModal(tid){
     .map(p=>`<option value="${p.id}">${p.nombre}</option>`)
     .join('');
   document.getElementById('mpref-plantilla').innerHTML='<option value="">— Selecciona —</option>'+opts;
+  const sel=document.getElementById('mpref-grupo');
+  sel.innerHTML='<option value="">— Primero selecciona una materia —</option>';
+  sel.disabled=true;
   document.getElementById('modal-pref').classList.add('open');
+}
+
+async function prefUpdateGrupos(){
+  const pid=document.getElementById('mpref-plantilla').value;
+  const sel=document.getElementById('mpref-grupo');
+  const warn=document.getElementById('mpref-warn');
+  warn.textContent='';
+  document.getElementById('btn-save-pref').disabled=true;
+  if(!pid){
+    sel.innerHTML='<option value="">— Primero selecciona una materia —</option>';
+    sel.disabled=true;
+    return;
+  }
+  // Find catalog entry for this plantilla in current cycle
+  const mc=(catalogo[currentCicloId]||[]).find(m=>m.plantilla_id===pid);
+  if(!mc){
+    sel.innerHTML='<option value="">No está en el catálogo del ciclo actual</option>';
+    sel.disabled=true;
+    return;
+  }
+  // Get candidate groups by semestre (and especialidad for CFP)
+  const allGroups=groups[currentCicloId]||[];
+  const targetGroups=mc.tipo==='cfp'
+    ? allGroups.filter(g=>g.sem==mc.semestre && g.especialidad===mc.especialidad)
+    : allGroups.filter(g=>g.sem==mc.semestre);
+  // Exclude groups already assigned for this teacher+plantilla
+  const already=(preferencias[_prefTid]||[]).filter(p=>p.plantilla_id===pid).map(p=>p.grupo_clave);
+  const available=targetGroups.filter(g=>!already.includes(g.clave));
+  if(available.length===0){
+    if(targetGroups.length===0){
+      sel.innerHTML='<option value="">No hay grupos para esta materia en el ciclo</option>';
+    } else {
+      sel.innerHTML='<option value="">✓ Ya asignada a todos los grupos disponibles</option>';
+      warn.textContent='Esta materia ya está asignada a todos sus grupos para este maestro.';
+    }
+    sel.disabled=true;
+    return;
+  }
+  sel.disabled=false;
+  sel.innerHTML='<option value="">— Selecciona grupo —</option>'+
+    available.sort((a,b)=>a.clave.localeCompare(b.clave,'es'))
+             .map(g=>`<option value="${g.clave}">${g.clave} — ${g.turno==='M'?'Matutino':'Vespertino'}</option>`)
+             .join('');
 }
 
 function prefCheck(){
   const pid=document.getElementById('mpref-plantilla').value;
-  const clave=(document.getElementById('mpref-clave').value||'').trim().toUpperCase();
+  const clave=document.getElementById('mpref-grupo').value;
   const warn=document.getElementById('mpref-warn');
   warn.textContent='';
   if(!pid||!clave){document.getElementById('btn-save-pref').disabled=true;return;}
-  // Validate clave pattern: digit + letters (e.g. 1AVS, 3BTM)
-  if(!/^\d[A-Z]{2,5}$/.test(clave)){
-    warn.textContent='Formato inválido. Ejemplo: 1AVS, 3BTM';
-    document.getElementById('btn-save-pref').disabled=true;
-    return;
-  }
   // Check duplicate
   const exists=(preferencias[_prefTid]||[]).some(p=>p.plantilla_id===pid&&p.grupo_clave===clave);
   if(exists){warn.textContent='Ya existe esta preferencia.';document.getElementById('btn-save-pref').disabled=true;return;}
@@ -1961,7 +2003,7 @@ function prefCheck(){
 async function guardarPreferencia(){
   const tid=_prefTid;
   const pid=document.getElementById('mpref-plantilla').value;
-  const clave=(document.getElementById('mpref-clave').value||'').trim().toUpperCase();
+  const clave=document.getElementById('mpref-grupo').value;
   if(!pid||!clave)return;
   document.getElementById('btn-save-pref').disabled=true;
   try{
@@ -1975,7 +2017,13 @@ async function guardarPreferencia(){
     renderMaestroDetail(tid);
     renderMaestrosList();
     toast('Preferencia guardada ✓');
-  }catch(e){toast('Error al guardar preferencia','err');document.getElementById('btn-save-pref').disabled=false;}
+  }catch(e){
+    const msg=e?.message||String(e);
+    console.error('guardarPreferencia error:',msg);
+    document.getElementById('mpref-warn').textContent='Error: '+msg.slice(0,120);
+    toast('Error al guardar preferencia','err');
+    document.getElementById('btn-save-pref').disabled=false;
+  }
 }
 
 async function eliminarPreferencia(tid,id){
@@ -3169,9 +3217,10 @@ async function ensureSchedule(groupDbId){
 async function ensureTeachers(){
   if(TEACHERS.length>0&&TEACHERS[0]._loaded)return;
   try{
-    const [rows,plazas]=await Promise.all([
+    const [rows,plazas,prefs]=await Promise.all([
       dbGet('maestros','order=nombre.asc'),
-      dbGet('maestros_plazas')
+      dbGet('maestros_plazas'),
+      dbGet('maestro_preferencias')
     ]);
     TEACHERS.length=0;
     rows.forEach(r=>TEACHERS.push({
@@ -3185,6 +3234,12 @@ async function ensureTeachers(){
       const t=TEACHERS.find(x=>x.id===p.maestro_id);
       if(t)t.plazas.push(p);
     });
+    // Pre-cargar preferencias para que el conteo sea correcto en la lista
+    prefs.forEach(p=>{
+      if(!preferencias[p.maestro_id])preferencias[p.maestro_id]=[];
+      if(!preferencias[p.maestro_id].some(x=>x.id===p.id))preferencias[p.maestro_id].push(p);
+    });
+    TEACHERS.forEach(t=>{t.prefCount=(preferencias[t.id]||[]).length;});
   }catch(e){console.warn('Using local TEACHERS fallback');}
 }
 

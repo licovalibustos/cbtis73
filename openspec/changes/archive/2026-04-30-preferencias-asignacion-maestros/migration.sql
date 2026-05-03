@@ -16,17 +16,8 @@ CREATE INDEX IF NOT EXISTS idx_maestro_preferencias_grupo ON public.maestro_pref
 -- RLS
 ALTER TABLE public.maestro_preferencias ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated read maestro_preferencias"
-  ON public.maestro_preferencias FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Authenticated write maestro_preferencias"
-  ON public.maestro_preferencias FOR INSERT
-  TO authenticated
+CREATE POLICY "anon all maestro_preferencias"
+  ON public.maestro_preferencias FOR ALL
+  TO anon
+  USING (true)
   WITH CHECK (true);
-
-CREATE POLICY "Authenticated delete maestro_preferencias"
-  ON public.maestro_preferencias FOR DELETE
-  TO authenticated
-  USING (true);
