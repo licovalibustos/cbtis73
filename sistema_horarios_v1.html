@@ -1817,8 +1817,8 @@ async function renderMaestroDetail(tid){
                 const pl=plantillas.find(x=>x.id===p.plantilla_id);
                 return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
                   <span class="tag t-blue" style="flex-shrink:0;min-width:52px;text-align:center;font-family:var(--fm);font-size:.65rem">${p.grupo_clave}</span>
-                  <span style="font-weight:700;flex:1;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
-                  <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar" style="color:var(--red);padding:.18rem .38rem">🗑</button>
+                  <span style="font-weight:700;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
+                  <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar" style="flex-shrink:0;color:var(--red);padding:.18rem .38rem">🗑</button>
                 </div>`;
               }).join('')
             : `<div style="color:var(--ink3);font-size:.75rem;text-align:center;padding:.75rem 0">
