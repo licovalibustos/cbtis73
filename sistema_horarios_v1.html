@@ -1644,13 +1644,15 @@ async function renderMaestroDetail(tid){
     setTimeout(()=>{ if(T(tid)) renderMaestroDetail(tid); },1000);
     return;
   }
-  await ensurePreferencias(tid);
+  await Promise.all([ensurePreferencias(tid), ensureCatalogo(currentCicloId)]);
   if(!competencias[tid])competencias[tid]=new Set();
   const comps=[...competencias[tid]].map(pid=>{const p=plantillas.find(x=>x.id===pid);return{id:pid,nombre:p?.nombre||pid};}).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   const assigned=assignedHrs(tid);
   const libre=t.hrs_carga-assigned;
   const pct=Math.min(100,Math.round(assigned/t.hrs_carga*100));
   const col=assigned>t.hrs_carga?'var(--red)':pct>=90?'var(--amber)':'var(--green)';
+  const prefs=preferencias[tid]||[];
+  const totalPrefHrs=prefs.reduce((s,p)=>{const m=(catalogo[currentCicloId]||[]).find(x=>x.plantilla_id===p.plantilla_id);return s+(m?.hrs||0);},0);
 
   // Build assignment rows for this cycle
   const asgRows=Object.entries(schedule[currentCicloId]||{}).flatMap(([gid,cells])=>
@@ -1727,9 +1729,9 @@ async function renderMaestroDetail(tid){
     <!-- ── COMPETENCIAS ── -->
     <div class="card" style="margin-bottom:.75rem">
       <div class="ch">
-        Materias que puede impartir
+        <span>Materias que puede impartir</span>
         <span class="tag ${comps.length?'t-green':'t-red'}">${comps.length} materias</span>
-        <button class="btn btn-green btn-xs" onclick="openCompModal('${tid}')">+ Agregar</button>
+        <button class="btn btn-green btn-xs" style="margin-left:auto" onclick="openCompModal('${tid}')">+ Agregar</button>
       </div>
       <div class="cb">
         ${comps.length
@@ -1755,7 +1757,7 @@ async function renderMaestroDetail(tid){
     <!-- ── ASIGNACIONES DEL CICLO ── -->
     <div class="card">
       <div class="ch">
-        Asignaciones — ${cycle==='par'?'Feb–Jul':'Ago–Ene'}
+        <span>Asignaciones — ${cycle==='par'?'Feb–Jul':'Ago–Ene'}</span>
         <span class="tag t-blue">${asgRows.length} clases</span>
       </div>
       ${asgRows.length
@@ -1774,9 +1776,9 @@ async function renderMaestroDetail(tid){
     <!-- ── PLAZAS PRESUPUESTALES ── -->
     <div class="card" style="margin-top:.75rem">
       <div class="ch">
-        Plazas presupuestales
+        <span>Plazas presupuestales</span>
         <span class="tag ${(t.plazas||[]).length?'t-green':'t-gray'}">${(t.plazas||[]).length}</span>
-        <button class="btn btn-green btn-xs" onclick="openNewPlaza('${tid}')">+ Agregar</button>
+        <button class="btn btn-green btn-xs" style="margin-left:auto" onclick="openNewPlaza('${tid}')">+ Agregar</button>
       </div>
       <div class="cb" style="padding:0">
         ${(t.plazas||[]).length
@@ -1804,20 +1806,24 @@ async function renderMaestroDetail(tid){
 
     <!-- ── GRUPOS PREFERIDOS ── -->
     ${(()=>{
-      const prefs=preferencias[tid]||[];
+      const excede=totalPrefHrs>t.hrs_carga;
       return `<div class="card" style="margin-top:.75rem">
         <div class="ch">
-          Grupos preferidos
+          <span>Grupos preferidos</span>
           <span class="tag ${prefs.length?'t-green':'t-gray'}">${prefs.length}</span>
-          <button class="btn btn-green btn-xs" onclick="openPrefModal('${tid}')">+ Agregar</button>
+          ${totalPrefHrs>0?`<span class="tag ${excede?'t-red':'t-blue'}" style="font-family:var(--fm)" title="Suma de horas/semana de los grupos preferidos">${totalPrefHrs} hrs</span>`:''}
+          <button class="btn btn-green btn-xs" style="margin-left:auto" onclick="openPrefModal('${tid}')">+ Agregar</button>
         </div>
+        ${excede?`<div style="background:var(--red-lt);border-bottom:1px solid #efa090;padding:.45rem .9rem;font-size:.7rem;color:var(--red)">⚠ Los grupos preferidos suman <b>${totalPrefHrs}h</b>, excediendo la carga reglamentaria de <b>${t.hrs_carga}h</b> por <b>${totalPrefHrs-t.hrs_carga}h</b></div>`:''}
         <div class="cb" style="padding:0">
           ${prefs.length
             ? prefs.map(p=>{
                 const pl=plantillas.find(x=>x.id===p.plantilla_id);
+                const mat=(catalogo[currentCicloId]||[]).find(x=>x.plantilla_id===p.plantilla_id);
                 return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
                   <span class="tag t-blue" style="flex-shrink:0;min-width:52px;text-align:center;font-family:var(--fm);font-size:.65rem">${p.grupo_clave}</span>
                   <span style="font-weight:700;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
+                  ${mat?.hrs?`<span style="font-family:var(--fm);font-size:.62rem;color:var(--ink2);flex-shrink:0">${mat.hrs}h</span>`:''}
                   <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar" style="flex-shrink:0;color:var(--red);padding:.18rem .38rem">🗑</button>
                 </div>`;
               }).join('')
@@ -1968,15 +1974,23 @@ async function prefUpdateGrupos(){
   const targetGroups=mc.tipo==='cfp'
     ? allGroups.filter(g=>g.sem==mc.semestre && g.especialidad===mc.especialidad)
     : allGroups.filter(g=>g.sem==mc.semestre);
-  // Exclude groups already assigned for this teacher+plantilla
-  const already=(preferencias[_prefTid]||[]).filter(p=>p.plantilla_id===pid).map(p=>p.grupo_clave);
-  const available=targetGroups.filter(g=>!already.includes(g.clave));
+  // Exclude groups already assigned to ANY teacher for this plantilla
+  let takenClaves=new Set();
+  try{
+    const takenRows=await dbGet('maestro_preferencias',`plantilla_id=eq.${pid}&select=grupo_clave,maestro_id`);
+    takenRows.forEach(r=>{
+      // Only block if assigned to a DIFFERENT teacher; allow same teacher (already filtered above)
+      if(r.maestro_id!==_prefTid) takenClaves.add(r.grupo_clave);
+    });
+  }catch(e){}
+  const alreadyMine=(preferencias[_prefTid]||[]).filter(p=>p.plantilla_id===pid).map(p=>p.grupo_clave);
+  const available=targetGroups.filter(g=>!alreadyMine.includes(g.clave)&&!takenClaves.has(g.clave));
   if(available.length===0){
     if(targetGroups.length===0){
       sel.innerHTML='<option value="">No hay grupos para esta materia en el ciclo</option>';
     } else {
-      sel.innerHTML='<option value="">✓ Ya asignada a todos los grupos disponibles</option>';
-      warn.textContent='Esta materia ya está asignada a todos sus grupos para este maestro.';
+      sel.innerHTML='<option value="">✓ Todos los grupos ya están asignados</option>';
+      warn.textContent='Todos los grupos de esta materia ya tienen maestro asignado.';
     }
     sel.disabled=true;
     return;
