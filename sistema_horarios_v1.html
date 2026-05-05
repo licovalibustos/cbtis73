@@ -1149,13 +1149,14 @@ function renderGrupoDetail(gid){
     ${subjs.length?`<div class="card">
       ${subjs.map(s=>{
         const used=Object.values((schedule[currentCicloId]||{})[gid]||{}).filter(c=>c.subjectName===s.name&&!c.isLab).length;
+        const req=s.hrs+(s.lab||0);
         return `<div class="subj-row">
           <div style="flex:1">
             <span style="font-family:var(--fh);font-weight:700;font-size:.78rem">${s.name}</span>
             ${s.lab?`<span class="tag t-purple" style="margin-left:.4rem">${s.lab}h lab</span>`:''}
           </div>
-          <span class="tag t-blue">${s.hrs}h</span>
-          <div style="width:80px"><div class="pbar"><div class="pfill" style="width:${Math.min(100,Math.round(used/s.hrs*100))}%;background:${used>=s.hrs?'var(--green)':'var(--amber)'}"></div></div><div style="font-size:.55rem;color:var(--ink2);text-align:right">${used}/${s.hrs}</div></div>
+          <span class="tag t-blue">${req}h</span>
+          <div style="width:80px"><div class="pbar"><div class="pfill" style="width:${Math.min(100,Math.round(used/req*100))}%;background:${used>=req?'var(--green)':'var(--amber)'}"></div></div><div style="font-size:.55rem;color:var(--ink2);text-align:right">${used}/${req}</div></div>
         </div>`;
       }).join('')}
     </div>`:`<div class="empty"><div class="ico">📚</div><div>Sin materias — ve a la pestaña Materias para agregarlas</div></div>`}
@@ -1652,7 +1653,10 @@ async function renderMaestroDetail(tid){
   const pct=Math.min(100,Math.round(assigned/t.hrs_carga*100));
   const col=assigned>t.hrs_carga?'var(--red)':pct>=90?'var(--amber)':'var(--green)';
   const prefs=preferencias[tid]||[];
-  const totalPrefHrs=prefs.reduce((s,p)=>{const m=(catalogo[currentCicloId]||[]).find(x=>x.plantilla_id===p.plantilla_id);return s+(m?.hrs||0);},0);
+  const totalPrefHrs=prefs.reduce((s,p)=>{
+    const m=(catalogo[currentCicloId]||[]).find(x=>x.plantilla_id===p.plantilla_id);
+    return s+(Number(m?.hrs)||0)+(Number(m?.hrs_lab)||0);
+  },0);
 
   // Build assignment rows for this cycle
   const asgRows=Object.entries(schedule[currentCicloId]||{}).flatMap(([gid,cells])=>
@@ -1811,7 +1815,7 @@ async function renderMaestroDetail(tid){
         <div class="ch">
           <span>Grupos preferidos</span>
           <span class="tag ${prefs.length?'t-green':'t-gray'}">${prefs.length}</span>
-          ${totalPrefHrs>0?`<span class="tag ${excede?'t-red':'t-blue'}" style="font-family:var(--fm)" title="Suma de horas/semana de los grupos preferidos">${totalPrefHrs} hrs</span>`:''}
+          ${totalPrefHrs>0?`<span class="tag ${excede?'t-red':'t-blue'}" style="font-family:var(--fm)" title="Suma de horas/semana (aula + laboratorio) de los grupos preferidos">${totalPrefHrs} hrs</span>`:''}
           <button class="btn btn-green btn-xs" style="margin-left:auto" onclick="openPrefModal('${tid}')">+ Agregar</button>
         </div>
         ${excede?`<div style="background:var(--red-lt);border-bottom:1px solid #efa090;padding:.45rem .9rem;font-size:.7rem;color:var(--red)">⚠ Los grupos preferidos suman <b>${totalPrefHrs}h</b>, excediendo la carga reglamentaria de <b>${t.hrs_carga}h</b> por <b>${totalPrefHrs-t.hrs_carga}h</b></div>`:''}
@@ -1820,10 +1824,13 @@ async function renderMaestroDetail(tid){
             ? prefs.map(p=>{
                 const pl=plantillas.find(x=>x.id===p.plantilla_id);
                 const mat=(catalogo[currentCicloId]||[]).find(x=>x.plantilla_id===p.plantilla_id);
+                const matHrs=Number(mat?.hrs)||0;
+                const matLab=Number(mat?.hrs_lab)||0;
+                const matTotal=matHrs+matLab;
                 return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .9rem;border-bottom:1px solid var(--bdr);font-size:.74rem">
                   <span class="tag t-blue" style="flex-shrink:0;min-width:52px;text-align:center;font-family:var(--fm);font-size:.65rem">${p.grupo_clave}</span>
                   <span style="font-weight:700;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:var(--fh);font-size:.72rem">${pl?.nombre||p.plantilla_id}</span>
-                  ${mat?.hrs?`<span style="font-family:var(--fm);font-size:.62rem;color:var(--ink2);flex-shrink:0">${mat.hrs}h</span>`:''}
+                  ${matTotal?`<span style="font-family:var(--fm);font-size:.62rem;color:var(--ink2);flex-shrink:0" title="${matHrs}h aula${matLab?` + ${matLab}h lab`:''}">${matTotal}h</span>`:''}
                   <button class="btn btn-ghost btn-xs" onclick="eliminarPreferencia('${tid}','${p.id}')" title="Quitar" style="flex-shrink:0;color:var(--red);padding:.18rem .38rem">🗑</button>
                 </div>`;
               }).join('')
@@ -2384,7 +2391,7 @@ async function runEngine(){
         continue;
       }
 
-      let hrsLeft=subj.hrs;
+      let hrsLeft=subj.hrs+(subj.lab||0);
       const slots=assignable(g.turno,g.sem);
 
       // --- Phase 1: place blocks (slotA + slotB consecutive) ---
