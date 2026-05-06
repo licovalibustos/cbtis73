@@ -2923,8 +2923,9 @@ function renderHorarioMaestro(){
   const t=T(tid);
   const sched=schedule[currentCicloId]||{};
 
-  // Build lookup: {turno:{slotId:{dayIdx:{subjectName,gClave,isLab}}}}
+  // Build lookup: {turno:{slotId:{dayIdx:{subjectName,gClave,isLab,pending}}}}
   const grid={M:{},V:{}};
+  // Approved assignments
   for(const [gid,cells] of Object.entries(sched)){
     const g=G(gid);if(!g)continue;
     const tur=g.turno||'M';
@@ -2932,13 +2933,31 @@ function renderHorarioMaestro(){
       if(d.teacherId!==tid)continue;
       const [sl,dy]=key.split('_');
       if(!grid[tur][sl])grid[tur][sl]={};
-      grid[tur][sl][parseInt(dy)]={subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab};
+      grid[tur][sl][parseInt(dy)]={subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab,pending:false};
     }
   }
+  // Pending suggestions
+  for(const s of suggestions){
+    if(s.teacherId!==tid||s.status!=='pending')continue;
+    const g=G(s.groupId);if(!g)continue;
+    const tur=g.turno||'M';
+    const gClave=g.clave||s.groupId;
+    const addSlot=(sl,dy)=>{
+      if(sl===null||dy===null)return;
+      if(!grid[tur][sl])grid[tur][sl]={};
+      if(!grid[tur][sl][dy])// don't overwrite approved
+        grid[tur][sl][dy]={subjectName:s.subjectName,gClave,isLab:false,pending:true};
+    };
+    addSlot(s.slotA,s.dayIdx);
+    if(s.slotB)addSlot(s.slotB,s.dayIdx);
+  }
 
-  // Total hours assigned
+  // Total hours assigned (approved only)
   let totalHrs=0;
-  for(const tur of['M','V'])for(const sl of Object.keys(grid[tur]))totalHrs+=Object.keys(grid[tur][sl]).length;
+  for(const tur of['M','V'])for(const sl of Object.keys(grid[tur]))
+    totalHrs+=Object.values(grid[tur][sl]).filter(c=>!c.pending).length;
+  const pendingHrs=(suggestions.filter(s=>s.teacherId===tid&&s.status==='pending')
+    .reduce((n,s)=>n+(s.slotB?2:1),0));
 
   // Cell style helpers
   const cellBase='border:1px solid #d0d5dd;padding:.3rem .4rem;min-height:44px;display:flex;flex-direction:column;justify-content:center;font-size:.62rem;text-align:center;border-radius:4px;';
@@ -2969,9 +2988,13 @@ function renderHorarioMaestro(){
       for(let d=0;d<5;d++){
         const cell=grid[tur][slot.id]?.[d];
         if(cell){
-          h+=`<div style="${cellBase}background:${isVes?'#ede9fe':'#dbeafe'};border-color:${isVes?'#a78bfa':'#93c5fd'};">
-            <div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:${isVes?'#6d28d9':'#1d4ed8'};line-height:1.2">${cell.subjectName}</div>
-            <div style="font-size:.55rem;color:#64748b;margin-top:2px">${cell.gClave}${cell.isLab?' · Lab':''}</div>
+          const bg=cell.pending?'#fffbeb':(isVes?'#ede9fe':'#dbeafe');
+          const brd=cell.pending?'#f59e0b':(isVes?'#a78bfa':'#93c5fd');
+          const clr=cell.pending?'#92400e':(isVes?'#6d28d9':'#1d4ed8');
+          const bStyle=cell.pending?'border:2px dashed '+brd+';':'border:1px solid '+brd+';';
+          h+=`<div style="${cellBase}${bStyle}background:${bg};">
+            <div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:${clr};line-height:1.2">${cell.subjectName}</div>
+            <div style="font-size:.55rem;color:#64748b;margin-top:2px">${cell.gClave}${cell.isLab?' · Lab':''}${cell.pending?' · ⏳':''}</div>
           </div>`;
         } else {
           h+=`<div style="${cellBase}background:#fff;"></div>`;
@@ -2986,11 +3009,12 @@ function renderHorarioMaestro(){
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.75rem">
       <div>
         <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">${t.name}</div>
-        <div style="font-size:.74rem;color:var(--ink2)">${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga · ${totalHrs}h asignadas${t.obs?' · '+t.obs:''}</div>
+        <div style="font-size:.74rem;color:var(--ink2)">${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga · ${totalHrs}h aprobadas${pendingHrs?' · '+pendingHrs+'h pendientes':''}${t.obs?' · '+t.obs:''}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:.5rem">
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:.3rem;font-size:.68rem"><div style="width:12px;height:12px;border-radius:3px;background:#dbeafe;border:1.5px solid #93c5fd"></div>Matutino</div>
         <div style="display:flex;align-items:center;gap:.3rem;font-size:.68rem"><div style="width:12px;height:12px;border-radius:3px;background:#ede9fe;border:1.5px solid #a78bfa"></div>Vespertino</div>
+        <div style="display:flex;align-items:center;gap:.3rem;font-size:.68rem"><div style="width:12px;height:12px;border-radius:3px;background:#fffbeb;border:2px dashed #f59e0b"></div>Pendiente ⏳</div>
       </div>
     </div>
     <div class="card" style="padding:1rem">
