@@ -364,6 +364,7 @@ input::placeholder{color:var(--ink3);}
     <div class="vsep"></div>
     <select id="asig-sem" onchange="renderAsigStats()"><option value="">Todos</option></select>
     <select id="asig-tur" onchange="renderAsigStats()"><option value="">Todos turnos</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
+    <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Estricto: solo propone bloques en horarios marcados como disponibles. Flexible: puede proponer fuera de disponibilidad (con advertencia)."><input type="checkbox" id="asig-strict" checked> Estricto</label>
     <button class="btn btn-blue btn-sm" onclick="runEngine()">🤖 Generar sugerencias</button>
     <button class="btn btn-green btn-sm" onclick="approveAll()">✓ Aprobar todo</button>
   </div>
@@ -2339,8 +2340,9 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
     const score=minAv-(usedHrs/cand.hrs_carga*20);
     if(score>bestScore){bestScore=score;bestT=cand;}
   }
-  // Pass 2: fallback — allow unavail slots
-  if(!bestT){
+  // Pass 2: fallback — allow unavail slots (only when not strict)
+  const _strict=document.getElementById('asig-strict')?.checked!==false;
+  if(!bestT&&!_strict){
     for(const cand of candidates){
       if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
       if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
@@ -2440,6 +2442,7 @@ async function runEngine(){
           // Skip cells already covered by an approved block
           if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===slot.id||s.slotB===slot.id)&&s.dayIdx===d&&s.status==='pending'))continue;
 
+          const strict2=document.getElementById('asig-strict')?.checked!==false;
           let bestT=null,bestScore=-1;
           for(const cand of candidates){
             const av=((availability[cand.id]||{})[currentCicloId]||{})[key]||'neutral';
@@ -2451,7 +2454,8 @@ async function runEngine(){
             const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
             if(score>bestScore){bestScore=score;bestT=cand;}
           }
-          if(!bestT){
+          // fallback: allow unavail only in flexible mode
+          if(!bestT&&!strict2){
             for(const cand of candidates){
               if(isConflict(cand.id,slot.id,d,g.id))continue;
               if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
@@ -2554,10 +2558,11 @@ function selSug(i){
     isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId)||
     (s.slotB?isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId):false)
   ):false;
-  document.getElementById('apr-s').textContent=`${s.groupId} · ${s.slotA?DAYS[s.dayIdx]+' · '+slotRangeStr:''}`;
+  const grpClaveModal=G(s.groupId)?.clave||s.groupId;
+  document.getElementById('apr-s').textContent=`${grpClaveModal} · ${s.slotA?DAYS[s.dayIdx]+' · '+slotRangeStr:''}`;  
   document.getElementById('apr-body').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem">
-      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Grupo</div><div style="font-family:var(--fh);font-weight:800;font-size:1.05rem">${s.groupId}</div></div>
+      <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Grupo</div><div style="font-family:var(--fh);font-weight:800;font-size:1.05rem">${G(s.groupId)?.clave||s.groupId}</div></div>
       <div class="card cb"><div style="font-size:.6rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">Horario</div><div style="font-family:var(--fh);font-weight:700;font-size:.9rem">${s.slotA?DAYS[s.dayIdx]:'—'}</div><div style="font-size:.7rem;color:var(--ink2)">${slotRangeStr}${slotB?' (bloque 2h)':''}</div></div>
     </div>
     <div class="card cb" style="margin-bottom:.75rem">
