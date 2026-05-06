@@ -2887,7 +2887,7 @@ function fillPrSel(){
   const type=document.getElementById('pr-type').value;
   const sel=document.getElementById('pr-which');
   sel.innerHTML='';
-  if(type==='group') groups[currentCicloId].forEach(g=>sel.appendChild(new Option(`${g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
+  if(type==='group') groups[currentCicloId].forEach(g=>sel.appendChild(new Option(`${g.clave||g.id} · ${g.sem}° · ${g.turno==='M'?'Mat':'Ves'}`,g.id)));
   else TEACHERS.forEach(t=>sel.appendChild(new Option(t.name,t.id)));
 }
 
@@ -2902,7 +2902,7 @@ function buildPrint(){
     const isVes=g.turno==='V';
     let html=`
       <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">DIRECCIÓN GENERAL DE EDUCACIÓN TECNOLÓGICA INDUSTRIAL · CBTIS</div>
-      <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;margin:.18rem 0">Horario — Grupo ${which}</div>
+      <div style="font-family:var(--fh);font-weight:800;font-size:1.1rem;margin:.18rem 0">Horario — Grupo ${g.clave||which}</div>
       <div style="font-size:.72rem;color:var(--ink2);margin-bottom:1.1rem">${g.sem}° Semestre · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${CYCLE_LBL[cycle]}</div>
       <div class="ovr-x"><div class="sg" style="gap:1px">
         <div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">HORA</div>
@@ -2954,7 +2954,7 @@ function buildPrint(){
           const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
           html+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.28rem;min-height:38px;display:flex;flex-direction:column;justify-content:center">
             ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.6rem;color:var(--blue)">${a.d.subjectName}</div>
-            <div style="font-size:.5rem;color:var(--ink2)">${a.gid}</div>`:''}</div>`;
+            <div style="font-size:.5rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
         }
       }
       html+=`</div></div>`;
