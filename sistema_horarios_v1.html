@@ -254,6 +254,7 @@ input::placeholder{color:var(--ink3);}
     <div class="ni" data-v="disponibilidad" onclick="go('disponibilidad')"><span class="ic">🗓</span>Disponibilidad</div>
     <div class="ni" data-v="asignacion" onclick="go('asignacion')"><span class="ic">⚙</span>Asignación</div>
     <div class="ni" data-v="horarios" onclick="go('horarios')"><span class="ic">📋</span>Horarios</div>
+    <div class="ni" data-v="hor-maestro" onclick="go('hor-maestro')"><span class="ic">👨‍🏫</span>Horario Maestro</div>
     <div class="ni" data-v="impresion" onclick="go('impresion')"><span class="ic">🖨</span>Imprimir</div>
   </nav>
   <div class="top-end">
@@ -401,7 +402,23 @@ input::placeholder{color:var(--ink3);}
 </div>
 
 <!-- ══════════════════════════════
-     7. IMPRESIÓN
+     7. HORARIO POR MAESTRO
+     ══════════════════════════════ -->
+<div class="view" id="view-hor-maestro">
+  <div class="vbar">
+    <div class="vtit">👨‍🏫 Horario por Maestro</div><div class="vsep"></div>
+    <span id="cy-hm" class="cy-badge cy-par">Feb–Jul · Pares</span>
+    <div class="vsep"></div>
+    <select id="hm-teacher" onchange="renderHorarioMaestro()" style="min-width:200px"><option value="">— Maestro —</option></select>
+    <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+  <div class="vbody" id="hm-body">
+    <div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     8. IMPRESIÓN
      ══════════════════════════════ -->
 <div class="view" id="view-impresion">
   <div class="vbar no-print">
@@ -996,6 +1013,7 @@ function go(name){
   if(name==='disponibilidad') renderMaestrosSb();
   if(name==='asignacion'){fillSemSels();renderAsigStats();}
   if(name==='horarios'){fillSemSels();filterHorGrp();}
+  if(name==='hor-maestro') renderHorarioMaestro();
   if(name==='impresion') fillPrSel();
   updConflict();
 }
@@ -1011,7 +1029,7 @@ function setCycle(c){
     if(el){el.textContent=lbl;el.className='cy-badge '+cls;}
   });
   selGroup=null;suggestions=[];
-  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();fillPrSel();
+  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();renderHorarioMaestro();fillPrSel();
   toast('Ciclo: '+lbl);
 }
 
@@ -2883,6 +2901,100 @@ function cellRemove(){
 // ═══════════════════════════════════════════
 //  7. IMPRESIÓN
 // ═══════════════════════════════════════════
+function renderHorarioMaestro(){
+  // Populate combo
+  const sel=document.getElementById('hm-teacher');
+  const prev=sel.value;
+  while(sel.options.length>1)sel.remove(1);
+  TEACHERS.forEach(t=>sel.appendChild(new Option(t.name,t.id)));
+  if([...sel.options].some(o=>o.value===prev))sel.value=prev;
+  else if(!sel.value&&prev)sel.value='';
+
+  const tid=sel.value;
+  const body=document.getElementById('hm-body');
+  if(!tid){body.innerHTML='<div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>';return;}
+
+  const t=T(tid);
+  const sched=schedule[currentCicloId]||{};
+
+  // Build lookup: {turno:{slotId:{dayIdx:{subjectName,gClave,isLab}}}}
+  const grid={M:{},V:{}};
+  for(const [gid,cells] of Object.entries(sched)){
+    const g=G(gid);if(!g)continue;
+    const tur=g.turno||'M';
+    for(const [key,d] of Object.entries(cells)){
+      if(d.teacherId!==tid)continue;
+      const [sl,dy]=key.split('_');
+      if(!grid[tur][sl])grid[tur][sl]={};
+      grid[tur][sl][parseInt(dy)]={subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab};
+    }
+  }
+
+  // Total hours assigned
+  let totalHrs=0;
+  for(const tur of['M','V'])for(const sl of Object.keys(grid[tur]))totalHrs+=Object.keys(grid[tur][sl]).length;
+
+  // Cell style helpers
+  const cellBase='border:1px solid #d0d5dd;padding:.3rem .4rem;min-height:44px;display:flex;flex-direction:column;justify-content:center;font-size:.62rem;text-align:center;border-radius:4px;';
+  const hdrCell='background:#1e293b;color:#fff;font-family:var(--fh);font-weight:700;font-size:.58rem;text-align:center;padding:.35rem .3rem;border-radius:4px;';
+  const timeCell='background:#f1f5f9;font-family:var(--fm);font-size:.55rem;color:#64748b;padding:.28rem .35rem;display:flex;align-items:center;border-radius:4px;border:1px solid #e2e8f0;white-space:nowrap;';
+  const recessCell='background:#fef9c3;border:1px solid #fde047;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:#854d0e;font-weight:600;padding:.25rem;grid-column:span 5;letter-spacing:.04em;';
+
+  function buildTurnoTable(tur){
+    const slots=SLOTS[tur];
+    const isVes=tur==='V';
+    const hasAny=Object.keys(grid[tur]).length>0;
+    let h=`<div style="font-family:var(--fh);font-weight:800;font-size:.78rem;color:${isVes?'#7c3aed':'#1d4ed8'};text-transform:uppercase;letter-spacing:.06em;margin:1.1rem 0 .45rem">${isVes?'▼ Turno Vespertino':'▲ Turno Matutino'}</div>`;
+    if(!hasAny&&tur==='V'){h+='<div style="font-size:.72rem;color:var(--ink3);padding:.4rem 0">Sin asignaciones en turno vespertino</div>';return h;}
+    if(!hasAny&&tur==='M'){h+='<div style="font-size:.72rem;color:var(--ink3);padding:.4rem 0">Sin asignaciones en turno matutino</div>';return h;}
+    h+=`<div style="overflow-x:auto"><div style="display:grid;grid-template-columns:90px repeat(5,1fr);gap:3px;min-width:540px">`;
+    // Header row
+    h+=`<div style="${hdrCell}">Horas</div>`;
+    DAYS.forEach(d=>{h+=`<div style="${hdrCell}">${d}</div>`;});
+    // Slot rows
+    for(const slot of slots){
+      // Receso row
+      if(slot.recess){
+        h+=`<div style="${timeCell}">${slot.lbl}</div>`;
+        h+=`<div style="${recessCell}">RECESO · ${slot.lbl}</div>`;
+        continue;
+      }
+      h+=`<div style="${timeCell}">${slot.lbl}</div>`;
+      for(let d=0;d<5;d++){
+        const cell=grid[tur][slot.id]?.[d];
+        if(cell){
+          h+=`<div style="${cellBase}background:${isVes?'#ede9fe':'#dbeafe'};border-color:${isVes?'#a78bfa':'#93c5fd'};">
+            <div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:${isVes?'#6d28d9':'#1d4ed8'};line-height:1.2">${cell.subjectName}</div>
+            <div style="font-size:.55rem;color:#64748b;margin-top:2px">${cell.gClave}${cell.isLab?' · Lab':''}</div>
+          </div>`;
+        } else {
+          h+=`<div style="${cellBase}background:#fff;"></div>`;
+        }
+      }
+    }
+    h+=`</div></div>`;
+    return h;
+  }
+
+  let html=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.75rem">
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">${t.name}</div>
+        <div style="font-size:.74rem;color:var(--ink2)">${t.hrs_nom}h nombramiento · ${t.hrs_carga}h carga · ${totalHrs}h asignadas${t.obs?' · '+t.obs:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.3rem;font-size:.68rem"><div style="width:12px;height:12px;border-radius:3px;background:#dbeafe;border:1.5px solid #93c5fd"></div>Matutino</div>
+        <div style="display:flex;align-items:center;gap:.3rem;font-size:.68rem"><div style="width:12px;height:12px;border-radius:3px;background:#ede9fe;border:1.5px solid #a78bfa"></div>Vespertino</div>
+      </div>
+    </div>
+    <div class="card" style="padding:1rem">
+      ${buildTurnoTable('M')}
+      ${buildTurnoTable('V')}
+    </div>
+  `;
+  body.innerHTML=html;
+}
+
 function fillPrSel(){
   const type=document.getElementById('pr-type').value;
   const sel=document.getElementById('pr-which');
@@ -3003,7 +3115,7 @@ function onCicloChange(){
   groups[currentCicloId]=null; subjects[currentCicloId]=null; schedule[currentCicloId]=null;
   catalogo[currentCicloId]=null; asignDet[currentCicloId]=null; asignGrupo[currentCicloId]=null;
   selGroup=null;suggestions=[];
-  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();fillPrSel();
+  fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();renderHorarioMaestro();fillPrSel();
   toast('Ciclo: '+(c?.nombre||''));
 }
 
