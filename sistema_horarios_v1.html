@@ -1135,7 +1135,7 @@ function renderGrupoDetail(gid){
   document.getElementById('g-detail').innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
       <div>
-        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${gid}</div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${g.clave||gid}</div>
         <div style="font-size:.75rem;color:var(--ink2)">${g.sem}° Semestre · ${g.turno==='M'?'Matutino':'Vespertino'} · ${g.especialidad||''}</div>
       </div>
       <div style="display:flex;gap:.4rem">
@@ -2696,7 +2696,7 @@ function filterHorGrp(){
   const prev=sel.value;
   while(sel.options.length>1)sel.remove(1);
   groups[currentCicloId].filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
-    .forEach(g=>sel.appendChild(new Option(g.id,g.id)));
+    .forEach(g=>sel.appendChild(new Option(g.clave||g.id,g.id)));
   if([...sel.options].some(o=>o.value===prev))sel.value=prev;
   renderHorario();
 }
@@ -2714,7 +2714,7 @@ function renderHorario(){
   let html=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
       <div>
-        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${gid}</div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${g.clave||gid}</div>
         <div style="font-size:.74rem;color:var(--ink2)">${g.sem}° · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${Object.keys(cells).length} bloques asignados</div>
       </div>
       <div class="legend">
