@@ -1,0 +1,555 @@
+{
+  "ciclo": {
+    "id": "39f9b6ab-58a6-41b2-80dc-0f573e824619",
+    "nombre": "Ago 2026 – Ene 2027",
+    "tipo": "impar",
+    "activo": true,
+    "fecha_inicio": "2026-08-01"
+  },
+  "strict": true,
+  "totals": {
+    "pending_items": 855,
+    "pending_hours": 1516,
+    "no_teacher": 0,
+    "unplaceable_items": 43,
+    "unplaceable_hours": 128
+  },
+  "focus": [
+    {
+      "grupo": "3AMA",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "PEREZ GARZA PEDRO ALBERTO"
+      ]
+    },
+    {
+      "grupo": "3AMC",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE"
+      ]
+    },
+    {
+      "grupo": "3AML",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "PEREZ GARZA PEDRO ALBERTO"
+      ]
+    },
+    {
+      "grupo": "3AMM",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE",
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI"
+      ]
+    },
+    {
+      "grupo": "3AMP",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE",
+        "HERNANDEZ DORIA JORGE OMAR"
+      ]
+    },
+    {
+      "grupo": "3AMS",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "PEREZ GARZA PEDRO ALBERTO",
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI"
+      ]
+    },
+    {
+      "grupo": "3AVA",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE"
+      ]
+    },
+    {
+      "grupo": "3AVC",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "HERNANDEZ DORIA JORGE OMAR",
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI"
+      ]
+    },
+    {
+      "grupo": "3AVL",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "PEREZ GARZA PEDRO ALBERTO",
+        "SIFUENTES CERVANTES JOSE"
+      ]
+    },
+    {
+      "grupo": "3AVM",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "HERNANDEZ DORIA JORGE OMAR"
+      ]
+    },
+    {
+      "grupo": "3AVP",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE",
+        "PEREZ GARZA PEDRO ALBERTO"
+      ]
+    },
+    {
+      "grupo": "3AVS",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "SIFUENTES CERVANTES JOSE"
+      ]
+    },
+    {
+      "grupo": "3BML",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "HERNANDEZ DORIA JORGE OMAR",
+        "PEREZ GARZA PEDRO ALBERTO"
+      ]
+    },
+    {
+      "grupo": "3BMP",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE",
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI"
+      ]
+    },
+    {
+      "grupo": "3BVL",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "SIFUENTES CERVANTES JOSE",
+        "HERNANDEZ DORIA JORGE OMAR"
+      ]
+    },
+    {
+      "grupo": "3BVP",
+      "materia": "PENSAMIENTO MATEMÁTICO III",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "PEREZ GARZA PEDRO ALBERTO"
+      ]
+    },
+    {
+      "grupo": "5AMC",
+      "materia": "ASISTE AL CIERRE DE AUDITORIA",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ACOSTA TERRAZAS MA. LUISA"
+      ]
+    },
+    {
+      "grupo": "5AMC",
+      "materia": "VERIFICA OPERACIONES CONTABLES",
+      "requerida": 8,
+      "propuesta": 8,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ACOSTA TERRAZAS MA. LUISA"
+      ]
+    },
+    {
+      "grupo": "5AVC",
+      "materia": "ASISTE AL CIERRE DE AUDITORIA",
+      "requerida": 4,
+      "propuesta": 4,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ACOSTA TERRAZAS MA. LUISA"
+      ]
+    },
+    {
+      "grupo": "5AVC",
+      "materia": "VERIFICA OPERACIONES CONTABLES",
+      "requerida": 8,
+      "propuesta": 8,
+      "faltan": 0,
+      "unplaceable": 0,
+      "no_teacher": 0,
+      "maestro_fijo": null,
+      "maestros_propuestos": [
+        "ACOSTA TERRAZAS MA. LUISA"
+      ]
+    }
+  ],
+  "teacher_focus": {
+    "id": "T03",
+    "nombre": "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+    "carga": 24,
+    "horas_propuestas": 18,
+    "grupos": [
+      "3AMA",
+      "3AML",
+      "3AMM",
+      "3AMS",
+      "3AVC",
+      "3AVM",
+      "3AVS",
+      "3BMP",
+      "3BVP"
+    ],
+    "materias": [
+      "PENSAMIENTO MATEMÁTICO III"
+    ]
+  },
+  "top_unplaceable": [
+    {
+      "grupo": "5BML",
+      "materia": "REA. ANALISIS HEMA. DE SERIE BLANCA Y HEMOSTASIA",
+      "hrs": 6,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVL",
+      "materia": "REA. ANALISIS HEMA. DE SERIE BLANCA Y HEMOSTASIA",
+      "hrs": 6,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVL",
+      "materia": "ANA. Y FRACCIONA SANGRE C/FINES TRANSFUSIONALES",
+      "hrs": 4,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVL",
+      "materia": "LA ENERGÍA EN LOS PROCESOS DE LA VIDA",
+      "hrs": 4,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVP",
+      "materia": "LA ENERGÍA EN LOS PROCESOS DE LA VIDA",
+      "hrs": 4,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMC",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMC",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AML",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AML",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMM",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMM",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMP",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMP",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMS",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AMS",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVA",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVA",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVC",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVC",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVL",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVL",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVM",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVM",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVP",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVP",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVS",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVS",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BML",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BML",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BMP",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BMP",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVL",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVL",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVP",
+      "materia": "APLICACIÓN DEL PENSAMENTO MATEMÁTICO",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVP",
+      "materia": "ECONOMÍA PÚBLICA Y SOCIAL",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVP",
+      "materia": "MATERIA Y ENERGÍA EN LOS ORGANISMOS",
+      "hrs": 3,
+      "teacherId": null
+    },
+    {
+      "grupo": "3AVA",
+      "materia": "GESTIONA LOS PROCESOS DE INDUCCIÓN Y PERMANENCIA DEL TALENTO HUMANO",
+      "hrs": 2,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVL",
+      "materia": "REA. ANALISIS HEMA. DE SERIE BLANCA Y HEMOSTASIA",
+      "hrs": 2,
+      "teacherId": null
+    },
+    {
+      "grupo": "5AVM",
+      "materia": "MANTIENE EL SISTEMA DE TRANSMISION TRANSEJE MANUAL DEL AUTOMOVIL",
+      "hrs": 2,
+      "teacherId": null
+    },
+    {
+      "grupo": "5BVP",
+      "materia": "CONSTRUYE  APLICACIONES WEB",
+      "hrs": 2,
+      "teacherId": null
+    }
+  ]
+}

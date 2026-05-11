@@ -1,0 +1,212 @@
+﻿[
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "__TEACHER__",
+        "materia":  "ARCOS VELAZQUEZ GABRIELA YATZIRI",
+        "req":  24,
+        "got":  0,
+        "faltan":  24,
+        "maestro_id":  "T03"
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AMA",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AMC",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AML",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AMM",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AMP",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AMS",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVA",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVC",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVL",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVM",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVP",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3AVS",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3BML",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3BMP",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3BVL",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "3BVP",
+        "materia":  "PENSAMIENTO MATEMÁTICO III",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "5AMC",
+        "materia":  "ASISTE AL CIERRE DE AUDITORIA",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "5AMC",
+        "materia":  "VERIFICA OPERACIONES CONTABLES",
+        "req":  8,
+        "got":  0,
+        "faltan":  8,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "5AVC",
+        "materia":  "ASISTE AL CIERRE DE AUDITORIA",
+        "req":  4,
+        "got":  0,
+        "faltan":  4,
+        "maestro_id":  null
+    },
+    {
+        "ciclo":  "Ago 2026 – Ene 2027",
+        "tipo":  "impar",
+        "grupo":  "5AVC",
+        "materia":  "VERIFICA OPERACIONES CONTABLES",
+        "req":  8,
+        "got":  0,
+        "faltan":  8,
+        "maestro_id":  null
+    }
+]

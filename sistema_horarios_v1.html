@@ -137,6 +137,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .sg-cell.filled{background:var(--blue-lt);border-color:#6888d8;}
 .sg-cell.filled.ves{background:var(--purple-lt);border-color:#9860d8;}
 .sg-cell.conflict{background:var(--red-lt)!important;border-color:var(--red)!important;animation:blink 1.4s infinite;}
+.sg-cell.pending{background:#fffbeb!important;border:2px dashed #f59e0b!important;}
 .sg-cell.warn{background:var(--amber-lt)!important;border-color:#c88840!important;}
 .sg-cell.recess{background:var(--bg);border-color:var(--bdr);cursor:default;}
 .sg-cell.recess:hover{background:var(--bg);border-color:var(--bdr);}
@@ -241,7 +242,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.5</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.6</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -372,6 +373,7 @@ input::placeholder{color:var(--ink3);}
     <select id="asig-sem" onchange="renderAsigStats()"><option value="">Todos</option></select>
     <select id="asig-tur" onchange="renderAsigStats()"><option value="">Todos turnos</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
     <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Estricto: solo propone bloques en horarios marcados como disponibles. Flexible: puede proponer fuera de disponibilidad (con advertencia)."><input type="checkbox" id="asig-strict" checked> Estricto</label>
+    <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Cuando está activo, el motor asigna cada materia al maestro marcado como preferido (maestro_preferencias) antes de intentar el reparto libre por competencias."><input type="checkbox" id="asig-prefer"> Respetar preferido</label>
     <button class="btn btn-blue btn-sm" onclick="runEngine()">🤖 Generar sugerencias</button>
     <button class="btn btn-green btn-sm" onclick="approveAll()">✓ Aprobar todo</button>
   </div>
@@ -382,9 +384,10 @@ input::placeholder{color:var(--ink3);}
         <div class="empty"><div class="ico">🤖</div><div style="font-size:.75rem">Presiona "Generar sugerencias"</div></div>
       </div>
     </div>
-    <div class="vbody" id="asig-body" style="flex:1">
+    <div class="vbody" id="asig-body" style="flex:1;overflow-y:auto">
       <div class="stats" id="asig-stats"></div>
       <div id="asig-assignments"></div>
+      <div id="asig-diag"></div>
     </div>
   </div>
 </div>
@@ -948,6 +951,8 @@ let schedule={};
 
 // suggestions list
 let suggestions=[];
+// diagnostic from last engine run
+let engineDiag=[];
 
 // preferencias[maestroId] = [{id,maestro_id,plantilla_id,grupo_clave}]
 let preferencias={};
@@ -1030,11 +1035,11 @@ function setCycle(c){
   document.getElementById('c-imp').classList.toggle('on',c==='impar');
   const lbl=CYCLE_LBL[c];
   const cls=c==='par'?'cy-par':'cy-imp';
-  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor'].forEach(id=>{
+  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor','cy-hm'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){el.textContent=lbl;el.className='cy-badge '+cls;}
   });
-  selGroup=null;suggestions=[];
+  selGroup=null;suggestions=[];engineDiag=[];
   fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();renderHorarioMaestro();fillPrSel();
   toast('Ciclo: '+lbl);
 }
@@ -1841,6 +1846,7 @@ async function renderMaestroDetail(tid){
           <span>Grupos preferidos</span>
           <span class="tag ${prefs.length?'t-green':'t-gray'}">${prefs.length}</span>
           ${totalPrefHrs>0?`<span class="tag ${excede?'t-red':'t-blue'}" style="font-family:var(--fm)" title="Suma de horas/semana (aula + laboratorio) de los grupos preferidos">${totalPrefHrs} hrs</span>`:''}
+          <label style="display:flex;align-items:center;gap:.3rem;font-size:.7rem;cursor:pointer;user-select:none;margin-left:.5rem" title="Cuando está activo, el motor solo asigna a este maestro en sus grupos preferidos o en asignaciones fijas. No participará en el reparto libre."><input type="checkbox" id="freeze-${tid}" ${t.solo_grupos_objetivo?'checked':''} onchange="toggleFreezeTeacher('${tid}',this.checked)"> Solo grupos obj.</label>
           <button class="btn btn-green btn-xs" style="margin-left:auto" onclick="openPrefModal('${tid}')">+ Agregar</button>
         </div>
         ${excede?`<div style="background:var(--red-lt);border-bottom:1px solid #efa090;padding:.45rem .9rem;font-size:.7rem;color:var(--red)">⚠ Los grupos preferidos suman <b>${totalPrefHrs}h</b>, excediendo la carga reglamentaria de <b>${t.hrs_carga}h</b> por <b>${totalPrefHrs-t.hrs_carga}h</b></div>`:''}
@@ -2172,7 +2178,7 @@ function saveTeacher(){
       return n>max?n:max;
     },0);
     const newId='T'+(String(maxId+1).padStart(2,'0'));
-    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,plazas:[],_loaded:true});
+    TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,solo_grupos_objetivo:false,plazas:[],_loaded:true});
     selTeacher=newId;
     closeM('modal-teacher');
     renderMaestrosList();
@@ -2202,6 +2208,20 @@ async function deleteTeacher(){
     toast('Maestro eliminado','warn');
   }catch(e){toast('Error: '+e.message,'err');}
   hideLoading();
+}
+
+async function toggleFreezeTeacher(tid,val){
+  const t=T(tid);if(!t)return;
+  t.solo_grupos_objetivo=val;
+  try{
+    await dbPatch('maestros',`id=eq.${tid}`,{solo_grupos_objetivo:val});
+    toast(val?'Maestro restringido a grupos objetivo':'Restricción de grupos objetivo desactivada');
+  }catch(e){
+    t.solo_grupos_objetivo=!val;
+    const cb=document.getElementById('freeze-'+tid);
+    if(cb)cb.checked=!val;
+    toast('Error: '+e.message,'err');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2379,8 +2399,53 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
   return bestT?{teacher:bestT, score:Math.round(Math.max(0,bestScore))}:null;
 }
 
+// Returns preferred teacher (teacher obj) for a plantilla+grupo_clave, or null
+function preferredTeacherFor(plantillaId, grupoClave){
+  if(!plantillaId||!grupoClave)return null;
+  for(const [tid,prefs] of Object.entries(preferencias)){
+    if(prefs.some(p=>p.plantilla_id===plantillaId&&p.grupo_clave===grupoClave)){
+      const t=T(tid);if(t)return t;
+    }
+  }
+  return null;
+}
+
+// Picks the single teacher to use for a whole subject in a group (D1–D3).
+// Returns {teacher, cause} where cause ∈ 'fixed'|'preferred'|'free'|'no_teacher'|'frozen_out'|'capacity'
+function pickTeacherForSubject(subj, g, tmpHrs){
+  const respectPref=document.getElementById('asig-prefer')?.checked;
+  // 1. Fixed from asignacion.maestro_id
+  if(subj.teacherId){
+    const t=T(subj.teacherId);
+    return t?{teacher:t,cause:'fixed'}:{teacher:null,cause:'no_teacher'};
+  }
+  if(!subj.plantilla_id)return{teacher:null,cause:'no_teacher'};
+  // 2. Preferred teacher (toggle active)
+  if(respectPref){
+    const pref=preferredTeacherFor(subj.plantilla_id,g.clave);
+    if(pref)return{teacher:pref,cause:'preferred'};
+  }
+  // 3. Free selection: competent teachers filtered by freeze rule
+  const all=competentTeachers(subj.plantilla_id);
+  if(!all.length)return{teacher:null,cause:'no_teacher'};
+  const nonFrozen=all.filter(t=>{
+    if(!t.solo_grupos_objetivo)return true;
+    return(preferencias[t.id]||[]).some(p=>p.plantilla_id===subj.plantilla_id&&p.grupo_clave===g.clave);
+  });
+  if(!nonFrozen.length)return{teacher:null,cause:all.length>0?'frozen_out':'no_teacher'};
+  // Pick best by remaining capacity
+  let bestT=null,bestScore=-1;
+  for(const cand of nonFrozen){
+    const used=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
+    if(used>=cand.hrs_carga)continue;
+    const score=(1-used/cand.hrs_carga)*100;
+    if(score>bestScore){bestScore=score;bestT=cand;}
+  }
+  return bestT?{teacher:bestT,cause:'free'}:{teacher:null,cause:'capacity'};
+}
+
 async function runEngine(){
-  suggestions=[];
+  suggestions=[];engineDiag=[];
   const semF=document.getElementById('asig-sem').value;
   const turF=document.getElementById('asig-tur').value;
 
@@ -2407,17 +2472,17 @@ async function runEngine(){
     if(!subjs.length)continue;
 
     for(const subj of subjs){
-      // Hard constraint: if subj.teacherId is already set, only that teacher is a candidate
-      const candidates = subj.teacherId
-        ? [T(subj.teacherId)].filter(Boolean)
-        : competentTeachers(subj.plantilla_id);
-      if(!candidates.length){
-        // No competent teacher — add warning suggestion
+      // D1+D2+D3: Pick ONE teacher for this whole subject before allocating slots
+      const hrsReq=subj.hrs+(subj.lab||0);
+      const pick=pickTeacherForSubject(subj,g,tmpHrs);
+      if(!pick.teacher){
         suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:null,score:0,status:'no_teacher',availState:'none'});
+        engineDiag.push({groupId:g.id,groupClave:g.clave,subjectName:subj.name,hrsReq,hrsProposed:0,teacherId:null,teacherName:null,cause:pick.cause});
         continue;
       }
-
-      let hrsLeft=subj.hrs+(subj.lab||0);
+      // Single teacher for ALL slots of this subject
+      const candidates=[pick.teacher];
+      let hrsLeft=hrsReq;
       const slots=assignable(g.turno,g.sem);
 
       // --- Phase 1: place blocks (slotA + slotB consecutive) ---
@@ -2505,9 +2570,17 @@ async function runEngine(){
         }
       }
 
+      // D5: Diagnostic for this subject
+      const hrsProposed=hrsReq-hrsLeft;
+      const usedAfter=(tmpHrs[pick.teacher.id]||0)+assignedHrs(pick.teacher.id);
+      engineDiag.push({
+        groupId:g.id,groupClave:g.clave,subjectName:subj.name,hrsReq,hrsProposed,
+        teacherId:pick.teacher.id,teacherName:pick.teacher.name,cause:pick.cause,
+        missingCause:hrsLeft>0?(usedAfter>=pick.teacher.hrs_carga?'capacity':'availability'):null
+      });
       if(hrsLeft>0){
-        // Some hours couldn't be placed — preserve fixed teacherId if there was one
-        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:subj.teacherId||null,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
+        // Some hours couldn't be placed with the single chosen teacher
+        suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:pick.teacher.id,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
       }
     }
   }
@@ -2703,6 +2776,52 @@ function renderAsigStats(){
       }).join('')}
     </div>
   `:'<div class="empty"><div class="ico">📋</div><div>Sin asignaciones aprobadas</div></div>';
+
+  // Diagnostic panel (populated after engine run)
+  const diagEntries=engineDiag.filter(d=>{
+    const g=G(d.groupId);if(!g)return false;
+    if(semF&&g.sem!=semF)return false;
+    if(turF&&g.turno!==turF)return false;
+    return true;
+  });
+  const CAUSE_LBL={fixed:'Fijo',preferred:'Preferido',free:'Libre',no_teacher:'Sin maestro',frozen_out:'Congelado',capacity:'Sin capacidad'};
+  const MISS_LBL={capacity:'Carga llena',availability:'Sin horario disponible'};
+  document.getElementById('asig-diag').innerHTML=diagEntries.length?`
+    <div class="card" style="margin-top:.75rem">
+      <div class="ch">Diagnóstico del motor <span class="tag t-blue">${diagEntries.length} materias</span>
+        <span class="tag t-green" style="margin-left:.3rem">${diagEntries.filter(d=>d.hrsReq===d.hrsProposed&&d.teacherId).length} completas</span>
+        ${diagEntries.filter(d=>d.hrsProposed<d.hrsReq&&d.teacherId).length?`<span class="tag t-amber">${diagEntries.filter(d=>d.hrsProposed<d.hrsReq&&d.teacherId).length} parciales</span>`:''}
+        ${diagEntries.filter(d=>!d.teacherId).length?`<span class="tag t-red">${diagEntries.filter(d=>!d.teacherId).length} sin maestro</span>`:''}
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.72rem">
+          <thead><tr style="background:var(--bg2);text-align:left">
+            <th style="padding:.4rem .7rem;font-weight:600;white-space:nowrap">Grupo</th>
+            <th style="padding:.4rem .7rem;font-weight:600">Materia</th>
+            <th style="padding:.4rem .7rem;font-weight:600;text-align:center">Req</th>
+            <th style="padding:.4rem .7rem;font-weight:600;text-align:center">Prop</th>
+            <th style="padding:.4rem .7rem;font-weight:600">Maestro</th>
+            <th style="padding:.4rem .7rem;font-weight:600">Causa</th>
+          </tr></thead>
+          <tbody>${diagEntries.map(d=>{
+            const ok=d.teacherId&&d.hrsProposed===d.hrsReq;
+            const partial=d.teacherId&&d.hrsProposed<d.hrsReq;
+            const bg=!d.teacherId?'background:var(--red-lt)':partial?'background:var(--amber-lt)':'';
+            const causeTag=d.cause?`<span class="tag ${d.cause==='fixed'?'t-blue':d.cause==='preferred'?'t-green':d.cause==='free'?'t-gray':d.cause==='frozen_out'?'t-amber':'t-red'}" style="font-size:.6rem">${CAUSE_LBL[d.cause]||d.cause}</span>`:'';
+            const missTag=d.missingCause?`<span class="tag t-amber" style="font-size:.6rem;margin-left:.25rem">${MISS_LBL[d.missingCause]||d.missingCause}</span>`:'';
+            return `<tr style="${bg};border-bottom:1px solid var(--bdr)">
+              <td style="padding:.35rem .7rem;white-space:nowrap"><span class="tag t-blue" style="font-size:.65rem">${d.groupClave}</span></td>
+              <td style="padding:.35rem .7rem;font-weight:600;font-family:var(--fh);font-size:.7rem">${d.subjectName}</td>
+              <td style="padding:.35rem .7rem;text-align:center;font-family:var(--fm)">${d.hrsReq}</td>
+              <td style="padding:.35rem .7rem;text-align:center;font-family:var(--fm);font-weight:700;color:${!d.teacherId?'var(--red)':d.hrsProposed<d.hrsReq?'var(--amber)':'var(--green)'}">${d.hrsProposed}</td>
+              <td style="padding:.35rem .7rem;font-size:.68rem;color:var(--ink2)">${d.teacherName||'—'}</td>
+              <td style="padding:.35rem .7rem">${causeTag}${missTag}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+  `:'';
 }
 
 function removeAsig(gid,key){
@@ -2713,36 +2832,62 @@ function removeAsig(gid,key){
 // ═══════════════════════════════════════════
 //  6. HORARIO POR GRUPO
 // ═══════════════════════════════════════════
-function filterHorGrp(){
+async function filterHorGrp(){
+  await ensureGroups();
   const sem=document.getElementById('h-sem').value;
   const tur=document.getElementById('h-tur').value;
   const sel=document.getElementById('h-grp');
   const prev=sel.value;
   while(sel.options.length>1)sel.remove(1);
-  groups[currentCicloId].filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
+  (groups[currentCicloId]||[]).filter(g=>(!sem||g.sem==sem)&&(!tur||g.turno===tur))
     .forEach(g=>sel.appendChild(new Option(g.clave||g.id,g.id)));
   if([...sel.options].some(o=>o.value===prev))sel.value=prev;
   renderHorario();
 }
 
-function renderHorario(){
+async function renderHorario(){
   const gid=document.getElementById('h-grp').value;
   const body=document.getElementById('h-body');
   if(!gid){body.innerHTML='<div class="empty"><div class="ico">📋</div><div>Selecciona un grupo</div></div>';return;}
+  body.innerHTML='<div class="empty"><div class="ico">⏳</div><div>Cargando...</div></div>';
+  await ensureGroups();
   const g=G(gid);
-  const cells=(schedule[currentCicloId]||{})[gid]||{};
+  if(!g){body.innerHTML='<div class="empty"><div class="ico">⚠️</div><div>Grupo no encontrado</div></div>';return;}
+  await Promise.all([ensureSubjects(g.id),ensureSchedule(g.id)]);
+  if(!subjects[currentCicloId])subjects[currentCicloId]={};
+  subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
+  if(!schedule[currentCicloId])schedule[currentCicloId]={};
+  schedule[currentCicloId][gid]=schedule[currentCicloId][g.id]||{};
+  const approvedCells=schedule[currentCicloId][gid];
   const slots=SLOTS[g.turno];
   const isVes=g.turno==='V';
   const subjs=subjects[currentCicloId][gid]||[];
+
+  // Merge approved + pending suggestions for this group
+  const cells={...approvedCells};
+  const pendingSugs=suggestions.filter(s=>s.groupId===g.id&&s.status==='pending');
+  for(const s of pendingSugs){
+    const addSlot=(sl,dy)=>{
+      if(sl===null||dy===null)return;
+      const key=sl+'_'+dy;
+      if(!cells[key])cells[key]={subjectName:s.subjectName,teacherId:s.teacherId,status:'pending',pending:true};
+    };
+    addSlot(s.slotA,s.dayIdx);
+    if(s.slotB)addSlot(s.slotB,s.dayIdx);
+  }
+
+  const approvedCount=Object.keys(approvedCells).length;
+  const pendingCount=pendingSugs.reduce((n,s)=>n+(s.slotB?2:1),0);
 
   let html=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
       <div>
         <div style="font-family:var(--fh);font-weight:800;font-size:1.15rem">Grupo ${g.clave||gid}</div>
-        <div style="font-size:.74rem;color:var(--ink2)">${g.sem}° · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${Object.keys(cells).length} bloques asignados</div>
+        <div style="font-size:.74rem;color:var(--ink2)">${g.sem}° · ${isVes?'Vespertino':'Matutino'} · ${g.especialidad||''} · ${approvedCount} bloques asignados${pendingCount?` · ${pendingCount} pendientes ⏳`:''}</div>
       </div>
       <div class="legend">
         <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:${isVes?'var(--purple-lt)':'var(--blue-lt)'};border:1.5px solid ${isVes?'#9860d8':'#6888d8'}"></div>Asignado</div>
+        <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:#fffbeb;border:2px dashed #f59e0b"></div>Pendiente ⏳</div>
         <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--red-lt);border:1.5px solid var(--red)"></div>Conflicto</div>
         <div style="display:flex;align-items:center;gap:.3rem"><div class="ldot" style="background:var(--amber-lt);border:1.5px solid #c88840"></div>Fuera de pref.</div>
       </div>
@@ -2765,12 +2910,17 @@ function renderHorario(){
       const key=slot.id+'_'+d;
       const cell=cells[key];
       const t=cell?.teacherId?T(cell.teacherId):null;
+      const isPending=cell?.pending===true;
       let cls='sg-cell';
-      if(cell?.subjectName)cls+=cell.status==='conflict'?' conflict':cell.status==='warn'?' warn':isVes?' filled ves':' filled';
+      if(cell?.subjectName){
+        if(isPending) cls+=' pending';
+        else cls+=cell.status==='conflict'?' conflict':cell.status==='warn'?' warn':isVes?' filled ves':' filled';
+      }
       html+=`<div class="${cls}" onclick="openCellEdit('${gid}','${slot.id}',${d})">
         ${cell?.subjectName?`
-          <div class="cs${isVes?' ves':''}">${cell.subjectName}</div>
+          <div class="cs${isVes&&!isPending?' ves':''}" style="${isPending?'color:#92400e':''}">${cell.subjectName}</div>
           <div class="ct">${t?t.name.split(' ').slice(0,3).join(' '):'<span style="color:var(--red)">Sin maestro</span>'}</div>
+          ${isPending?'<div class="cf" style="color:#92400e">⏳ Pendiente</div>':''}
           ${cell.status==='conflict'?'<div class="cf" style="color:var(--red)">⚠ Conflicto</div>':''}
           ${cell.status==='warn'?'<div class="cf" style="color:var(--amber)">⚡ Fuera pref.</div>':''}
         `:`<div class="cp">+</div>`}
@@ -2779,22 +2929,27 @@ function renderHorario(){
   }
   html+=`</div></div></div>`;
 
-  // Progress by subject
+  // Progress by subject (approved + pending)
   if(subjs.length){
-    const usedMap={};
-    Object.values(cells).forEach(c=>{if(c.subjectName)usedMap[c.subjectName]=(usedMap[c.subjectName]||0)+1;});
+    const approvedMap={};
+    Object.values(approvedCells).forEach(c=>{if(c.subjectName)approvedMap[c.subjectName]=(approvedMap[c.subjectName]||0)+1;});
+    const pendingMap={};
+    for(const s of pendingSugs) pendingMap[s.subjectName]=(pendingMap[s.subjectName]||0)+(s.slotB?2:1);
     html+=`<div class="card">
       <div class="ch">Progreso de materias</div>
       <div style="padding:.75rem;display:flex;flex-wrap:wrap;gap:.5rem">
         ${subjs.map(s=>{
-          const used=usedMap[s.name]||0;
+          const approved=approvedMap[s.name]||0;
+          const pending=pendingMap[s.name]||0;
+          const used=approved+pending;
           const pct=Math.min(100,Math.round(used/s.hrs*100));
-          const col=used>=s.hrs?'var(--green)':used>0?'var(--amber)':'var(--bdr2)';
-          // Find who's teaching it
-          const teacherIds=[...new Set(Object.values(cells).filter(c=>c.subjectName===s.name&&c.teacherId).map(c=>c.teacherId))];
+          const col=approved>=s.hrs?'var(--green)':used>=s.hrs?'#f59e0b':used>0?'var(--amber)':'var(--bdr2)';
+          const teacherIds=[...new Set(Object.values(approvedCells).filter(c=>c.subjectName===s.name&&c.teacherId).map(c=>c.teacherId))];
+          const pendingTeachers=[...new Set(pendingSugs.filter(p=>p.subjectName===s.name&&p.teacherId).map(p=>p.teacherId))];
+          const allTeachers=[...new Set([...teacherIds,...pendingTeachers])];
           return `<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:.5rem .75rem;min-width:150px">
             <div style="font-family:var(--fh);font-weight:700;font-size:.75rem">${s.name}</div>
-            <div style="font-size:.6rem;color:var(--ink2);margin-top:2px">${used}/${s.hrs}h · ${teacherIds.map(id=>{const t=T(id);return t?t.name.split(' ')[0]:'?';}).join(', ')||'sin maestro'}</div>
+            <div style="font-size:.6rem;color:var(--ink2);margin-top:2px">${approved}/${s.hrs}h aprobadas${pending?` · ${pending}h ⏳`:''}  · ${allTeachers.map(id=>{const t=T(id);return t?t.name.split(' ')[0]:'?';}).join(', ')||'sin maestro'}</div>
             <div style="height:3px;background:var(--bdr);border-radius:2px;margin-top:4px;overflow:hidden">
               <div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div>
             </div>
@@ -2813,7 +2968,7 @@ function openCellEdit(gid,slotId,dayIdx){
   const cell=((schedule[currentCicloId]||{})[gid]||{})[slotId+'_'+dayIdx];
   const subjs=subjects[currentCicloId][gid]||[];
 
-  document.getElementById('mcell-t').textContent=`${gid} — ${DAYS[dayIdx]}`;
+  document.getElementById('mcell-t').textContent=`Grupo ${g?.clave||gid} — ${DAYS[dayIdx]}`;
   document.getElementById('mcell-s').textContent=slot?.lbl||slotId;
   document.getElementById('mcell-day').value=dayIdx;
 
@@ -2835,10 +2990,15 @@ function openCellEdit(gid,slotId,dayIdx){
   document.getElementById('modal-cell').classList.add('open');
 }
 
-function openCellManual(){
+async function openCellManual(){
   const gid=document.getElementById('h-grp').value;
   if(!gid){toast('Selecciona un grupo','warn');return;}
+  await ensureGroups();
   const g=G(gid);
+  if(!g){toast('Grupo no encontrado','err');return;}
+  await ensureSubjects(g.id);
+  if(!subjects[currentCicloId])subjects[currentCicloId]={};
+  subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
   openCellEdit(gid,assignable(g.turno,g.sem)[0]?.id||'m1',0);
 }
 
@@ -3144,7 +3304,7 @@ function onCicloChange(){
   // Reload all data for this ciclo
   groups[currentCicloId]=null; subjects[currentCicloId]=null; schedule[currentCicloId]=null;
   catalogo[currentCicloId]=null; asignDet[currentCicloId]=null; asignGrupo[currentCicloId]=null;
-  selGroup=null;suggestions=[];
+  selGroup=null;suggestions=[];engineDiag=[];
   fillSemSels();renderGrupos();fillGrpSel();renderMaestrosSb();renderAsigStats();filterHorGrp();renderHorarioMaestro();fillPrSel();
   toast('Ciclo: '+(c?.nombre||''));
 }
@@ -3153,7 +3313,7 @@ function updateCycleBadges(){
   const c=ciclos.find(x=>x.id===currentCicloId);
   const lbl=c?c.nombre:CYCLE_LBL[cycle];
   const cls=cycle==='par'?'cy-par':'cy-imp';
-  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor'].forEach(id=>{
+  ['cy-grupos','cy-materias','cy-disp','cy-asig','cy-hor','cy-hm'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){el.textContent=lbl;el.className='cy-badge '+cls;}
   });
@@ -3301,7 +3461,7 @@ async function saveNuevoCiclo(){
     // Reset local cache
     groups[currentCicloId]=null;subjects[currentCicloId]=null;schedule[currentCicloId]=null;
     catalogo[currentCicloId]=null;asignDet[currentCicloId]=null;asignGrupo[currentCicloId]=null;
-    selGroup=null;suggestions=[];
+    selGroup=null;suggestions=[];engineDiag=[];
     fillSemSels();
     await ensureGroups();
     renderGrupos();fillGrpSel();renderAsigStats();filterHorGrp();fillPrSel();
@@ -3396,6 +3556,7 @@ async function ensureTeachers(){
       hrs_nom:r.hrs_nom,hrs_carga:r.hrs_carga,obs:r.obs,
       grado:r.grado||null,egresado_de:r.egresado_de||null,
       especialidad_acad:r.especialidad_acad||null,departamento:r.departamento||null,
+      solo_grupos_objetivo:r.solo_grupos_objetivo||false,
       plazas:[],prefCount:0,_loaded:true
     }));
     plazas.forEach(p=>{
@@ -3799,7 +3960,7 @@ saveTeacher=async function(){
       },0);
       const newId='T'+(String(maxId+1).padStart(2,'0'));
       await dbPost('maestros',{id:newId,nombre:name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento});
-      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,plazas:[],_loaded:true});
+      TEACHERS.push({id:newId,name,rfc,categoria,hrs_nom,hrs_carga,obs,grado,egresado_de,especialidad_acad,departamento,solo_grupos_objetivo:false,plazas:[],_loaded:true});
       selTeacher=newId;
       closeM('modal-teacher');
       renderMaestrosList();
