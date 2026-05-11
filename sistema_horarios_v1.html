@@ -2858,9 +2858,11 @@ async function renderHorario(){
   await ensureGroups();
   const g=G(gid);
   if(!g){body.innerHTML='<div class="empty"><div class="ico">⚠️</div><div>Grupo no encontrado</div></div>';return;}
-  await Promise.all([ensureSubjects(g.id),ensureSchedule(g.id)]);
+  await Promise.all([ensureSubjects(g.id),ensureSchedule(g.id),ensureAsignacionesGrupo(currentCicloId,g.id)]);
   if(!subjects[currentCicloId])subjects[currentCicloId]={};
-  subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
+  // Prefer asignaciones-based subjects (richer data); fall back to legacy materias table
+  const _asigSubjs=subjectsFromAsignaciones(g);
+  subjects[currentCicloId][gid]=_asigSubjs.length ? _asigSubjs : (subjects[currentCicloId][g.id]||[]);
   if(!schedule[currentCicloId])schedule[currentCicloId]={};
   schedule[currentCicloId][gid]=schedule[currentCicloId][g.id]||{};
   const approvedCells=schedule[currentCicloId][gid];
@@ -3001,9 +3003,10 @@ async function openCellManual(){
   await ensureGroups();
   const g=G(gid);
   if(!g){toast('Grupo no encontrado','err');return;}
-  await ensureSubjects(g.id);
+  await Promise.all([ensureSubjects(g.id),ensureAsignacionesGrupo(currentCicloId,g.id)]);
   if(!subjects[currentCicloId])subjects[currentCicloId]={};
-  subjects[currentCicloId][gid]=subjects[currentCicloId][g.id]||[];
+  const _asigSubjs=subjectsFromAsignaciones(g);
+  subjects[currentCicloId][gid]=_asigSubjs.length ? _asigSubjs : (subjects[currentCicloId][g.id]||[]);
   openCellEdit(gid,assignable(g.turno,g.sem)[0]?.id||'m1',0);
 }
 
