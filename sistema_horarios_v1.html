@@ -373,7 +373,7 @@ input::placeholder{color:var(--ink3);}
     <select id="asig-sem" onchange="renderAsigStats()"><option value="">Todos</option></select>
     <select id="asig-tur" onchange="renderAsigStats()"><option value="">Todos turnos</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
     <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Estricto: solo propone bloques en horarios marcados como disponibles. Flexible: puede proponer fuera de disponibilidad (con advertencia)."><input type="checkbox" id="asig-strict" checked> Estricto</label>
-    <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Cuando está activo, el motor asigna cada materia al maestro marcado como preferido (maestro_preferencias) antes de intentar el reparto libre por competencias."><input type="checkbox" id="asig-prefer"> Respetar preferido</label>
+    <label style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;user-select:none" title="Cuando está activo, el motor asigna cada materia al maestro marcado como preferido (maestro_preferencias) antes de intentar el reparto libre por competencias."><input type="checkbox" id="asig-prefer" checked> Respetar preferido</label>
     <button class="btn btn-blue btn-sm" onclick="runEngine()">🤖 Generar sugerencias</button>
     <button class="btn btn-green btn-sm" onclick="approveAll()">✓ Aprobar todo</button>
   </div>
