@@ -2452,10 +2452,16 @@ async function runEngine(){
   // Ensure asignaciones loaded for all groups in scope
   showLoading('Cargando asignaciones…');
   await ensureGroups();
-  for(const g of (groups[currentCicloId]||[])){
-    if(semF&&g.sem!=semF)continue;
-    if(turF&&g.turno!==turF)continue;
+  const groupsInScope=(groups[currentCicloId]||[]).filter(g=>
+    (!semF||g.sem==semF)&&(!turF||g.turno===turF));
+  for(const g of groupsInScope){
     await ensureAsignacionesGrupo(currentCicloId,g.id);
+  }
+  // Ensure preferences loaded for ALL teachers before scoring
+  await ensureTeachers();
+  showLoading('Cargando preferencias…');
+  for(const t of TEACHERS){
+    await ensurePreferencias(t.id);
   }
   hideLoading();
 
