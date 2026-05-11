@@ -2367,6 +2367,14 @@ function hasPendingMutexConflict(tid, slotId, day, exGroupId){
   );
 }
 
+// Check if teacher already has a pending suggestion at the exact same slot+day (cross-group conflict)
+function hasPendingSlotConflict(tid, slotId, day, exGroupId){
+  return suggestions.some(s=>
+    s.status==='pending'&&s.teacherId===tid&&s.groupId!==exGroupId&&s.dayIdx===day&&
+    (s.slotA===slotId||s.slotB===slotId)
+  );
+}
+
 function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
   const keyA=slotA.id+'_'+d, keyB=slotB.id+'_'+d;
   let bestT=null, bestScore=-1;
@@ -2377,6 +2385,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
     if(avA==='unavail'||avB==='unavail')continue;
     if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
     if(isUnavail(cand.id,slotA.id,d)||isUnavail(cand.id,slotB.id,d))continue;
+    if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
     if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
     const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
     if(usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
@@ -2389,6 +2398,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
   if(!bestT&&!_strict){
     for(const cand of candidates){
       if(isConflict(cand.id,slotA.id,d,groupId)||isConflict(cand.id,slotB.id,d,groupId))continue;
+      if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
       if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
       const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
       if(usedHrs+2>cand.hrs_carga+1)continue;
@@ -2547,6 +2557,7 @@ async function runEngine(){
             const av=((availability[cand.id]||{})[currentCicloId]||{})[key]||'neutral';
             if(av==='unavail')continue;
             if(isConflict(cand.id,slot.id,d,g.id))continue;
+            if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
             if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
             if(usedHrs>=cand.hrs_carga)continue;
@@ -2557,6 +2568,7 @@ async function runEngine(){
           if(!bestT&&!strict2){
             for(const cand of candidates){
               if(isConflict(cand.id,slot.id,d,g.id))continue;
+              if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
               if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
               const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
               if(usedHrs>=cand.hrs_carga)continue;
