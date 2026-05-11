@@ -2471,6 +2471,7 @@ async function runEngine(){
       : (subjects[currentCicloId]?.[g.id]||[]);
     if(!subjs.length)continue;
 
+    let subjIdx=0;
     for(const subj of subjs){
       // D1+D2+D3: Pick ONE teacher for this whole subject before allocating slots
       const hrsReq=subj.hrs+(subj.lab||0);
@@ -2486,9 +2487,11 @@ async function runEngine(){
       const slots=assignable(g.turno,g.sem);
 
       // --- Phase 1: place blocks (slotA + slotB consecutive) ---
-      // Outer loop: day; inner loop: find first available pair on that day
+      // Rotate start day per subject to spread load across the week
+      const startDay = subjIdx % 5;
       let daysWithBlock=0;
-      for(let d=0;d<5&&hrsLeft>=2;d++){
+      for(let _d=0;_d<5&&hrsLeft>=2;_d++){
+        const d=(_d+startDay)%5;
         // Find first pair [slots[i], slots[i+1]] both free for this group
         let placed=false;
         for(let i=0;i<slots.length-1;i++){
@@ -2496,9 +2499,9 @@ async function runEngine(){
           const keyA=sA.id+'_'+d, keyB=sB.id+'_'+d;
           // Both cells must be free in schedule
           if((sched[g.id]||{})[keyA]||(sched[g.id]||{})[keyB])continue;
-          // Not already suggested for this group+key
-          if(suggestions.some(s=>s.groupId===g.id&&s.slotA===sA.id&&s.dayIdx===d&&s.status==='pending'))continue;
-          if(suggestions.some(s=>s.groupId===g.id&&s.slotA===sB.id&&s.dayIdx===d&&s.status==='pending'))continue;
+          // Not already suggested for this group+key (check both slotA and slotB positions)
+          if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sA.id||s.slotB===sA.id)&&s.dayIdx===d&&s.status==='pending'))continue;
+          if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sB.id||s.slotB===sB.id)&&s.dayIdx===d&&s.status==='pending'))continue;
           // Find a teacher available for both slots
           const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs);
           if(!res)continue;
@@ -2521,10 +2524,11 @@ async function runEngine(){
         if(placed)daysWithBlock++;
       }
 
-      // --- Phase 2: fallback — place remaining hours one by one (original loop) ---
-      for(const slot of slots){
+      // --- Phase 2: fallback — place remaining hours one by one ---
+      // Iterate day-first to spread remaining hours across the week
+      for(let d=0;d<5;d++){
         if(hrsLeft<=0)break;
-        for(let d=0;d<5;d++){
+        for(const slot of slots){
           if(hrsLeft<=0)break;
           const key=slot.id+'_'+d;
           if((sched[g.id]||{})[key])continue;
@@ -2582,6 +2586,7 @@ async function runEngine(){
         // Some hours couldn't be placed with the single chosen teacher
         suggestions.push({groupId:g.id,subjectName:subj.name,slotA:null,slotB:null,dayIdx:null,teacherId:pick.teacher.id,score:0,status:'unplaceable',hrs:hrsLeft,availState:'none'});
       }
+      subjIdx++;
     }
   }
   suggestions.sort((a,b)=>{
