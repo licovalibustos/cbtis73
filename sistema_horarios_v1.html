@@ -138,6 +138,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .sg-cell.filled.ves{background:var(--purple-lt);border-color:#9860d8;}
 .sg-cell.conflict{background:var(--red-lt)!important;border-color:var(--red)!important;animation:blink 1.4s infinite;}
 .sg-cell.pending{background:#fffbeb!important;border:2px dashed #f59e0b!important;}
+.sg-cell.drag-over{background:var(--blue-lt)!important;border:2px dashed var(--blue)!important;}
 .sg-cell.warn{background:var(--amber-lt)!important;border-color:#c88840!important;}
 .sg-cell.recess{background:var(--bg);border-color:var(--bdr);cursor:default;}
 .sg-cell.recess:hover{background:var(--bg);border-color:var(--bdr);}
@@ -2941,15 +2942,30 @@ async function renderHorario(){
         if(isPending) cls+=' pending';
         else cls+=cell.status==='conflict'?' conflict':cell.status==='warn'?' warn':isVes?' filled ves':' filled';
       }
-      html+=`<div class="${cls}" onclick="openCellEdit('${gid}','${slot.id}',${d})">
-        ${cell?.subjectName?`
+      if(cell?.subjectName){
+        // Draggable filled cell
+        html+=`<div class="${cls}" draggable="true"
+          data-gid="${gid}" data-slot="${slot.id}" data-day="${d}"
+          ondragstart="sgDragStart(event)"
+          ondragover="event.preventDefault()"
+          onclick="openCellEdit('${gid}','${slot.id}',${d})">
           <div class="cs${isVes&&!isPending?' ves':''}" style="${isPending?'color:#92400e':''}">${cell.subjectName}</div>
           <div class="ct">${t?t.name.split(' ').slice(0,3).join(' '):'<span style="color:var(--red)">Sin maestro</span>'}</div>
           ${isPending?'<div class="cf" style="color:#92400e">⏳ Pendiente</div>':''}
           ${cell.status==='conflict'?'<div class="cf" style="color:var(--red)">⚠ Conflicto</div>':''}
           ${cell.status==='warn'?'<div class="cf" style="color:var(--amber)">⚡ Fuera pref.</div>':''}
-        `:`<div class="cp">+</div>`}
-      </div>`;
+        </div>`;
+      } else {
+        // Drop target empty cell
+        html+=`<div class="${cls}"
+          data-gid="${gid}" data-slot="${slot.id}" data-day="${d}"
+          ondragover="sgDragOver(event)"
+          ondragleave="sgDragLeave(event)"
+          ondrop="sgDrop(event)"
+          onclick="openCellEdit('${gid}','${slot.id}',${d})">
+          <div class="cp">+</div>
+        </div>`;
+      }
     }
   }
   html+=`</div></div></div>`;
@@ -2984,6 +3000,58 @@ async function renderHorario(){
     </div>`;
   }
   body.innerHTML=html;
+}
+
+// ── Drag & Drop en Horario por Grupo ──────────────────────────────
+let _sgDrag=null; // {gid, slot, day}
+
+function sgDragStart(e){
+  const el=e.currentTarget;
+  _sgDrag={gid:el.dataset.gid, slot:el.dataset.slot, day:parseInt(el.dataset.day)};
+  e.dataTransfer.effectAllowed='move';
+  el.style.opacity='.45';
+  e.dataTransfer.setData('text/plain','sg');
+  // restore opacity after drag ends
+  el.addEventListener('dragend',()=>{el.style.opacity='';},{once:true});
+}
+
+function sgDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function sgDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function sgDrop(e){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!_sgDrag)return;
+  const toSlot=e.currentTarget.dataset.slot;
+  const toDay=parseInt(e.currentTarget.dataset.day);
+  const {gid, slot:fromSlot, day:fromDay}=_sgDrag;
+  _sgDrag=null;
+  if(fromSlot===toSlot&&fromDay===toDay)return;
+
+  // Move in schedule (approved)
+  const sched=(schedule[currentCicloId]||{})[gid]||{};
+  const fromKey=fromSlot+'_'+fromDay;
+  const toKey=toSlot+'_'+toDay;
+  if(sched[fromKey]){
+    sched[toKey]=sched[fromKey];
+    delete sched[fromKey];
+  }
+
+  // Move in suggestions (pending)
+  for(const s of suggestions){
+    if(s.groupId!==gid||s.status!=='pending')continue;
+    if(s.slotA===fromSlot&&s.dayIdx===fromDay){s.slotA=toSlot;s.dayIdx=toDay;}
+    else if(s.slotB===fromSlot&&s.dayIdx===fromDay){s.slotB=toSlot;s.dayIdx=toDay;}
+  }
+
+  renderHorario();
 }
 
 function openCellEdit(gid,slotId,dayIdx){
