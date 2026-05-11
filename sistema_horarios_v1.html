@@ -2611,6 +2611,9 @@ async function runEngine(){
   suggestions.sort((a,b)=>{
     if(a.status==='no_teacher'||a.status==='unplaceable')return 1;
     if(b.status==='no_teacher'||b.status==='unplaceable')return -1;
+    const gc=(G(a.groupId)?.clave||'').localeCompare(G(b.groupId)?.clave||'');
+    if(gc!==0)return gc;
+    if(a.dayIdx!==b.dayIdx)return (a.dayIdx??9)-(b.dayIdx??9);
     return b.score-a.score;
   });
   renderSugList();renderAsigStats();
