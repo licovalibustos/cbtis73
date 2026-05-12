@@ -3047,6 +3047,27 @@ function sgDrop(e){
   const sched=(schedule[currentCicloId]||{})[gid]||{};
   const fromKey=fromSlot+'_'+fromDay;
   const toKey=toSlot+'_'+toDay;
+
+  // Determine teacherId of the cell being dragged (approved or pending)
+  let draggedTeacherId=sched[fromKey]?.teacherId;
+  if(!draggedTeacherId){
+    const ps=suggestions.find(s=>s.groupId===gid&&s.status==='pending'&&s.dayIdx===fromDay&&(s.slotA===fromSlot||s.slotB===fromSlot));
+    if(ps)draggedTeacherId=ps.teacherId;
+  }
+
+  // Validate: check if the teacher is already busy at the destination (excluding this group)
+  if(draggedTeacherId){
+    const schedConflict=isConflict(draggedTeacherId,toSlot,toDay,gid);
+    const pendConflict=hasPendingSlotConflict(draggedTeacherId,toSlot,toDay,gid);
+    const unavail=isUnavail(draggedTeacherId,toSlot,toDay);
+    if(schedConflict||pendConflict||unavail){
+      const t=T(draggedTeacherId);
+      const tName=t?t.name.split(' ').slice(0,2).join(' '):'El maestro';
+      const reason=unavail?'no disponible en ese horario':'ya tiene clase en ese horario';
+      toast(`${tName} ${reason}`,'warn');
+      return;
+    }
+  }
   if(sched[fromKey]){
     sched[toKey]=sched[fromKey];
     delete sched[fromKey];
