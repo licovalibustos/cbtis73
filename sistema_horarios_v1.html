@@ -424,7 +424,7 @@ input::placeholder{color:var(--ink3);}
     <span id="cy-hm" class="cy-badge cy-par">Feb–Jul · Pares</span>
     <div class="vsep"></div>
     <select id="hm-teacher" onchange="renderHorarioMaestro()" style="min-width:200px"><option value="">— Maestro —</option></select>
-    <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-ghost btn-sm no-print" onclick="printHorarioMaestro()">🖨 Imprimir</button>
   </div>
   <div class="vbody" id="hm-body">
     <div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>
@@ -3284,6 +3284,69 @@ function renderHorarioMaestro(){
     </div>
   `;
   body.innerHTML=html;
+}
+
+function printHorarioMaestro(){
+  const tid=document.getElementById('hm-teacher').value;
+  if(!tid)return toast('Selecciona un maestro primero','err');
+  const t=T(tid);
+  const sched=schedule[currentCicloId]||{};
+  const asgns=[];
+  for(const [gid,cells] of Object.entries(sched)){
+    const g=G(gid);if(!g)continue;
+    for(const [key,d] of Object.entries(cells)){
+      if(d.teacherId!==tid)continue;
+      const [sl,dy]=key.split('_');
+      asgns.push({gid,sl,dy:parseInt(dy),d,turno:g.turno||'M'});
+    }
+  }
+  const hasBoth=['M','V'].every(tr=>asgns.some(a=>a.turno===tr));
+
+  const buildTurTable=(tur)=>{
+    const ta=asgns.filter(a=>a.turno===tur);
+    let g=`<div style="font-weight:700;font-size:7pt;margin-bottom:3pt;text-transform:uppercase;font-family:Arial,sans-serif">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif">
+        <colgroup><col style="width:48pt">${DAYS.map(()=>'<col>').join('')}</colgroup>
+        <tr>${['HORA',...DAYS].map(h=>`<th style="background:#1e293b;color:#fff;padding:2pt 3pt;font-size:6pt;text-align:center;border:0.5pt solid #0f172a">${h.toUpperCase()}</th>`).join('')}</tr>`;
+    for(const slot of SLOTS[tur]){
+      if(slot.recess){
+        g+=`<tr><td colspan="6" style="padding:1.5pt 4pt;font-size:5.5pt;color:#64748b;background:#f8fafc;border:0.5pt solid #e2e8f0;text-align:center">☕ Receso — ${slot.lbl}</td></tr>`;
+        continue;
+      }
+      if(slot.blocked)continue;
+      g+=`<tr><td style="padding:2pt 3pt;font-size:6pt;color:#334155;background:#f1f5f9;border:0.5pt solid #e2e8f0;white-space:nowrap">${slot.lbl}</td>`;
+      for(let d=0;d<5;d++){
+        const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
+        g+=`<td style="padding:2pt;background:${a?'#dbeafe':'#fff'};border:0.5pt solid #e2e8f0;vertical-align:middle;height:16pt;overflow:hidden">
+          ${a?`<div style="font-weight:700;font-size:6pt;color:#1d4ed8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.d.subjectName}</div><div style="font-size:5pt;color:#64748b">${G(a.gid)?.clave||a.gid}</div>`:''}
+        </td>`;
+      }
+      g+=`</tr>`;
+    }
+    g+=`</table>`;
+    return g;
+  };
+
+  let body=`<div style="font-size:7pt;color:#475569;font-family:Arial,sans-serif">CBTIS 73 · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+    <div style="font-weight:800;font-size:13pt;margin:2pt 0;font-family:Arial,sans-serif">${t.name}</div>
+    <div style="font-size:7pt;color:#475569;margin-bottom:6pt;font-family:Arial,sans-serif">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>`;
+  if(hasBoth){
+    body+=`<table style="width:100%;border-collapse:collapse"><tr>
+      <td style="width:50%;padding-right:6pt;vertical-align:top">${buildTurTable('M')}</td>
+      <td style="width:50%;vertical-align:top">${buildTurTable('V')}</td>
+    </tr></table>`;
+  } else {
+    for(const tur of['M','V']){
+      if(!asgns.some(a=>a.turno===tur))continue;
+      body+=buildTurTable(tur);
+    }
+  }
+  body+=`<div style="margin-top:4pt;font-size:6pt;color:#94a3b8;border-top:0.5pt solid #e2e8f0;padding-top:3pt;font-family:Arial,sans-serif">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+
+  let ifr=document.getElementById('_pifr');
+  if(!ifr){ifr=document.createElement('iframe');ifr.id='_pifr';ifr.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden';document.body.appendChild(ifr);}
+  ifr.onload=()=>{ifr.contentWindow.focus();ifr.contentWindow.print();};
+  ifr.srcdoc=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:8mm 10mm;}*{box-sizing:border-box;}body{margin:0;padding:4mm;}</style></head><body>${body}</body></html>`;
 }
 
 function fillPrSel(){
