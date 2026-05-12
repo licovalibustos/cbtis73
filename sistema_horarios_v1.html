@@ -3301,6 +3301,16 @@ function printHorarioMaestro(){
       asgns.push({gid,sl,dy:parseInt(dy),d,turno:g.turno||'M'});
     }
   }
+  // También incluir sugerencias pendientes
+  for(const s of suggestions){
+    if(s.teacherId!==tid||s.status!=='pending')continue;
+    const g=G(s.groupId);if(!g)continue;
+    const fake={subjectName:s.subjectName,teacherId:tid,status:'pending'};
+    if(s.slotA!==null&&s.dayIdx!==null)
+      asgns.push({gid:s.groupId,sl:s.slotA,dy:s.dayIdx,d:fake,turno:g.turno||'M'});
+    if(s.slotB!==null&&s.dayIdx!==null)
+      asgns.push({gid:s.groupId,sl:s.slotB,dy:s.dayIdx,d:fake,turno:g.turno||'M'});
+  }
   const hasBoth=['M','V'].every(tr=>asgns.some(a=>a.turno===tr));
 
   const buildTurTable=(tur)=>{
