@@ -236,6 +236,14 @@ input::placeholder{color:var(--ink3);}
   .sg{min-width:0!important;width:100%!important;grid-template-columns:60px repeat(5,1fr)!important;gap:1px!important;}
   .sg-cell{min-height:0!important;padding:.12rem .18rem!important;}
 }
+/* Print teacher override: hide everything except the injected print div */
+body.print-teacher-mode > *:not(#_ptdiv){display:none!important;}
+#_ptdiv{display:block;position:fixed;top:0;left:0;width:100%;z-index:99999;background:#fff;}
+@media print{
+  @page{size:A4 landscape;margin:8mm 10mm;}
+  body.print-teacher-mode > *:not(#_ptdiv){display:none!important;}
+  #_ptdiv{display:block!important;position:static!important;width:100%!important;background:#fff!important;}
+}
 </style>
 </head>
 <body>
@@ -3343,10 +3351,17 @@ function printHorarioMaestro(){
   }
   body+=`<div style="margin-top:4pt;font-size:6pt;color:#94a3b8;border-top:0.5pt solid #e2e8f0;padding-top:3pt;font-family:Arial,sans-serif">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
 
-  let ifr=document.getElementById('_pifr');
-  if(!ifr){ifr=document.createElement('iframe');ifr.id='_pifr';ifr.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden';document.body.appendChild(ifr);}
-  ifr.onload=()=>{ifr.contentWindow.focus();ifr.contentWindow.print();};
-  ifr.srcdoc=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:8mm 10mm;}*{box-sizing:border-box;}body{margin:0;padding:4mm;}</style></head><body>${body}</body></html>`;
+  // Inyectar div temporal, imprimir en landscape, limpiar
+  let pd=document.getElementById('_ptdiv');
+  if(pd)pd.remove();
+  pd=document.createElement('div');
+  pd.id='_ptdiv';
+  pd.innerHTML=body;
+  document.body.appendChild(pd);
+  document.body.classList.add('print-teacher-mode');
+  window.print();
+  document.body.classList.remove('print-teacher-mode');
+  pd.remove();
 }
 
 function fillPrSel(){
