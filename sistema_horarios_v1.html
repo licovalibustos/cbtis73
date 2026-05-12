@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.602</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.603</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -2521,6 +2521,9 @@ async function runEngine(){
       let daysWithBlock=0;
       for(let _d=0;_d<5&&hrsLeft>=2;_d++){
         const d=(_d+startDay)%5;
+        // Skip day if this subject is already placed here (avoids double-booking same subject on same day)
+        if(Object.entries(sched[g.id]||{}).some(([k,v])=>k.endsWith('_'+d)&&v.subjectName===subj.name))continue;
+        if(suggestions.some(s=>s.groupId===g.id&&s.subjectName===subj.name&&s.dayIdx===d&&s.status==='pending'))continue;
         // Find first pair [slots[i], slots[i+1]] both free for this group
         let placed=false;
         for(let i=0;i<slots.length-1;i++){
@@ -2557,6 +2560,9 @@ async function runEngine(){
       // Iterate day-first to spread remaining hours across the week
       for(let d=0;d<5;d++){
         if(hrsLeft<=0)break;
+        // Skip day if this subject is already placed here (avoids double-booking same subject on same day)
+        if(Object.entries(sched[g.id]||{}).some(([k,v])=>k.endsWith('_'+d)&&v.subjectName===subj.name))continue;
+        if(suggestions.some(s=>s.groupId===g.id&&s.subjectName===subj.name&&s.dayIdx===d&&s.status==='pending'))continue;
         for(const slot of slots){
           if(hrsLeft<=0)break;
           const key=slot.id+'_'+d;
