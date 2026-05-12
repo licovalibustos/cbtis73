@@ -226,15 +226,16 @@ input::placeholder{color:var(--ink3);}
 .cy-imp{background:var(--purple-lt);color:var(--purple);}
 
 /* PRINT */
+@page{margin:6mm 8mm;}
 @media print{
   .top,.vbar,.sb,.aq,.no-print{display:none!important;}
   .vbody,.admin-main{padding:0;overflow:visible;}
   .app,.main,.view.on{display:block;height:auto;overflow:visible;}
-  body{background:#fff;font-size:10px;}
+  body{background:#fff;font-size:9px;}
   .ovr-x{overflow:visible!important;}
-  .sg{min-width:0!important;width:100%!important;grid-template-columns:72px repeat(5,1fr)!important;gap:1px!important;}
-  .sg-cell{min-height:32px!important;padding:.18rem .22rem!important;}
-  #pr-area .sg{page-break-inside:avoid;}
+  .sg{min-width:0!important;width:100%!important;grid-template-columns:60px repeat(5,1fr)!important;gap:1px!important;}
+  .sg-cell{min-height:0!important;padding:.12rem .18rem!important;}
+  #pr-area{zoom:.78;}
 }
 </style>
 </head>
@@ -3339,25 +3340,25 @@ function buildPrint(){
       }
 
     let html=`
-      <div style="font-family:var(--fh);font-size:.62rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
-      <div style="font-family:var(--fh);font-weight:800;font-size:1.05rem;margin:.18rem 0">${t.name}</div>
-      <div style="font-size:.7rem;color:var(--ink2);margin-bottom:1.1rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
+      <div style="font-family:var(--fh);font-size:.58rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-family:var(--fh);font-weight:800;font-size:.95rem;margin:.12rem 0">${t.name}</div>
+      <div style="font-size:.65rem;color:var(--ink2);margin-bottom:.7rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
     `;
     for(const tur of['M','V']){
       const ta=asgns.filter(a=>a.turno===tur);if(!ta.length)continue;
-      html+=`<div style="font-family:var(--fh);font-weight:700;font-size:.7rem;color:var(--ink2);margin-bottom:.38rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
-        <div class="ovr-x" style="margin-bottom:1.1rem"><div class="sg" style="gap:1px;width:100%">
-          <div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">HORA</div>
-          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.38rem;font-family:var(--fh);font-weight:700;font-size:.58rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
+      html+=`<div style="font-family:var(--fh);font-weight:700;font-size:.65rem;color:var(--ink2);margin-bottom:.25rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+        <div class="ovr-x" style="margin-bottom:.7rem"><div class="sg" style="gap:1px;width:100%">
+          <div style="background:var(--ink);color:#fff;padding:.25rem .3rem;font-family:var(--fh);font-weight:700;font-size:.52rem;border-radius:3px;text-align:center">HORA</div>
+          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.25rem .3rem;font-family:var(--fh);font-weight:700;font-size:.52rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
       `;
       for(const slot of SLOTS[tur]){
-        html+=`<div style="background:var(--bg2);padding:.28rem .42rem;font-family:var(--fm);font-size:.52rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center">${slot.lbl}</div>`;
-        if(slot.recess||slot.blocked){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:12px"></div>`;continue;}
+        html+=`<div style="background:var(--bg2);padding:.2rem .3rem;font-family:var(--fm);font-size:.48rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center">${slot.lbl}</div>`;
+        if(slot.recess||slot.blocked){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:8px"></div>`;continue;}
         for(let d=0;d<5;d++){
           const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
-          html+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.22rem;min-height:0;display:flex;flex-direction:column;justify-content:center">
-            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.6rem;color:var(--blue)">${a.d.subjectName}</div>
-            <div style="font-size:.5rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
+          html+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.18rem;min-height:0;display:flex;flex-direction:column;justify-content:center">
+            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.55rem;color:var(--blue)">${a.d.subjectName}</div>
+            <div style="font-size:.46rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
         }
       html+=`</div></div>`;
       }
