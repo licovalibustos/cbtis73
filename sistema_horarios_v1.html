@@ -3342,10 +3342,7 @@ function printHorarioMaestro(){
     <div style="font-weight:800;font-size:13pt;margin:2pt 0;font-family:Arial,sans-serif">${t.name}</div>
     <div style="font-size:7pt;color:#475569;margin-bottom:6pt;font-family:Arial,sans-serif">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>`;
   if(hasBoth){
-    body+=`<table style="width:100%;border-collapse:collapse"><tr>
-      <td style="width:50%;padding-right:6pt;vertical-align:top">${buildTurTable('M')}</td>
-      <td style="width:50%;vertical-align:top">${buildTurTable('V')}</td>
-    </tr></table>`;
+    body+=buildTurTable('M')+'<div style="margin-top:6pt"></div>'+buildTurTable('V');
   } else {
     for(const tur of['M','V']){
       if(!asgns.some(a=>a.turno===tur))continue;
