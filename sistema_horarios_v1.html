@@ -3053,11 +3053,26 @@ function sgDrop(e){
   }
 
   // Move in suggestions (pending)
+  // If the dragged slot is part of a pair (slotA+slotB), split them so only the
+  // dragged slot moves; the other slot stays as an independent single-slot suggestion.
+  const toAdd=[];
   for(const s of suggestions){
     if(s.groupId!==gid||s.status!=='pending')continue;
-    if(s.slotA===fromSlot&&s.dayIdx===fromDay){s.slotA=toSlot;s.dayIdx=toDay;}
-    else if(s.slotB===fromSlot&&s.dayIdx===fromDay){s.slotB=toSlot;s.dayIdx=toDay;}
+    if(s.slotA===fromSlot&&s.dayIdx===fromDay){
+      if(s.slotB){
+        // Pair: create new suggestion for the moved slot, keep remaining slotB as slotA
+        toAdd.push({...s,slotA:toSlot,slotB:null,dayIdx:toDay});
+        s.slotA=s.slotB; s.slotB=null;
+      } else {
+        s.slotA=toSlot; s.dayIdx=toDay;
+      }
+    } else if(s.slotB===fromSlot&&s.dayIdx===fromDay){
+      // Pair: create new suggestion for the moved slotB, original keeps only slotA
+      toAdd.push({...s,slotA:toSlot,slotB:null,dayIdx:toDay});
+      s.slotB=null;
+    }
   }
+  for(const ns of toAdd)suggestions.push(ns);
 
   renderHorario();
 }
