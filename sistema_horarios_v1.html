@@ -2418,12 +2418,19 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
 // Returns preferred teacher (teacher obj) for a plantilla+grupo_clave, or null
 function preferredTeacherFor(plantillaId, grupoClave){
   if(!plantillaId||!grupoClave)return null;
+  // Collect all teachers with a matching preference, then pick the one with lowest load
+  const matches=[];
   for(const [tid,prefs] of Object.entries(preferencias)){
     if(prefs.some(p=>p.plantilla_id===plantillaId&&p.grupo_clave===grupoClave)){
-      const t=T(tid);if(t)return t;
+      const t=T(tid);if(t)matches.push(t);
     }
   }
-  return null;
+  if(!matches.length)return null;
+  // Tiebreak: least loaded teacher wins
+  return matches.reduce((best,t)=>{
+    const usedBest=assignedHrs(best.id);const usedT=assignedHrs(t.id);
+    return usedT<usedBest?t:best;
+  });
 }
 
 // Picks the single teacher to use for a whole subject in a group (D1–D3).
@@ -2601,10 +2608,15 @@ async function runEngine(){
       // D5: Diagnostic for this subject
       const hrsProposed=hrsReq-hrsLeft;
       const usedAfter=(tmpHrs[pick.teacher.id]||0)+assignedHrs(pick.teacher.id);
+      let missingCause=null;
+      if(hrsLeft>0){
+        if(usedAfter>=pick.teacher.hrs_carga) missingCause='capacity';
+        else missingCause='conflict'; // slots blocked by conflicts/unavailability
+      }
       engineDiag.push({
         groupId:g.id,groupClave:g.clave,subjectName:subj.name,hrsReq,hrsProposed,
         teacherId:pick.teacher.id,teacherName:pick.teacher.name,cause:pick.cause,
-        missingCause:hrsLeft>0?(usedAfter>=pick.teacher.hrs_carga?'capacity':'availability'):null
+        missingCause
       });
       if(hrsLeft>0){
         // Some hours couldn't be placed with the single chosen teacher
@@ -2817,7 +2829,7 @@ function renderAsigStats(){
     return true;
   });
   const CAUSE_LBL={fixed:'Fijo',preferred:'Preferido',free:'Libre',no_teacher:'Sin maestro',frozen_out:'Congelado',capacity:'Sin capacidad'};
-  const MISS_LBL={capacity:'Carga llena',availability:'Sin horario disponible'};
+  const MISS_LBL={capacity:'Carga llena',availability:'Sin horario disponible',conflict:'Conflicto de horario'};
   document.getElementById('asig-diag').innerHTML=diagEntries.length?`
     <div class="card" style="margin-top:.75rem">
       <div class="ch">Diagnóstico del motor <span class="tag t-blue">${diagEntries.length} materias</span>
@@ -2839,8 +2851,8 @@ function renderAsigStats(){
             const ok=d.teacherId&&d.hrsProposed===d.hrsReq;
             const partial=d.teacherId&&d.hrsProposed<d.hrsReq;
             const bg=!d.teacherId?'background:var(--red-lt)':partial?'background:var(--amber-lt)':'';
-            const causeTag=d.cause?`<span class="tag ${d.cause==='fixed'?'t-blue':d.cause==='preferred'?'t-green':d.cause==='free'?'t-gray':d.cause==='frozen_out'?'t-amber':'t-red'}" style="font-size:.6rem">${CAUSE_LBL[d.cause]||d.cause}</span>`:'';
-            const missTag=d.missingCause?`<span class="tag t-amber" style="font-size:.6rem;margin-left:.25rem">${MISS_LBL[d.missingCause]||d.missingCause}</span>`:'';
+            const causeTag=d.cause?`<span class="tag ${d.cause==='fixed'?'t-blue':d.cause==='preferred'?'t-green':d.cause==='free'?'t-gray':d.cause==='frozen_out'?'t-amber':'t-red'}" style="font-size:.6rem">${CAUSE_LBL[d.cause]||d.cause}${!d.teacherId&&d.cause==='frozen_out'?' · sin candidato libre':''}</span>`:'';
+            const missTag=d.missingCause?`<span class="tag ${d.missingCause==='capacity'?'t-red':'t-amber'}" style="font-size:.6rem;margin-left:.25rem">${MISS_LBL[d.missingCause]||d.missingCause}</span>`:'';
             return `<tr style="${bg};border-bottom:1px solid var(--bdr)">
               <td style="padding:.35rem .7rem;white-space:nowrap"><span class="tag t-blue" style="font-size:.65rem">${d.groupClave}</span></td>
               <td style="padding:.35rem .7rem;font-weight:600;font-family:var(--fh);font-size:.7rem">${d.subjectName}</td>
