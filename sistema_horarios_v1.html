@@ -235,7 +235,6 @@ input::placeholder{color:var(--ink3);}
   .ovr-x{overflow:visible!important;}
   .sg{min-width:0!important;width:100%!important;grid-template-columns:60px repeat(5,1fr)!important;gap:1px!important;}
   .sg-cell{min-height:0!important;padding:.12rem .18rem!important;}
-  #pr-area{zoom:.78;}
 }
 </style>
 </head>
@@ -3339,32 +3338,51 @@ function buildPrint(){
         asgns.push({gid,sl,dy:parseInt(dy),slot:allSlots().find(s=>s.id===sl),d,turno:g?.turno||'M'});
       }
 
-    let html=`
-      <div style="font-family:var(--fh);font-size:.58rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
-      <div style="font-family:var(--fh);font-weight:800;font-size:.95rem;margin:.12rem 0">${t.name}</div>
-      <div style="font-size:.65rem;color:var(--ink2);margin-bottom:.7rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
-    `;
-    for(const tur of['M','V']){
-      const ta=asgns.filter(a=>a.turno===tur);if(!ta.length)continue;
-      html+=`<div style="font-family:var(--fh);font-weight:700;font-size:.65rem;color:var(--ink2);margin-bottom:.25rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
-        <div class="ovr-x" style="margin-bottom:.7rem"><div class="sg" style="gap:1px;width:100%">
-          <div style="background:var(--ink);color:#fff;padding:.25rem .3rem;font-family:var(--fh);font-weight:700;font-size:.52rem;border-radius:3px;text-align:center">HORA</div>
-          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.25rem .3rem;font-family:var(--fh);font-weight:700;font-size:.52rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
+    // Detectar si el maestro tiene ambos turnos
+    const hasBoth=['M','V'].every(tr=>asgns.some(a=>a.turno===tr));
+
+    // Función helper que genera la grilla de un turno
+    const turGrid=(tur)=>{
+      const ta=asgns.filter(a=>a.turno===tur);
+      let g=`<div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:var(--ink2);margin-bottom:.2rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+        <div style="display:grid;grid-template-columns:58px repeat(5,1fr);gap:1px;">
+          <div style="background:var(--ink);color:#fff;padding:.22rem .28rem;font-family:var(--fh);font-weight:700;font-size:.5rem;border-radius:3px;text-align:center">HORA</div>
+          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.22rem .28rem;font-family:var(--fh);font-weight:700;font-size:.5rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
       `;
       for(const slot of SLOTS[tur]){
-        html+=`<div style="background:var(--bg2);padding:.2rem .3rem;font-family:var(--fm);font-size:.48rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center">${slot.lbl}</div>`;
-        if(slot.recess||slot.blocked){html+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:8px"></div>`;continue;}
+        g+=`<div style="background:var(--bg2);padding:.16rem .24rem;font-family:var(--fm);font-size:.44rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center;white-space:nowrap">${slot.lbl}</div>`;
+        if(slot.recess||slot.blocked){g+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:6px"></div>`;continue;}
         for(let d=0;d<5;d++){
           const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
-          html+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.18rem;min-height:0;display:flex;flex-direction:column;justify-content:center">
-            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.55rem;color:var(--blue)">${a.d.subjectName}</div>
-            <div style="font-size:.46rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
+          g+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.14rem;min-height:0;display:flex;flex-direction:column;justify-content:center">
+            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.5rem;color:var(--blue);line-height:1.2">${a.d.subjectName}</div>
+            <div style="font-size:.42rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
         }
-      html+=`</div></div>`;
       }
-      html+=`</div></div>`;
+      g+=`</div>`;
+      return g;
+    };
+
+    let html=`
+      <div style="font-family:var(--fh);font-size:.56rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-family:var(--fh);font-weight:800;font-size:.95rem;margin:.1rem 0">${t.name}</div>
+      <div style="font-size:.62rem;color:var(--ink2);margin-bottom:.6rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
+    `;
+
+    if(hasBoth){
+      // Side-by-side: ambos turnos en columnas para que quepan en una hoja
+      html+=`<div style="display:flex;gap:6px;align-items:flex-start">
+        <div style="flex:1;min-width:0">${turGrid('M')}</div>
+        <div style="flex:1;min-width:0">${turGrid('V')}</div>
+      </div>`;
+    } else {
+      for(const tur of['M','V']){
+        if(!asgns.some(a=>a.turno===tur))continue;
+        html+=`<div style="margin-bottom:.6rem">${turGrid(tur)}</div>`;
+      }
     }
-    html+=`<div style="margin-top:1rem;font-size:.6rem;color:var(--ink3);border-top:1px solid var(--bdr);padding-top:.45rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+
+    html+=`<div style="margin-top:.8rem;font-size:.55rem;color:var(--ink3);border-top:1px solid var(--bdr);padding-top:.35rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
     area.innerHTML=html;
   }
   toast('Vista previa lista');
