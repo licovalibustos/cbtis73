@@ -440,7 +440,7 @@ input::placeholder{color:var(--ink3);}
     <select id="pr-type" onchange="fillPrSel()"><option value="group">Por grupo</option><option value="teacher">Por maestro</option></select>
     <select id="pr-which" style="min-width:200px"></select>
     <button class="btn btn-ink btn-sm" onclick="buildPrint()">Vista previa</button>
-    <button class="btn btn-red btn-sm" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-red btn-sm" onclick="doPrint()">🖨 Imprimir</button>
   </div>
   <div class="vbody" id="pr-area">
     <div class="empty"><div class="ico">🖨</div><div>Selecciona qué imprimir</div></div>
@@ -3341,52 +3341,96 @@ function buildPrint(){
     // Detectar si el maestro tiene ambos turnos
     const hasBoth=['M','V'].every(tr=>asgns.some(a=>a.turno===tr));
 
-    // Función helper que genera la grilla de un turno
-    const turGrid=(tur)=>{
+    // Función helper que genera la grilla de un turno (usada en popup y preview)
+    const turGrid=(tur,compact)=>{
       const ta=asgns.filter(a=>a.turno===tur);
-      let g=`<div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:var(--ink2);margin-bottom:.2rem;text-transform:uppercase">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
-        <div style="display:grid;grid-template-columns:58px repeat(5,1fr);gap:1px;">
-          <div style="background:var(--ink);color:#fff;padding:.22rem .28rem;font-family:var(--fh);font-weight:700;font-size:.5rem;border-radius:3px;text-align:center">HORA</div>
-          ${DAYS.map(d=>`<div style="background:var(--ink);color:#fff;padding:.22rem .28rem;font-family:var(--fh);font-weight:700;font-size:.5rem;border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
+      const fs=compact?'.42rem':'.52rem';
+      const fp=compact?'.36rem':'.44rem';
+      const hp=compact?'.12rem .18rem':'.2rem .28rem';
+      let g=`<div style="font-weight:700;font-size:.65rem;margin-bottom:.2rem;text-transform:uppercase;font-family:sans-serif">Turno ${tur==='M'?'Matutino':'Vespertino'}</div>
+        <div style="display:grid;grid-template-columns:62px repeat(5,1fr);gap:1px;font-family:sans-serif">
+          <div style="background:#1e293b;color:#fff;padding:${hp};font-weight:700;font-size:${fs};border-radius:3px;text-align:center">HORA</div>
+          ${DAYS.map(d=>`<div style="background:#1e293b;color:#fff;padding:${hp};font-weight:700;font-size:${fs};border-radius:3px;text-align:center">${d.toUpperCase()}</div>`).join('')}
       `;
       for(const slot of SLOTS[tur]){
-        g+=`<div style="background:var(--bg2);padding:.16rem .24rem;font-family:var(--fm);font-size:.44rem;color:var(--ink2);border-radius:3px;display:flex;align-items:center;white-space:nowrap">${slot.lbl}</div>`;
-        if(slot.recess||slot.blocked){g+=`<div style="grid-column:span 5;background:var(--bg);border-radius:3px;height:6px"></div>`;continue;}
+        g+=`<div style="background:#f1f5f9;padding:${hp};font-size:${fp};color:#64748b;border-radius:3px;display:flex;align-items:center;white-space:nowrap">${slot.lbl}</div>`;
+        if(slot.recess||slot.blocked){g+=`<div style="grid-column:span 5;background:#f8fafc;border-radius:3px;height:5px;display:flex;align-items:center;justify-content:center;font-size:.38rem;color:#94a3b8">${slot.recess?'☕ Receso':''}</div>`;continue;}
         for(let d=0;d<5;d++){
           const a=ta.find(x=>x.sl===slot.id&&x.dy===d);
-          g+=`<div style="background:${a?'var(--blue-lt)':'#fff'};border:1px solid var(--bdr);border-radius:3px;padding:.14rem;min-height:0;display:flex;flex-direction:column;justify-content:center">
-            ${a?`<div style="font-family:var(--fh);font-weight:700;font-size:.5rem;color:var(--blue);line-height:1.2">${a.d.subjectName}</div>
-            <div style="font-size:.42rem;color:var(--ink2)">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
+          g+=`<div style="background:${a?'#dbeafe':'#fff'};border:1px solid #e2e8f0;border-radius:3px;padding:${hp};min-height:0;display:flex;flex-direction:column;justify-content:center">
+            ${a?`<div style="font-weight:700;font-size:${fs};color:#1d4ed8;line-height:1.2;font-family:sans-serif">${a.d.subjectName}</div>
+            <div style="font-size:${fp};color:#64748b;font-family:sans-serif">${G(a.gid)?.clave||a.gid}</div>`:''}</div>`;
         }
       }
       g+=`</div>`;
       return g;
     };
 
-    let html=`
-      <div style="font-family:var(--fh);font-size:.56rem;color:var(--ink2)">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
-      <div style="font-family:var(--fh);font-weight:800;font-size:.95rem;margin:.1rem 0">${t.name}</div>
-      <div style="font-size:.62rem;color:var(--ink2);margin-bottom:.6rem">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
+    // ── Vista previa en pantalla ──
+    let previewHtml=`
+      <div style="font-size:.56rem;color:#64748b;font-family:sans-serif">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-weight:800;font-size:.95rem;margin:.1rem 0;font-family:sans-serif">${t.name}</div>
+      <div style="font-size:.62rem;color:#64748b;margin-bottom:.6rem;font-family:sans-serif">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${CYCLE_LBL[cycle]}</div>
     `;
-
     if(hasBoth){
-      // Side-by-side: ambos turnos en columnas para que quepan en una hoja
-      html+=`<div style="display:flex;gap:6px;align-items:flex-start">
-        <div style="flex:1;min-width:0">${turGrid('M')}</div>
-        <div style="flex:1;min-width:0">${turGrid('V')}</div>
+      previewHtml+=`<div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="flex:1;min-width:0">${turGrid('M',false)}</div>
+        <div style="flex:1;min-width:0">${turGrid('V',false)}</div>
       </div>`;
     } else {
       for(const tur of['M','V']){
         if(!asgns.some(a=>a.turno===tur))continue;
-        html+=`<div style="margin-bottom:.6rem">${turGrid(tur)}</div>`;
+        previewHtml+=`<div style="margin-bottom:.6rem">${turGrid(tur,false)}</div>`;
       }
     }
+    previewHtml+=`<div style="margin-top:.8rem;font-size:.55rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:.35rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+    area.innerHTML=previewHtml;
 
-    html+=`<div style="margin-top:.8rem;font-size:.55rem;color:var(--ink3);border-top:1px solid var(--bdr);padding-top:.35rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
-    area.innerHTML=html;
+    // ── Guardar datos para popup de impresión ──
+    area._printData={t,asgns,hasBoth,cycle:CYCLE_LBL[cycle],turGrid};
   }
   toast('Vista previa lista');
 }
+
+function doPrint(){
+  const type=document.getElementById('pr-type').value;
+  const area=document.getElementById('pr-area');
+  if(type==='teacher'&&area._printData){
+    const {t,asgns,hasBoth,cycle,turGrid}=area._printData;
+    // Generar HTML para el popup (landscape, auto-print)
+    let body=`
+      <div style="font-size:10pt;color:#475569;font-family:sans-serif">CBTIS · DISTRIBUCIÓN DE ACTIVIDADES ACADÉMICAS</div>
+      <div style="font-weight:800;font-size:16pt;margin:.15rem 0;font-family:sans-serif">${t.name}</div>
+      <div style="font-size:9pt;color:#475569;margin-bottom:.8rem;font-family:sans-serif">${t.hrs_nom}h nombr. · ${t.hrs_carga}h carga${t.obs?' · '+t.obs:''} · ${cycle}</div>
+    `;
+    if(hasBoth){
+      body+=`<div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">${turGrid('M',true)}</div>
+        <div style="flex:1;min-width:0">${turGrid('V',true)}</div>
+      </div>`;
+    } else {
+      for(const tur of['M','V']){
+        if(!asgns.some(a=>a.turno===tur))continue;
+        body+=`<div style="margin-bottom:.6rem">${turGrid(tur,true)}</div>`;
+      }
+    }
+    body+=`<div style="margin-top:.8rem;font-size:7pt;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:.4rem">Impreso: ${new Date().toLocaleDateString('es-MX')}</div>`;
+
+    const popup=window.open('','_blank','width=1100,height=700');
+    popup.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Horario ${t.name}</title>
+      <style>
+        @page{size:A4 landscape;margin:8mm 10mm;}
+        *{box-sizing:border-box;}
+        body{margin:0;padding:6mm;background:#fff;font-family:sans-serif;}
+      </style>
+    </head><body>${body}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>`);
+    popup.document.close();
+  } else {
+    window.print();
+  }
+}
+
 document.getElementById('pr-type').onchange=fillPrSel;
 
 // ═══════════════════════════════════════════
