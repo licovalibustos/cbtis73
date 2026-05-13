@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.603</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.604</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -569,6 +569,9 @@ input::placeholder{color:var(--ink3);}
         <div class="field"><label>Horas de laboratorio</label><input type="number" id="mm-lab" min="0" max="12" value="0" style="width:100%" oninput="onMmHrsChange()"></div>
       </div>
       <div id="mm-hrs-hint" style="font-size:.75rem;margin-top:.25rem;min-height:1em"></div>
+      <label style="display:flex;align-items:center;gap:.45rem;font-size:.78rem;margin-top:.35rem;cursor:pointer">
+        <input type="checkbox" id="mm-multigrup"> Multi-grupo (varios grupos simultáneos)
+      </label>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeM('modal-materia')">Cancelar</button>
@@ -936,6 +939,8 @@ let subjects={};
 
 // catalogo[cicloId] = [{id,ciclo_id,semestre,tipo,especialidad,nombre,hrs,hrs_lab}]
 let catalogo={};
+// multiGrupoNames[cicloId] = Set<string> of materia nombres where permite_multi_grupo=true
+const multiGrupoNames={};
 // asignDet[cicloId][materiaId] = [{id,materia_id,grupo_id,maestro_id,maestro_lab_id}]
 let asignDet={};
 // asignGrupo[cicloId][grupoDbId] = [{id,materia_id,grupo_id,maestro_id,maestro_lab_id,materias_catalogo:{...}}]
@@ -1073,24 +1078,34 @@ function fillGrpSel(){
 // Conflict detection
 function detectConflicts(){
   const map={};
+  const mgSet=multiGrupoNames[currentCicloId];
   for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{}))
     for(const [key,d] of Object.entries(cells)){
       if(!d.teacherId)continue;
       if(!map[d.teacherId])map[d.teacherId]={};
       if(!map[d.teacherId][key])map[d.teacherId][key]=[];
-      map[d.teacherId][key].push(gid);
+      map[d.teacherId][key].push({gid,subjectName:d.subjectName||''});
     }
   return Object.entries(map).flatMap(([tid,slots])=>
-    Object.entries(slots).filter(([,gs])=>gs.length>1).map(([key,gs])=>({tid,key,gs}))
+    Object.entries(slots).filter(([,entries])=>{
+      if(entries.length<2)return false;
+      const sn=entries[0].subjectName;
+      if(mgSet?.has(sn)&&entries.every(e=>e.subjectName===sn))return false;
+      return true;
+    }).map(([key,entries])=>({tid,key,gs:entries.map(e=>e.gid)}))
   );
 }
 
-function isConflict(tid,slotId,day,exGroup){
+function isConflict(tid,slotId,day,exGroup,subjectName=null){
   if(!tid)return false;
   const key=slotId+'_'+day;
+  const mgSet=multiGrupoNames[currentCicloId];
   for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
     if(gid===exGroup)continue;
-    if(cells[key]&&cells[key].teacherId===tid)return true;
+    if(cells[key]&&cells[key].teacherId===tid){
+      if(subjectName&&mgSet?.has(subjectName)&&cells[key].subjectName===subjectName)continue;
+      return true;
+    }
   }
   // Check mutex pairs (m4/mx and v4/vx overlap in time)
   const mutexPair=MUTEX_SLOTS.find(p=>p.includes(slotId));
@@ -1099,7 +1114,10 @@ function isConflict(tid,slotId,day,exGroup){
     const pKey=partner+'_'+day;
     for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
       if(gid===exGroup)continue;
-      if(cells[pKey]&&cells[pKey].teacherId===tid)return true;
+      if(cells[pKey]&&cells[pKey].teacherId===tid){
+        if(subjectName&&mgSet?.has(subjectName)&&cells[pKey].subjectName===subjectName)continue;
+        return true;
+      }
     }
   }
   return false;
@@ -1471,6 +1489,7 @@ function openMateriaCatModal(matId){
     document.getElementById('mm-esp').value=mc.especialidad||'A';
     document.getElementById('mm-hrs').value=mc.hrs;
     document.getElementById('mm-lab').value=mc.hrs_lab||0;
+    document.getElementById('mm-multigrup').checked=!!(mc.permite_multi_grupo);
     if(mc.tipo==='cfp'){
       document.getElementById('mm-total').value=mc.hrs+(mc.hrs_lab||0);
       document.getElementById('mm-total-wrap').style.display='block';
@@ -1489,6 +1508,7 @@ function openMateriaCatModal(matId){
     document.getElementById('mm-tipo').value='troncal';
     document.getElementById('mm-hrs').value='3';
     document.getElementById('mm-lab').value='0';
+    document.getElementById('mm-multigrup').checked=false;
     document.getElementById('mm-total').value='';
     document.getElementById('mm-total-wrap').style.display='none';
     document.getElementById('mm-hrs-hint').textContent='';
@@ -1557,6 +1577,7 @@ async function saveMateriasCatalogo(){
   const especialidad=tipo==='cfp'?(document.getElementById('mm-esp').value||null):null;
   const hrs=parseInt(document.getElementById('mm-hrs').value)||1;
   const hrs_lab=parseInt(document.getElementById('mm-lab').value)||0;
+  const permite_multi_grupo=document.getElementById('mm-multigrup').checked;
   if(!nombre){toast('Escribe el nombre de la materia','err');return;}
   const dup=(catalogo[currentCicloId]||[]).find(m=>m.nombre===nombre&&m.id!==editMateriaId);
   if(dup){toast(`"${nombre}" ya existe en el catálogo`,'err');return;}
@@ -1579,14 +1600,16 @@ async function saveMateriasCatalogo(){
       }
     }
     if(editMateriaId){
-      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab});
+      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
       const arr=catalogo[currentCicloId]||[];
       const idx=arr.findIndex(m=>m.id===editMateriaId);
-      if(idx>=0)arr[idx]={...arr[idx],nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab};
+      if(idx>=0)arr[idx]={...arr[idx],nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo};
+      multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
     } else {
-      const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab});
+      const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
       if(!catalogo[currentCicloId])catalogo[currentCicloId]=[];
       catalogo[currentCicloId].push(row);
+      multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
       // Auto-crear asignaciones para grupos existentes del mismo semestre
       await ensureGroups();
       const gruposTarget=(groups[currentCicloId]||[]).filter(g=>{
@@ -1627,6 +1650,7 @@ async function delMateriaCatalogo(){
     await dbDel('materias_catalogo',`id=eq.${editMateriaId}`);
     const delSem=(catalogo[currentCicloId]||[]).find(m=>m.id===editMateriaId)?.semestre||selCatSem;
     catalogo[currentCicloId]=(catalogo[currentCicloId]||[]).filter(m=>m.id!==editMateriaId);
+    multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
     if(asignDet[currentCicloId])delete asignDet[currentCicloId][editMateriaId];
     selMateria=null;
     closeM('modal-materia');
@@ -2350,9 +2374,10 @@ function subjectsFromAsignaciones(g){
   const asigs=(asignGrupo[currentCicloId]||{})[g.id]||[];
   return asigs.map(a=>{
     const mc=a.materias_catalogo||{};
-    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null,_sem:mc.semestre,_tipo:mc.tipo,_esp:mc.especialidad};
+    return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null,_sem:mc.semestre,_tipo:mc.tipo,_esp:mc.especialidad,_multiGrupo:!!mc.permite_multi_grupo};
   }).filter(s=>{
     if(!s.name)return false;
+    if(s._multiGrupo)return false;       // multi-grupo: asignación manual, el motor no toca
     if(s._tipo==='optativa')return true; // optativas: sin restricción de semestre/especialidad
     if(s._sem!=g.sem)return false;       // troncal/cfp: debe coincidir con semestre del grupo
     if(s._tipo==='cfp'&&s._esp&&g.especialidad&&s._esp!==g.especialidad)return false;
@@ -2381,7 +2406,7 @@ function hasPendingSlotConflict(tid, slotId, day, exGroupId){
   );
 }
 
-function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
+function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs, ignoreCapacity=false){
   const keyA=slotA.id+'_'+d, keyB=slotB.id+'_'+d;
   let bestT=null, bestScore=-1;
   // Pass 1: prefer available teachers
@@ -2394,7 +2419,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
     if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
     if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
     const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-    if(usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
+    if(!ignoreCapacity&&usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
     const minAv=Math.min(avA==='avail'?100:65, avB==='avail'?100:65);
     const score=minAv-(usedHrs/cand.hrs_carga*20);
     if(score>bestScore){bestScore=score;bestT=cand;}
@@ -2407,7 +2432,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
       if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
       if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
       const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-      if(usedHrs+2>cand.hrs_carga+1)continue;
+      if(!ignoreCapacity&&usedHrs+2>cand.hrs_carga+1)continue;
       const score=20-(usedHrs/cand.hrs_carga*20);
       if(score>bestScore){bestScore=score;bestT=cand;}
     }
@@ -2440,22 +2465,28 @@ function pickTeacherForSubject(subj, g, tmpHrs){
   // 1. Fixed from asignacion.maestro_id
   if(subj.teacherId){
     const t=T(subj.teacherId);
-    return t?{teacher:t,cause:'fixed'}:{teacher:null,cause:'no_teacher'};
+    return t?{teacher:t,cause:'fixed',ignoreCapacity:false}:{teacher:null,cause:'no_teacher',ignoreCapacity:false};
   }
-  if(!subj.plantilla_id)return{teacher:null,cause:'no_teacher'};
-  // 2. Preferred teacher (toggle active)
-  if(respectPref){
-    const pref=preferredTeacherFor(subj.plantilla_id,g.clave);
-    if(pref)return{teacher:pref,cause:'preferred'};
+  // 2. Preferred teacher (toggle active) — skip if no plantilla_id (avoids null===null in D2 check)
+  if(respectPref && subj.plantilla_id){
+    let pref=preferredTeacherFor(subj.plantilla_id,g.clave);
+    if(pref){
+      // validate solo_grupos_objetivo: ensure pref has explicit preference for this group
+      if(pref.solo_grupos_objetivo){
+        const hasPref=(preferencias[pref.id]||[]).some(p=>p.plantilla_id===subj.plantilla_id&&p.grupo_clave===g.clave);
+        if(!hasPref) pref=null;
+      }
+      if(pref) return{teacher:pref,cause:'preferred',ignoreCapacity:pref.solo_grupos_objetivo===true};
+    }
   }
   // 3. Free selection: competent teachers filtered by freeze rule
   const all=competentTeachers(subj.plantilla_id);
-  if(!all.length)return{teacher:null,cause:'no_teacher'};
+  if(!all.length)return{teacher:null,cause:'no_teacher',ignoreCapacity:false};
   const nonFrozen=all.filter(t=>{
     if(!t.solo_grupos_objetivo)return true;
     return(preferencias[t.id]||[]).some(p=>p.plantilla_id===subj.plantilla_id&&p.grupo_clave===g.clave);
   });
-  if(!nonFrozen.length)return{teacher:null,cause:all.length>0?'frozen_out':'no_teacher'};
+  if(!nonFrozen.length)return{teacher:null,cause:all.length>0?'frozen_out':'no_teacher',ignoreCapacity:false};
   // Pick best by remaining capacity
   let bestT=null,bestScore=-1;
   for(const cand of nonFrozen){
@@ -2464,7 +2495,7 @@ function pickTeacherForSubject(subj, g, tmpHrs){
     const score=(1-used/cand.hrs_carga)*100;
     if(score>bestScore){bestScore=score;bestT=cand;}
   }
-  return bestT?{teacher:bestT,cause:'free'}:{teacher:null,cause:'capacity'};
+  return bestT?{teacher:bestT,cause:'free',ignoreCapacity:false}:{teacher:null,cause:'capacity',ignoreCapacity:false};
 }
 
 async function runEngine(){
@@ -2486,6 +2517,8 @@ async function runEngine(){
   for(const t of TEACHERS){
     await ensurePreferencias(t.id);
   }
+  showLoading('Cargando disponibilidad…');
+  for(const t of TEACHERS) await ensureDisponibilidad(t.id);
   hideLoading();
 
   const sched=schedule[currentCicloId]||{};
@@ -2535,7 +2568,7 @@ async function runEngine(){
           if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sA.id||s.slotB===sA.id)&&s.dayIdx===d&&s.status==='pending'))continue;
           if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sB.id||s.slotB===sB.id)&&s.dayIdx===d&&s.status==='pending'))continue;
           // Find a teacher available for both slots
-          const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs);
+          const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs,pick.ignoreCapacity);
           if(!res)continue;
           const {teacher:bestT,score}=res;
           const avA=((availability[bestT.id]||{})[currentCicloId]||{})[keyA]||'neutral';
@@ -2579,7 +2612,7 @@ async function runEngine(){
             if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
             if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-            if(usedHrs>=cand.hrs_carga)continue;
+            if(!pick.ignoreCapacity&&usedHrs>=cand.hrs_carga)continue;
             const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
             if(score>bestScore){bestScore=score;bestT=cand;}
           }
@@ -2590,7 +2623,7 @@ async function runEngine(){
               if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
               if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
               const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-              if(usedHrs>=cand.hrs_carga)continue;
+              if(!pick.ignoreCapacity&&usedHrs>=cand.hrs_carga)continue;
               const score=20-(usedHrs/cand.hrs_carga*20);
               if(score>bestScore){bestScore=score;bestT=cand;}
             }
@@ -3075,7 +3108,8 @@ function sgDrop(e){
 
   // Validate: check if the teacher is already busy at the destination (excluding this group)
   if(draggedTeacherId){
-    const schedConflict=isConflict(draggedTeacherId,toSlot,toDay,gid);
+    const draggedSubjectName=sched[fromKey]?.subjectName||null;
+    const schedConflict=isConflict(draggedTeacherId,toSlot,toDay,gid,draggedSubjectName);
     const pendConflict=hasPendingSlotConflict(draggedTeacherId,toSlot,toDay,gid);
     const unavail=isUnavail(draggedTeacherId,toSlot,toDay);
     if(schedConflict||pendConflict||unavail){
@@ -3181,11 +3215,11 @@ function cellCheck(){
   const w=document.getElementById('mcell-warns');
   const msgs=[];
   if(tid&&slotId&&!isNaN(dayIdx)){
-    if(isConflict(tid,slotId,dayIdx,editCell.gid))
+    const subjName=document.getElementById('mcell-subj').value;
+    if(isConflict(tid,slotId,dayIdx,editCell.gid,subjName||null))
       msgs.push(`<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--red);margin-top:.45rem">🚨 Conflicto: este maestro ya tiene clase en otro grupo en ese horario.</div>`);
     if(isUnavail(tid,slotId,dayIdx))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ El maestro marcó este horario como no disponible.</div>`);
-    const subjName=document.getElementById('mcell-subj').value;
     const _ptc=subjName?plantillas.find(p=>p.nombre===subjName):null;
     if(_ptc&&tid&&!competentTeachers(_ptc.id).find(c=>c.id===tid))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ Este maestro no tiene esta materia como competencia.</div>`);
@@ -3207,7 +3241,7 @@ function cellSave(){
   const oldKey=oldSl+'_'+oldDy;
   const newKey=slotId+'_'+dayIdx;
   if(oldKey!==newKey)delete schedule[currentCicloId][gid][oldKey];
-  const conflict=isConflict(teacherId,slotId,dayIdx,gid);
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null);
   const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
   schedule[currentCicloId][gid][newKey]={subjectName,teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
   closeM('modal-cell');renderHorario();updConflict();toast('Guardado ✓');
@@ -3725,7 +3759,7 @@ async function saveNuevoCiclo(){
       // Track new catalog IDs (with plantilla_id for propagation)
       const newCatRows=[];
       for(const m of oldCat){
-        const [nm]=await dbPost('materias_catalogo',{ciclo_id:newCiclo.id,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab,plantilla_id:m.plantilla_id||null});
+        const [nm]=await dbPost('materias_catalogo',{ciclo_id:newCiclo.id,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad,nombre:m.nombre,hrs:m.hrs,hrs_lab:m.hrs_lab,plantilla_id:m.plantilla_id||null,permite_multi_grupo:m.permite_multi_grupo||false});
         newCatRows.push({id:nm.id,plantilla_id:m.plantilla_id||null,semestre:m.semestre,tipo:m.tipo,especialidad:m.especialidad});
       }
 
@@ -3834,6 +3868,7 @@ async function ensureCatalogo(cicloId){
   try{
     const rows=await dbGet('materias_catalogo',`ciclo_id=eq.${cicloId}&order=semestre.asc,nombre.asc&select=*`);
     catalogo[cicloId]=rows;
+    multiGrupoNames[cicloId]=new Set(rows.filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
   }catch(e){catalogo[cicloId]=[];}
 }
 
@@ -4312,7 +4347,7 @@ cellSave=async function(){
   const teacherId=document.getElementById('mcell-teacher').value||null;
   if(!subjectName){toast('Selecciona una materia','err');return;}
   const {slotId:oldSl,dayIdx:oldDy}=editCell;
-  const conflict=isConflict(teacherId,slotId,dayIdx,gid);
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null);
   const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
   const status=conflict?'conflict':unavail?'warn':'ok';
   showLoading('Guardando…');
