@@ -2377,7 +2377,6 @@ function subjectsFromAsignaciones(g){
     return {id:a.id,name:mc.nombre||'',hrs:mc.hrs||0,lab:mc.hrs_lab||0,teacherId:a.maestro_id,labTeacherId:a.maestro_lab_id,plantilla_id:mc.plantilla_id||null,_sem:mc.semestre,_tipo:mc.tipo,_esp:mc.especialidad,_multiGrupo:!!mc.permite_multi_grupo};
   }).filter(s=>{
     if(!s.name)return false;
-    if(s._multiGrupo)return false;       // multi-grupo: asignación manual, el motor no toca
     if(s._tipo==='optativa')return true; // optativas: sin restricción de semestre/especialidad
     if(s._sem!=g.sem)return false;       // troncal/cfp: debe coincidir con semestre del grupo
     if(s._tipo==='cfp'&&s._esp&&g.especialidad&&s._esp!==g.especialidad)return false;
@@ -2528,9 +2527,11 @@ async function runEngine(){
     if(semF&&g.sem!=semF)continue;
     if(turF&&g.turno!==turF)continue;
     // Use asignaciones if available, fallback to subjects cache
-    const subjs=subjectsFromAsignaciones(g).length
+    // Exclude multi-grupo subjects: they are manual-only, motor must not auto-assign them
+    const _allSubjs=subjectsFromAsignaciones(g).length
       ? subjectsFromAsignaciones(g)
       : (subjects[currentCicloId]?.[g.id]||[]);
+    const subjs=_allSubjs.filter(s=>!s._multiGrupo);
     if(!subjs.length)continue;
 
     let subjIdx=0;
