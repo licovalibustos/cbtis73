@@ -2381,7 +2381,7 @@ function hasPendingSlotConflict(tid, slotId, day, exGroupId){
   );
 }
 
-function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
+function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs, ignoreCapacity=false){
   const keyA=slotA.id+'_'+d, keyB=slotB.id+'_'+d;
   let bestT=null, bestScore=-1;
   // Pass 1: prefer available teachers
@@ -2394,7 +2394,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
     if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
     if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
     const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-    if(usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
+    if(!ignoreCapacity&&usedHrs+2>cand.hrs_carga+1)continue; // allow up to 1 over for blocks
     const minAv=Math.min(avA==='avail'?100:65, avB==='avail'?100:65);
     const score=minAv-(usedHrs/cand.hrs_carga*20);
     if(score>bestScore){bestScore=score;bestT=cand;}
@@ -2407,7 +2407,7 @@ function findPairTeacher(candidates, slotA, slotB, d, groupId, tmpHrs){
       if(hasPendingSlotConflict(cand.id,slotA.id,d,groupId)||hasPendingSlotConflict(cand.id,slotB.id,d,groupId))continue;
       if(hasPendingMutexConflict(cand.id,slotA.id,d,groupId)||hasPendingMutexConflict(cand.id,slotB.id,d,groupId))continue;
       const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-      if(usedHrs+2>cand.hrs_carga+1)continue;
+      if(!ignoreCapacity&&usedHrs+2>cand.hrs_carga+1)continue;
       const score=20-(usedHrs/cand.hrs_carga*20);
       if(score>bestScore){bestScore=score;bestT=cand;}
     }
@@ -2440,22 +2440,28 @@ function pickTeacherForSubject(subj, g, tmpHrs){
   // 1. Fixed from asignacion.maestro_id
   if(subj.teacherId){
     const t=T(subj.teacherId);
-    return t?{teacher:t,cause:'fixed'}:{teacher:null,cause:'no_teacher'};
+    return t?{teacher:t,cause:'fixed',ignoreCapacity:false}:{teacher:null,cause:'no_teacher',ignoreCapacity:false};
   }
-  if(!subj.plantilla_id)return{teacher:null,cause:'no_teacher'};
-  // 2. Preferred teacher (toggle active)
-  if(respectPref){
-    const pref=preferredTeacherFor(subj.plantilla_id,g.clave);
-    if(pref)return{teacher:pref,cause:'preferred'};
+  // 2. Preferred teacher (toggle active) — skip if no plantilla_id (avoids null===null in D2 check)
+  if(respectPref && subj.plantilla_id){
+    let pref=preferredTeacherFor(subj.plantilla_id,g.clave);
+    if(pref){
+      // validate solo_grupos_objetivo: ensure pref has explicit preference for this group
+      if(pref.solo_grupos_objetivo){
+        const hasPref=(preferencias[pref.id]||[]).some(p=>p.plantilla_id===subj.plantilla_id&&p.grupo_clave===g.clave);
+        if(!hasPref) pref=null;
+      }
+      if(pref) return{teacher:pref,cause:'preferred',ignoreCapacity:pref.solo_grupos_objetivo===true};
+    }
   }
   // 3. Free selection: competent teachers filtered by freeze rule
   const all=competentTeachers(subj.plantilla_id);
-  if(!all.length)return{teacher:null,cause:'no_teacher'};
+  if(!all.length)return{teacher:null,cause:'no_teacher',ignoreCapacity:false};
   const nonFrozen=all.filter(t=>{
     if(!t.solo_grupos_objetivo)return true;
     return(preferencias[t.id]||[]).some(p=>p.plantilla_id===subj.plantilla_id&&p.grupo_clave===g.clave);
   });
-  if(!nonFrozen.length)return{teacher:null,cause:all.length>0?'frozen_out':'no_teacher'};
+  if(!nonFrozen.length)return{teacher:null,cause:all.length>0?'frozen_out':'no_teacher',ignoreCapacity:false};
   // Pick best by remaining capacity
   let bestT=null,bestScore=-1;
   for(const cand of nonFrozen){
@@ -2464,7 +2470,7 @@ function pickTeacherForSubject(subj, g, tmpHrs){
     const score=(1-used/cand.hrs_carga)*100;
     if(score>bestScore){bestScore=score;bestT=cand;}
   }
-  return bestT?{teacher:bestT,cause:'free'}:{teacher:null,cause:'capacity'};
+  return bestT?{teacher:bestT,cause:'free',ignoreCapacity:false}:{teacher:null,cause:'capacity',ignoreCapacity:false};
 }
 
 async function runEngine(){
@@ -2486,6 +2492,8 @@ async function runEngine(){
   for(const t of TEACHERS){
     await ensurePreferencias(t.id);
   }
+  showLoading('Cargando disponibilidad…');
+  for(const t of TEACHERS) await ensureDisponibilidad(t.id);
   hideLoading();
 
   const sched=schedule[currentCicloId]||{};
@@ -2535,7 +2543,7 @@ async function runEngine(){
           if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sA.id||s.slotB===sA.id)&&s.dayIdx===d&&s.status==='pending'))continue;
           if(suggestions.some(s=>s.groupId===g.id&&(s.slotA===sB.id||s.slotB===sB.id)&&s.dayIdx===d&&s.status==='pending'))continue;
           // Find a teacher available for both slots
-          const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs);
+          const res=findPairTeacher(candidates,sA,sB,d,g.id,tmpHrs,pick.ignoreCapacity);
           if(!res)continue;
           const {teacher:bestT,score}=res;
           const avA=((availability[bestT.id]||{})[currentCicloId]||{})[keyA]||'neutral';
@@ -2579,7 +2587,7 @@ async function runEngine(){
             if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
             if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
             const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-            if(usedHrs>=cand.hrs_carga)continue;
+            if(!pick.ignoreCapacity&&usedHrs>=cand.hrs_carga)continue;
             const score=(av==='avail'?100:65)-(usedHrs/cand.hrs_carga*20);
             if(score>bestScore){bestScore=score;bestT=cand;}
           }
@@ -2590,7 +2598,7 @@ async function runEngine(){
               if(hasPendingSlotConflict(cand.id,slot.id,d,g.id))continue;
               if(hasPendingMutexConflict(cand.id,slot.id,d,g.id))continue;
               const usedHrs=(tmpHrs[cand.id]||0)+assignedHrs(cand.id);
-              if(usedHrs>=cand.hrs_carga)continue;
+              if(!pick.ignoreCapacity&&usedHrs>=cand.hrs_carga)continue;
               const score=20-(usedHrs/cand.hrs_carga*20);
               if(score>bestScore){bestScore=score;bestT=cand;}
             }

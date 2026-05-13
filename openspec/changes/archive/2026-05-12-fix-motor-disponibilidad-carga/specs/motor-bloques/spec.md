@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: El motor genera sugerencias de bloque de 2 horas consecutivas
 El sistema SHALL generar sugerencias de bloque—compuestas por dos franjas horarias consecutivas del mismo día—como unidad primaria de asignación. Un bloque válido requiere que ambas franjas estén libres para el grupo y que el maestro esté disponible y sin conflicto en las dos. Los slots consecutivos se determinan por adyacencia en el array devuelto por `assignable(turno, sem)`, que ya excluye recesos. Antes de iterar grupos, el motor SHALL precargar la disponibilidad de todos los maestros desde la tabla `disponibilidad` usando `ensureDisponibilidad`, de modo que `availability[tid][cicloId]` nunca sea `undefined` durante la evaluación de slots.
