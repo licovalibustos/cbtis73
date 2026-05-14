@@ -4275,6 +4275,13 @@ saveDisp=async function(){
     if(rows.length){
       // upsert all at once
       const r=await fetch(SUPA_URL+'/rest/v1/disponibilidad?on_conflict=maestro_id,ciclo_id,slot_id,dia',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(rows)
+      });
+      if(!r.ok){const err=await r.text();throw new Error(err);}
     }
     renderMaestrosSb();
     dispDirty=false;
@@ -4712,6 +4719,12 @@ async function mvSave(){
   try{
     if(rows.length){
       const r=await fetch(SUPA_URL+'/rest/v1/disponibilidad?on_conflict=maestro_id,ciclo_id,slot_id,dia',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(rows)
+      });
+      if(!r.ok){const err=await r.text();throw new Error(err);}
     }
     btn.textContent='✓ Guardado correctamente';
     btn.style.background='var(--green)';

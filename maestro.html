@@ -106,7 +106,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
   <div class="hmark">73</div>
   <div>
     <div class="htxt">CBTIS No. 73</div>
-    <div class="hsub">Captura de Disponibilidad &nbsp;·&nbsp; v1.2</div>
+    <div class="hsub">Disponibilidad &nbsp;·&nbsp; v1.3</div>
   </div>
   <div class="hciclo" id="hciclo"></div>
 </div>
@@ -328,7 +328,7 @@ async function save(){
 
   try{
     if(rows.length){
-      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+      const r=await fetch(SUPA_URL+'/rest/v1/disponibilidad?on_conflict=maestro_id,ciclo_id,slot_id,dia',{
         method:'POST',
         headers:{
           'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
@@ -337,6 +337,7 @@ async function save(){
         },
         body:JSON.stringify(rows)
       });
+      if(!r.ok){const err=await r.text();throw new Error(err);}
     }
     btn.textContent='✅ Guardado correctamente';
     btn.style.background='var(--green)';
