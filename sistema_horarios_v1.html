@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.604</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.605</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -4274,18 +4274,19 @@ saveDisp=async function(){
   try{
     if(rows.length){
       // upsert all at once
-      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+      const r=await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
         method:'POST',
         headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
           'Content-Type':'application/json',
           'Prefer':'resolution=merge-duplicates'},
         body:JSON.stringify(rows)
       });
+      if(!r.ok){const err=await r.text();throw new Error(err);}
     }
     renderMaestrosSb();
     dispDirty=false;
     toast('Disponibilidad guardada ✓');
-  }catch(e){toast('Error guardando disponibilidad','err');}
+  }catch(e){toast('Error guardando disponibilidad: '+e.message,'err');}
   hideLoading();
 };
 
@@ -4717,12 +4718,13 @@ async function mvSave(){
   btn.disabled=true;btn.textContent='Guardando…';
   try{
     if(rows.length){
-      await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
+      const r=await fetch(SUPA_URL+'/rest/v1/disponibilidad',{
         method:'POST',
         headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
           'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
         body:JSON.stringify(rows)
       });
+      if(!r.ok){const err=await r.text();throw new Error(err);}
     }
     btn.textContent='✓ Guardado correctamente';
     btn.style.background='var(--green)';
