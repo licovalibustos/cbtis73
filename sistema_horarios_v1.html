@@ -3161,6 +3161,7 @@ function sgDrop(e){
 function openCellEdit(gid,slotId,dayIdx){
   editCell={gid,slotId,dayIdx};
   const g=G(gid);
+  if(!g){toast('Grupo no encontrado','err');return;}
   const slot=allSlots().find(s=>s.id===slotId);
   const cell=((schedule[currentCicloId]||{})[gid]||{})[slotId+'_'+dayIdx];
   const subjs=subjects[currentCicloId][gid]||[];
@@ -3170,7 +3171,8 @@ function openCellEdit(gid,slotId,dayIdx){
   document.getElementById('mcell-day').value=dayIdx;
 
   const slotSel=document.getElementById('mcell-slot');
-  slotSel.innerHTML=assignable(g.turno,g.sem).map(s=>`<option value="${s.id}" ${s.id===slotId?'selected':''}>${s.lbl}</option>`).join('');
+  const slots=assignable(g.turno,g.sem)||[];
+  slotSel.innerHTML=(slots.length?slots:[{id:slotId,lbl:''}]).map(s=>`<option value="${s.id}" ${s.id===slotId?'selected':''}>${s.lbl}</option>`).join('');
 
   const subjSel=document.getElementById('mcell-subj');
   subjSel.innerHTML='<option value="">— Materia —</option>'+
@@ -3204,12 +3206,13 @@ function cellAutoTeacher(){
   // When subject is chosen, suggest competent teachers
   const subjName=document.getElementById('mcell-subj').value;
   if(!subjName)return;
-  const _pt=plantillas.find(p=>p.nombre===subjName);
+  const _pt=(plantillas||[]).find(p=>p.nombre===subjName);
   const candidates=_pt?competentTeachers(_pt.id):[];
   const sel=document.getElementById('mcell-teacher');
   const cur=sel.value;
+  const teachers=TEACHERS||[];
   sel.innerHTML='<option value="">— Maestro —</option>'+
-    TEACHERS.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${t.name}${candidates.find(c=>c.id===t.id)?' ★':''}</option>`).join('');
+    teachers.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${t.name}${candidates.find(c=>c.id===t.id)?' ★':''}</option>`).join('');
   // Auto-select first competent if none selected
   if(!cur&&candidates.length)sel.value=candidates[0].id;
   cellCheck();
@@ -3228,9 +3231,9 @@ function cellCheck(){
       msgs.push(`<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--red);margin-top:.45rem">🚨 Conflicto: este maestro ya tiene clase en otro grupo en ese horario.</div>`);
     if(isUnavail(tid,slotId,dayIdx))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ El maestro marcó este horario como no disponible.</div>`);
-    const _ptc=subjName?plantillas.find(p=>p.nombre===subjName):null;
-    if(_ptc&&tid&&!competentTeachers(_ptc.id).find(c=>c.id===tid))
-      msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ Este maestro no tiene esta materia como competencia.</div>`);
+    const _ptc=subjName?(plantillas||[]).find(p=>p.nombre===subjName):null;
+    if(_ptc&&tid){const cTeachers=competentTeachers(_ptc.id)||[];if(!cTeachers.find(c=>c.id===tid))
+      msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ Este maestro no tiene esta materia como competencia.</div>`);}
   }
   w.innerHTML=msgs.join('');
 }
