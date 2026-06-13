@@ -3874,8 +3874,25 @@ async function ensureSubjects(groupDbId){
   if(!subjects[currentCicloId])subjects[currentCicloId]={};
   if(subjects[currentCicloId][groupDbId]!==undefined)return;
   try{
-    const rows=await dbGet('materias',`grupo_id=eq.${groupDbId}&order=nombre.asc`);
-    subjects[currentCicloId][groupDbId]=rows.map(r=>({id:r.id,name:r.nombre,hrs:r.hrs,lab:r.hrs_lab,labTeacherId:r.maestro_lab_id}));
+    await ensureAsignacionesGrupo(currentCicloId,groupDbId);
+    const g=(groups[currentCicloId]||[]).find(x=>x.id===groupDbId);
+    if(g){
+      subjects[currentCicloId][groupDbId]=subjectsFromAsignaciones(g);
+    }else{
+      const asigs=(asignGrupo[currentCicloId]||{})[groupDbId]||[];
+      subjects[currentCicloId][groupDbId]=asigs.map(a=>{
+        const mc=a.materias_catalogo||{};
+        return {
+          id:a.id,
+          name:mc.nombre||'',
+          hrs:mc.hrs||0,
+          lab:mc.hrs_lab||0,
+          teacherId:a.maestro_id,
+          labTeacherId:a.maestro_lab_id,
+          plantilla_id:mc.plantilla_id||null
+        };
+      }).filter(s=>!!s.name).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+    }
   }catch(e){subjects[currentCicloId][groupDbId]=[];}
 }
 
