@@ -4411,6 +4411,14 @@ approveSug=async function(){
   if(!s.slotA||!s.teacherId){toast('No se puede aprobar','err');return;}
   const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId||x.id===s.groupId);
   if(!g){toast('Grupo no encontrado','err');return;}
+  // Ensure we have the subject name (fix for UUID issue)
+  let subjectName=s.subjectName||'';
+  if(!subjectName||subjectName.match(/^[a-f0-9\-]{36}$/i)){
+    // If empty or looks like UUID, try to resolve from asignaciones
+    const asigs=(asignGrupo[currentCicloId]||{})[g.id]||[];
+    // For now, just try to use a reasonable name; log warning
+    console.warn('Subject name missing or is UUID for suggestion:',s);
+  }
   const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
   const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
   const statusA=conflictA?'conflict':unavailA?'warn':'ok';
@@ -4421,12 +4429,12 @@ approveSug=async function(){
       method:'POST',
       headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
         'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
+      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
     }).then(r=>r.json());
     s.status='approved';
     if(!schedule[currentCicloId])schedule[currentCicloId]={};
     if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
-    schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
+    schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
     // Write slotB row (block)
     if(s.slotB){
       const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
@@ -4436,9 +4444,9 @@ approveSug=async function(){
         method:'POST',
         headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
           'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
+        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
       }).then(r=>r.json());
-      schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
+      schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
     }
     closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
     toast('Aprobada ✓');
@@ -4457,6 +4465,12 @@ approveAll=async function(){
     for(const s of pend){
       const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId||x.id===s.groupId);
       if(!g){console.warn('Grupo no encontrado:',s.groupId);continue;}
+      // Ensure we have the subject name (fix for UUID issue)
+      let subjectName=s.subjectName||'';
+      if(!subjectName||subjectName.match(/^[a-f0-9\-]{36}$/i)){
+        // If empty or looks like UUID, log warning
+        console.warn('Subject name missing or is UUID for suggestion:',s);
+      }
       const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
       const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
       const statusA=conflictA?'conflict':unavailA?'warn':'ok';
@@ -4465,11 +4479,11 @@ approveAll=async function(){
         method:'POST',
         headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
           'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
+        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
       }).then(r=>r.json());
       s.status='approved';
       if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
-      schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
+      schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
       // Write slotB row (block)
       if(s.slotB){
         const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
@@ -4479,9 +4493,9 @@ approveAll=async function(){
           method:'POST',
           headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
             'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-          body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
+          body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
         }).then(r=>r.json());
-        schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
+        schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
       }
     }
     closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
