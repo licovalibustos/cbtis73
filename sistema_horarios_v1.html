@@ -4441,6 +4441,50 @@ approveSug=async function(){
   hideLoading();
 };
 
+// Override approveAll to persist to DB
+const _origApproveAll=approveAll;
+approveAll=async function(){
+  const pend=suggestions.filter(s=>s.status==='pending'&&s.slotA&&s.teacherId);
+  if(!pend.length){toast('Sin sugerencias válidas pendientes','warn');return;}
+  showLoading('Aprobando todo…');
+  try{
+    if(!schedule[currentCicloId])schedule[currentCicloId]={};
+    for(const s of pend){
+      const g=(groups[currentCicloId]||[]).find(x=>x.clave===s.groupId||x.id===s.groupId);
+      if(!g){console.warn('Grupo no encontrado:',s.groupId);continue;}
+      const conflictA=isConflict(s.teacherId,s.slotA,s.dayIdx,s.groupId);
+      const unavailA=isUnavail(s.teacherId,s.slotA,s.dayIdx);
+      const statusA=conflictA?'conflict':unavailA?'warn':'ok';
+      // Write slotA row
+      const [rowA]=await fetch(SUPA_URL+'/rest/v1/horario',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotA,dia:s.dayIdx,status:statusA})
+      }).then(r=>r.json());
+      s.status='approved';
+      if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
+      schedule[currentCicloId][g.id][s.slotA+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusA,horarioId:rowA.id};
+      // Write slotB row (block)
+      if(s.slotB){
+        const conflictB=isConflict(s.teacherId,s.slotB,s.dayIdx,s.groupId);
+        const unavailB=isUnavail(s.teacherId,s.slotB,s.dayIdx);
+        const statusB=conflictB?'conflict':unavailB?'warn':'ok';
+        const [rowB]=await fetch(SUPA_URL+'/rest/v1/horario',{
+          method:'POST',
+          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+            'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+          body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:s.subjectName,maestro_id:s.teacherId,slot_id:s.slotB,dia:s.dayIdx,status:statusB})
+        }).then(r=>r.json());
+        schedule[currentCicloId][g.id][s.slotB+'_'+s.dayIdx]={subjectName:s.subjectName,teacherId:s.teacherId,status:statusB,horarioId:rowB.id};
+      }
+    }
+    closeM('modal-approve');renderSugList();renderAsigStats();updConflict();
+    toast('Todo aprobado ✓');
+  }catch(e){toast('Error: '+e.message,'err');}
+  hideLoading();
+};
+
 // ═══════════════════════════════════════════
 //  PATCH DATA GETTERS to use currentCicloId
 // ═══════════════════════════════════════════
