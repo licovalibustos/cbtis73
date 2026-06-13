@@ -3274,7 +3274,7 @@ function renderHorarioMaestro(){
   const t=T(tid);
   const sched=schedule[currentCicloId]||{};
 
-  // Build lookup: {turno:{slotId:{dayIdx:{subjectName,gClave,isLab,pending}}}}
+  // Build lookup: {turno:{slotId:{dayIdx:[{subjectName,gClave,isLab,pending}, ...]}}}
   const grid={M:{},V:{}};
   // Approved assignments
   for(const [gid,cells] of Object.entries(sched)){
@@ -3284,7 +3284,8 @@ function renderHorarioMaestro(){
       if(d.teacherId!==tid)continue;
       const [sl,dy]=key.split('_');
       if(!grid[tur][sl])grid[tur][sl]={};
-      grid[tur][sl][parseInt(dy)]={subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab,pending:false};
+      if(!grid[tur][sl][parseInt(dy)])grid[tur][sl][parseInt(dy)]=[];
+      grid[tur][sl][parseInt(dy)].push({subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab,pending:false});
     }
   }
   // Pending suggestions
@@ -3296,8 +3297,8 @@ function renderHorarioMaestro(){
     const addSlot=(sl,dy)=>{
       if(sl===null||dy===null)return;
       if(!grid[tur][sl])grid[tur][sl]={};
-      if(!grid[tur][sl][dy])// don't overwrite approved
-        grid[tur][sl][dy]={subjectName:s.subjectName,gClave,isLab:false,pending:true};
+      if(!grid[tur][sl][dy])grid[tur][sl][dy]=[];
+      grid[tur][sl][dy].push({subjectName:s.subjectName,gClave,isLab:false,pending:true});
     };
     addSlot(s.slotA,s.dayIdx);
     if(s.slotB)addSlot(s.slotB,s.dayIdx);
@@ -3337,15 +3338,19 @@ function renderHorarioMaestro(){
       }
       h+=`<div style="${timeCell}">${slot.lbl}</div>`;
       for(let d=0;d<5;d++){
-        const cell=grid[tur][slot.id]?.[d];
-        if(cell){
-          const bg=cell.pending?'#fffbeb':(isVes?'#ede9fe':'#dbeafe');
-          const brd=cell.pending?'#f59e0b':(isVes?'#a78bfa':'#93c5fd');
-          const clr=cell.pending?'#92400e':(isVes?'#6d28d9':'#1d4ed8');
-          const bStyle=cell.pending?'border:2px dashed '+brd+';':'border:1px solid '+brd+';';
-          h+=`<div style="${cellBase}${bStyle}background:${bg};">
-            <div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:${clr};line-height:1.2">${cell.subjectName}</div>
-            <div style="font-size:.55rem;color:#64748b;margin-top:2px">${cell.gClave}${cell.isLab?' · Lab':''}${cell.pending?' · ⏳':''}</div>
+        const cells=grid[tur][slot.id]?.[d] || [];
+        if(cells.length){
+          const bg=cells[0].pending?'#fffbeb':(isVes?'#ede9fe':'#dbeafe');
+          const brd=cells[0].pending?'#f59e0b':(isVes?'#a78bfa':'#93c5fd');
+          const clr=cells[0].pending?'#92400e':(isVes?'#6d28d9':'#1d4ed8');
+          const bStyle=cells[0].pending?'border:2px dashed '+brd+';':'border:1px solid '+brd+';';
+          h+=`<div style="${cellBase}${bStyle}background:${bg};flex-direction:column;gap:.2rem">
+            ${cells.map(cell=>`
+              <div>
+                <div style="font-family:var(--fh);font-weight:700;font-size:.62rem;color:${clr};line-height:1.2">${cell.subjectName}</div>
+                <div style="font-size:.55rem;color:#64748b">${cell.gClave}${cell.isLab?' · Lab':''}${cell.pending?' · ⏳':''}</div>
+              </div>
+            `).join('')}
           </div>`;
         } else {
           h+=`<div style="${cellBase}background:#fff;"></div>`;
