@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.622</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.623</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -2074,10 +2074,26 @@ async function saveMateriasCatalogo(){
       }
     }
     if(editMateriaId){
-      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
       const arr=catalogo[currentCicloId]||[];
       const idx=arr.findIndex(m=>m.id===editMateriaId);
+      const prevNombre=(idx>=0?arr[idx]?.nombre:null)||null;
+      await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
       if(idx>=0)arr[idx]={...arr[idx],nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo};
+
+      // Keep denormalized horario rows in sync when a catalog subject is renamed.
+      if(prevNombre&&prevNombre!==nombre){
+        await dbPatch('horario',`ciclo_id=eq.${currentCicloId}&materia_nombre=eq.${encodeURIComponent(prevNombre)}`,{materia_nombre:nombre});
+        for(const cells of Object.values(schedule[currentCicloId]||{})){
+          for(const key of Object.keys(cells||{})){
+            const c=cells[key];
+            if(c?.subjectName===prevNombre)c.subjectName=nombre;
+          }
+        }
+        for(const s of suggestions||[]){
+          if(s?.subjectName===prevNombre)s.subjectName=nombre;
+        }
+      }
+
       multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
     } else {
       const [row]=await dbPost('materias_catalogo',{ciclo_id:currentCicloId,nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
