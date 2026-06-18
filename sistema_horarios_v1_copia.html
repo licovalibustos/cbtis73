@@ -1516,13 +1516,15 @@ function detectConflicts(){
   );
 }
 
-function isConflict(tid,slotId,day,exGroup,subjectName=null){
+function isConflict(tid,slotId,day,exGroup,subjectName=null,excludeHorarioId=null){
   if(!tid)return false;
   const key=slotId+'_'+day;
   const mgSet=multiGrupoNames[currentCicloId];
   for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
     if(gid===exGroup)continue;
     if(cells[key]&&cells[key].teacherId===tid){
+      // Exclude the current cell being edited (by horarioId) from conflict check
+      if(excludeHorarioId&&cells[key].horarioId===excludeHorarioId)continue;
       if(subjectName&&mgSet?.has(subjectName)&&cells[key].subjectName===subjectName)continue;
       return true;
     }
@@ -1535,6 +1537,8 @@ function isConflict(tid,slotId,day,exGroup,subjectName=null){
     for(const [gid,cells] of Object.entries(schedule[currentCicloId]||{})){
       if(gid===exGroup)continue;
       if(cells[pKey]&&cells[pKey].teacherId===tid){
+        // Exclude the current cell being edited (by horarioId) from conflict check
+        if(excludeHorarioId&&cells[pKey].horarioId===excludeHorarioId)continue;
         if(subjectName&&mgSet?.has(subjectName)&&cells[pKey].subjectName===subjectName)continue;
         return true;
       }
@@ -3664,7 +3668,9 @@ function cellCheck(){
   const msgs=[];
   if(tid&&slotId&&!isNaN(dayIdx)){
     const subjName=document.getElementById('mcell-subj').value;
-    if(isConflict(tid,slotId,dayIdx,editCell.gid,subjName||null))
+    // Exclude current cell from conflict check when editing
+    const currentHorarioId=((schedule[currentCicloId]||{})[editCell.gid]||{})[editCell.slotId+'_'+editCell.dayIdx]?.horarioId;
+    if(isConflict(tid,slotId,dayIdx,editCell.gid,subjName||null,currentHorarioId))
       msgs.push(`<div style="background:var(--red-lt);border:1px solid #efa090;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--red);margin-top:.45rem">🚨 Conflicto: este maestro ya tiene clase en otro grupo en ese horario.</div>`);
     if(isUnavail(tid,slotId,dayIdx))
       msgs.push(`<div style="background:var(--amber-lt);border:1px solid #c88840;border-radius:7px;padding:.5rem .65rem;font-size:.7rem;color:var(--amber);margin-top:.45rem">⚠ El maestro marcó este horario como no disponible.</div>`);
@@ -4842,7 +4848,11 @@ cellSave=async function(){
   const teacherId=document.getElementById('mcell-teacher').value||null;
   if(!subjectName){toast('Selecciona una materia','err');return;}
   const {slotId:oldSl,dayIdx:oldDy}=editCell;
-  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null);
+  const oldKey=oldSl+'_'+oldDy;
+  const newKey=slotId+'_'+dayIdx;
+  const oldEntry=((schedule[currentCicloId]||{})[gid]||{})[oldKey];
+  const excludeHId=oldEntry?.horarioId||null;
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null,excludeHId);
   const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
   const status=conflict?'conflict':unavail?'warn':'ok';
   showLoading('Guardando…');
@@ -4850,8 +4860,6 @@ cellSave=async function(){
     // Delete old if slot changed
     if(!schedule[currentCicloId])schedule[currentCicloId]={};
     if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
-    const oldKey=oldSl+'_'+oldDy;
-    const newKey=slotId+'_'+dayIdx;
     if(oldKey!==newKey){
       const old=schedule[currentCicloId][g.id][oldKey];
       if(old?.horarioId)await dbDel('horario',`id=eq.${old.horarioId}`);
