@@ -3694,8 +3694,10 @@ function cellSave(){
   if(!schedule[currentCicloId][gid])schedule[currentCicloId][gid]={};
   const oldKey=oldSl+'_'+oldDy;
   const newKey=slotId+'_'+dayIdx;
+  const oldEntry=schedule[currentCicloId][gid][oldKey];
+  const excludeHId=oldEntry?.horarioId||null;
   if(oldKey!==newKey)delete schedule[currentCicloId][gid][oldKey];
-  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null);
+  const conflict=isConflict(teacherId,slotId,dayIdx,gid,subjectName||null,excludeHId);
   const unavail=teacherId?isUnavail(teacherId,slotId,dayIdx):false;
   schedule[currentCicloId][gid][newKey]={subjectName,teacherId,status:conflict?'conflict':unavail?'warn':'ok'};
   closeM('modal-cell');renderHorario();updConflict();toast('Guardado ✓');
@@ -4862,32 +4864,55 @@ cellSave=async function(){
     if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
     if(oldKey!==newKey){
       const old=schedule[currentCicloId][g.id][oldKey];
-      if(old?.horarioId)await dbDel('horario',`id=eq.${old.horarioId}`);
+      if(old?.horarioId){
+        await dbDel('horario',`id=eq.${old.horarioId}`);
+        // Verify deletion succeeded by checking BD
+        const stillExists=await dbGet('horario',`id=eq.${old.horarioId}`);
+        if(stillExists?.length>0)throw new Error('No se pudo eliminar el registro anterior');
+      }
       delete schedule[currentCicloId][g.id][oldKey];
     }
     // Persist: update existing row when editing same cell; insert when it's new/moved.
     let savedRow=null;
     const existing=(oldKey===newKey)?schedule[currentCicloId][g.id][newKey]:null;
     if(existing?.horarioId){
+      // Update existing row
       const patched=await dbPatch(
         'horario',
         `id=eq.${existing.horarioId}`,
         {materia_nombre:subjectName,maestro_id:teacherId,status}
       );
       savedRow=Array.isArray(patched)?patched[0]:null;
+      if(!savedRow)throw new Error('No se pudo actualizar el registro');
     }else{
-      const inserted=await fetch(SUPA_URL+'/rest/v1/horario',{
-        method:'POST',
-        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
-          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:teacherId,slot_id:slotId,dia:dayIdx,status})
-      }).then(r=>r.json());
-      savedRow=Array.isArray(inserted)?inserted[0]:inserted;
+      // Check if record exists in BD first (in case cache is out of sync)
+      const existsInBD=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&grupo_id=eq.${g.id}&slot_id=eq.${slotId}&dia=eq.${dayIdx}`);
+      if(existsInBD?.length>0){
+        // Record exists in BD but not in cache: PATCH it
+        const bdRow=existsInBD[0];
+        const patched=await dbPatch(
+          'horario',
+          `id=eq.${bdRow.id}`,
+          {materia_nombre:subjectName,maestro_id:teacherId,status}
+        );
+        savedRow=Array.isArray(patched)?patched[0]:null;
+        if(!savedRow)throw new Error('No se pudo actualizar el registro');
+      }else{
+        // Record doesn't exist: POST new one
+        const inserted=await fetch(SUPA_URL+'/rest/v1/horario',{
+          method:'POST',
+          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+            'Content-Type':'application/json','Prefer':'return=representation'},
+          body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:teacherId,slot_id:slotId,dia:dayIdx,status})
+        }).then(r=>{if(!r.ok)throw new Error(r.statusText);return r.json();});
+        savedRow=Array.isArray(inserted)?inserted[0]:inserted;
+        if(!savedRow?.id)throw new Error('No se guardó el registro en BD');
+      }
     }
     schedule[currentCicloId][g.id][newKey]={subjectName,teacherId,status,horarioId:savedRow?.id||existing?.horarioId};
     closeM('modal-cell');renderHorario();updConflict();
     toast('Guardado ✓');
-  }catch(e){toast('Error: '+e.message,'err');}
+  }catch(e){console.error('cellSave error:',e);toast('Error: '+e.message,'err');}
   hideLoading();
 };
 
