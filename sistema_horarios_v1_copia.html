@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.620</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.621</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1189,8 +1189,12 @@ function buildHorarioTemplateCellMap(model){
   }
 
   clearRange('B',28,36); clearRange('C',28,36); clearRange('D',28,36); clearRange('F',28,36);
+  const normMateria=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+  const isRse=item=>normMateria(item?.materia)==='RECURSOS SOCIOEMOCIONALES';
+  const cargaData=(model.carga||[]);
+  const hasRse=cargaData.some(isRse);
   let cargaTotal=0;
-  const cargaRows=(model.carga||[]).slice(0,9);
+  const cargaRows=cargaData.filter(item=>!isRse(item)).slice(0,9);
   for(let i=0;i<cargaRows.length;i++){
     const row=28+i;
     const item=cargaRows[i];
@@ -1202,8 +1206,18 @@ function buildHorarioTemplateCellMap(model){
     cargaTotal+=h;
   }
   setCell('C37',cargaTotal);
-  setCell('C48',0);
-  setCell('C49',cargaTotal);
+
+  // Actividades complementarias (excepcion):
+  // "Recursos Socioemocionales" se reporta aqui como clave 5.2 y 1 hora.
+  clearRange('B',41,47); clearRange('C',41,47); clearRange('D',41,47);
+  const actTotal=hasRse?1:0;
+  if(hasRse){
+    setCell('B41','5.2');
+    setCell('C41',1);
+    setCell('D41','RECURSOS SOCIOEMOCIONALES');
+  }
+  setCell('C48',actTotal);
+  setCell('C49',cargaTotal+actTotal);
 
   const dayCols=['I','J','K','L','M'];
   const allRows=[...Object.values(TEMPLATE_SLOT_ROWS.M),...Object.values(TEMPLATE_SLOT_ROWS.V)];
