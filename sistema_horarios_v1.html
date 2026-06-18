@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.612</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.613</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -425,6 +425,7 @@ input::placeholder{color:var(--ink3);}
     <span id="cy-hm" class="cy-badge cy-par">Feb–Jul · Pares</span>
     <div class="vsep"></div>
     <select id="hm-teacher" onchange="renderHorarioMaestro()" style="min-width:200px"><option value="">— Maestro —</option></select>
+    <button class="btn btn-green btn-sm no-print" onclick="exportHorarioMaestroExcel()">📗 Excel</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="printHorarioMaestro()">🖨 Imprimir</button>
   </div>
   <div class="vbody" id="hm-body">
@@ -983,6 +984,7 @@ const COLS=['#bf3a18','#1a44be','#1a7840','#b86810','#6218be','#1a68b0','#8a1840
 const ac=id=>COLS[parseInt(id.replace(/\D/g,''))%COLS.length];
 const allSlots=()=>[...SLOTS.M,...SLOTS.V];
 const assignable=(t,sem)=>SLOTS[t].filter(s=>!s.recess&&!s.blocked&&(!s.forSem||s.forSem.includes(sem)));
+let _zipJsLoader=null;
 function normalizeSlotForSem(slotId,sem){
   if(sem===1||sem===2){
     if(slotId==='m4')return'mx';
@@ -997,6 +999,367 @@ function normalizeSlotForSem(slotId,sem){
   return slotId;
 }
 const normSubj=s=>s.trim().toUpperCase();
+const excelSafePart=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'archivo';
+const materiaClave=s=>{
+  const txt=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+  if(!txt)return '';
+  const stop=new Set(['DE','DEL','LA','LAS','EL','LOS','Y','E','EN','A','AL','PARA','POR','CON']);
+  const parts=txt.split(/\s+/).filter(Boolean).filter(p=>!stop.has(p));
+  const safeParts=parts.length?parts:txt.split(/\s+/).filter(Boolean);
+  return safeParts.map(p=>/^[A-Z]/.test(p)?p[0]:(/^\d+$/.test(p)?p:'' )).join('').slice(0,12);
+};
+const TEMPLATE_SLOT_ROWS={
+  M:{m1:28,m2:29,m3:30,m4:32,mx:33,m5:35,m6:36,m7:37,m8:38},
+  V:{v1:40,v2:41,v3:42,v4:44,vx:45,v5:47,v6:48,v7:49,v8:50},
+};
+
+const XLSX_MAIN_NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const XLSX_REL_NS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const XLSX_PKG_REL_NS='http://schemas.openxmlformats.org/package/2006/relationships';
+
+async function ensureJSZip(){
+  if(window.JSZip)return window.JSZip;
+  if(_zipJsLoader)return _zipJsLoader;
+  _zipJsLoader=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    script.async=true;
+    script.onload=()=>resolve(window.JSZip);
+    script.onerror=()=>reject(new Error('No se pudo cargar JSZip'));
+    document.head.appendChild(script);
+  });
+  return _zipJsLoader;
+}
+
+async function fetchHorarioMaestroRows(tid){
+  await ensureGroups();
+  try{
+    return await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${tid}&order=dia.asc,slot_id.asc`);
+  }catch(e){
+    console.warn('No se pudo cargar horario del maestro:',e);
+    return [];
+  }
+}
+
+function buildHorarioMaestroExcelModel(tid, rows){
+  const teacher=T(tid);
+  const ciclo=ciclos.find(c=>c.id===currentCicloId)||{};
+  const groupsById=Object.fromEntries((groups[currentCicloId]||[]).map(g=>[g.id,g]));
+  const cells={M:{},V:{}};
+  const load=[];
+
+  for(const r of rows||[]){
+    const g=groupsById[r.grupo_id];
+    const turno=g?.turno||'M';
+    const sem=g?.sem||null;
+    const slotId=normalizeSlotForSem(r.slot_id,sem);
+    const slot=allSlots().find(s=>s.id===slotId);
+    const grupoClave=g?.clave||r.grupo_id;
+    const dayIdx=parseInt(r.dia);
+    if(!cells[turno][slotId])cells[turno][slotId]={};
+    if(!cells[turno][slotId][dayIdx])cells[turno][slotId][dayIdx]=[];
+    cells[turno][slotId][dayIdx].push({subjectName:r.materia_nombre,grupoClave,status:r.status,isLab:r.is_lab});
+    load.push({grupoClave,materia:r.materia_nombre,horas:1,dia:DAYS[dayIdx],horario:slot?.lbl||r.slot_id,turno:turno==='M'?'Matutino':'Vespertino'});
+  }
+
+  const carga={};
+  for(const item of load){
+    const key=item.grupoClave+'||'+item.materia;
+    if(!carga[key])carga[key]={grupoClave:item.grupoClave,materia:item.materia,horas:0,dias:new Set(),turno:item.turno};
+    carga[key].horas+=1;
+    carga[key].dias.add(item.dia);
+  }
+
+  return {
+    teacher,
+    ciclo,
+    rows:load,
+    carga:Object.values(carga).sort((a,b)=>a.grupoClave.localeCompare(b.grupoClave,'es')||a.materia.localeCompare(b.materia,'es')).map(x=>({...x,dias:[...x.dias].join(', ')})),
+    cells,
+  };
+}
+
+function pickHorarioTemplateFile(){
+  return new Promise((resolve,reject)=>{
+    const input=document.createElement('input');
+    input.type='file';
+    input.accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    input.style.display='none';
+    document.body.appendChild(input);
+
+    const cleanup=()=>{if(input.parentNode)input.parentNode.removeChild(input);};
+
+    input.addEventListener('change',()=>{
+      const file=input.files&&input.files[0];
+      cleanup();
+      if(file)resolve(file);
+      else reject(new Error('Selección de template cancelada'));
+    },{once:true});
+
+    input.click();
+  });
+}
+
+async function loadHorarioTemplateArrayBuffer(){
+  const readFromSelectedFile=async()=>{
+    toast('Selecciona Template_Horario_Maestro.xlsx','warn');
+    const file=await pickHorarioTemplateFile();
+    return file.arrayBuffer();
+  };
+
+  if(location.protocol==='file:')return readFromSelectedFile();
+
+  try{
+    const r=await fetch('Template_Horario_Maestro.xlsx',{cache:'no-store'});
+    if(!r.ok)throw new Error('No se encontró Template_Horario_Maestro.xlsx');
+    return r.arrayBuffer();
+  }catch(e){
+    console.warn('No se pudo cargar template por fetch, se pedirá archivo local:',e);
+    return readFromSelectedFile();
+  }
+}
+
+function buildHorarioTemplateCellMap(model){
+  const map={};
+  const setCell=(addr,val)=>{map[addr]=(val===undefined||val===null)?'':val;};
+  const clearRange=(col,rowStart,rowEnd)=>{for(let r=rowStart;r<=rowEnd;r++)setCell(col+r,'');};
+  const t=model.teacher||{};
+  // Keep institutional fixed fields from the template (plantel, ubicacion, nivel, etc.).
+  setCell('C12',t.name||'');
+  setCell('K12',t.rfc||'');
+  setCell('C13',t.grado||'');
+  setCell('H13',t.egresado_de||'');
+  setCell('L13',t.especialidad_acad||'');
+  setCell('C14',t.departamento||'');
+  setCell('I14',t.categoria||'');
+  // No. de Hrs. Nombram. is captured below the header.
+  setCell('D19',Number(t.hrs_nom)||'');
+
+  const plazas=t.plazas||[];
+  const plazaPrincipal=plazas[0]||{};
+  setCell('B19',plazaPrincipal.fecha_ingreso_sep||'');
+  setCell('C19',plazaPrincipal.fecha_ingreso_dgeti||'');
+  setCell('E19',plazaPrincipal.plaza||'');
+  setCell('J19',plazaPrincipal.condicion_nom||'');
+  const hasM=plazas.some(p=>p.turno==='M'||p.turno==='A');
+  const hasV=plazas.some(p=>p.turno==='V'||p.turno==='A');
+  setCell('M19',hasM?'X':'');
+  setCell('P19',hasV?'X':'');
+
+  clearRange('B',28,36); clearRange('C',28,36); clearRange('D',28,36); clearRange('F',28,36);
+  let cargaTotal=0;
+  const cargaRows=(model.carga||[]).slice(0,9);
+  for(let i=0;i<cargaRows.length;i++){
+    const row=28+i;
+    const item=cargaRows[i];
+    const h=Number(item.horas)||0;
+    setCell('B'+row,materiaClave(item.materia||''));
+    setCell('C'+row,h||'');
+    setCell('D'+row,item.materia||'');
+    setCell('F'+row,item.grupoClave||'');
+    cargaTotal+=h;
+  }
+  setCell('C37',cargaTotal);
+  setCell('C48',0);
+  setCell('C49',cargaTotal);
+
+  const dayCols=['I','J','K','L','M'];
+  const allRows=[...Object.values(TEMPLATE_SLOT_ROWS.M),...Object.values(TEMPLATE_SLOT_ROWS.V)];
+  for(const rr of allRows){for(const col of dayCols)setCell(col+rr,'');}
+
+  const writeTurno=(turno)=>{
+    const rowMap=TEMPLATE_SLOT_ROWS[turno];
+    for(const [slotId,row] of Object.entries(rowMap)){
+      for(let d=0;d<5;d++){
+        const dayEntries=model.cells[turno]?.[slotId]?.[d]||[];
+        const claves=[...new Set(dayEntries.map(e=>e.grupoClave).filter(Boolean))];
+        setCell(dayCols[d]+row,claves.join('\n'));
+      }
+    }
+  };
+  writeTurno('M');
+  writeTurno('V');
+
+  const now=new Date();
+  setCell('O50',now.getDate());
+  setCell('P50',now.getMonth()+1);
+  setCell('Q50',now.getFullYear());
+  setCell('E53',t.name||'');
+
+  return map;
+}
+
+function parseXml(text){
+  return new DOMParser().parseFromString(text,'application/xml');
+}
+
+function buildSheetCellMap(sheetDoc){
+  const cells=sheetDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'c');
+  const map={};
+  for(const c of cells){
+    const ref=c.getAttribute('r');
+    if(ref)map[ref]=c;
+  }
+  return map;
+}
+
+function colToNumber(col){
+  let n=0;
+  for(let i=0;i<col.length;i++)n=n*26+(col.charCodeAt(i)-64);
+  return n;
+}
+
+function splitCellRef(ref){
+  const m=/^([A-Z]+)(\d+)$/.exec(ref);
+  if(!m)return null;
+  return {col:m[1],row:parseInt(m[2],10),colNum:colToNumber(m[1])};
+}
+
+function findOrCreateRow(sheetDoc,rowNum){
+  const sheetData=sheetDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'sheetData')[0];
+  if(!sheetData)throw new Error('sheetData no encontrado en la plantilla');
+  const rows=sheetData.getElementsByTagNameNS(XLSX_MAIN_NS,'row');
+  for(const row of rows){
+    if(parseInt(row.getAttribute('r'),10)===rowNum)return row;
+  }
+  const newRow=sheetDoc.createElementNS(XLSX_MAIN_NS,'row');
+  newRow.setAttribute('r',String(rowNum));
+  sheetData.appendChild(newRow);
+  return newRow;
+}
+
+function findOrCreateCell(sheetDoc,cellMap,ref){
+  if(cellMap[ref])return cellMap[ref];
+  const parts=splitCellRef(ref);
+  if(!parts)throw new Error('Referencia de celda inválida: '+ref);
+  const rowEl=findOrCreateRow(sheetDoc,parts.row);
+  const newCell=sheetDoc.createElementNS(XLSX_MAIN_NS,'c');
+  newCell.setAttribute('r',ref);
+  rowEl.appendChild(newCell);
+  cellMap[ref]=newCell;
+  return newCell;
+}
+
+function setSheetCellValue(sheetDoc,cellMap,ref,value){
+  const cell=findOrCreateCell(sheetDoc,cellMap,ref);
+  while(cell.firstChild)cell.removeChild(cell.firstChild);
+
+  if(typeof value==='number'&&Number.isFinite(value)){
+    cell.removeAttribute('t');
+    const v=sheetDoc.createElementNS(XLSX_MAIN_NS,'v');
+    v.textContent=String(value);
+    cell.appendChild(v);
+    return;
+  }
+
+  const text=String(value??'');
+  cell.setAttribute('t','inlineStr');
+  const isNode=sheetDoc.createElementNS(XLSX_MAIN_NS,'is');
+  const tNode=sheetDoc.createElementNS(XLSX_MAIN_NS,'t');
+  if(/(^\s)|(\s$)|\n/.test(text))tNode.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');
+  tNode.textContent=text;
+  isNode.appendChild(tNode);
+  cell.appendChild(isNode);
+}
+
+async function resolveHoja1PathFromZip(zip){
+  const wbXml=await zip.file('xl/workbook.xml')?.async('text');
+  const relXml=await zip.file('xl/_rels/workbook.xml.rels')?.async('text');
+  if(!wbXml||!relXml)return 'xl/worksheets/sheet1.xml';
+
+  const wbDoc=parseXml(wbXml);
+  const sheets=[...wbDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'sheet')];
+  const hoja=sheets.find(s=>s.getAttribute('name')==='Hoja1')||sheets[0];
+  if(!hoja)return 'xl/worksheets/sheet1.xml';
+  const relId=hoja.getAttributeNS(XLSX_REL_NS,'id')||hoja.getAttribute('r:id');
+  if(!relId)return 'xl/worksheets/sheet1.xml';
+
+  const relDoc=parseXml(relXml);
+  const rels=[...relDoc.getElementsByTagNameNS(XLSX_PKG_REL_NS,'Relationship')];
+  const rel=rels.find(r=>r.getAttribute('Id')===relId);
+  const target=rel?.getAttribute('Target')||'worksheets/sheet1.xml';
+  return target.startsWith('xl/')?target:('xl/'+target.replace(/^\//,''));
+}
+
+async function stripCalcChainArtifacts(zip){
+  if(zip.file('xl/calcChain.xml'))zip.remove('xl/calcChain.xml');
+
+  const contentTypesEntry=zip.file('[Content_Types].xml');
+  if(contentTypesEntry){
+    const contentTypesXml=await contentTypesEntry.async('text');
+    const contentTypesDoc=parseXml(contentTypesXml);
+    const ctNs='http://schemas.openxmlformats.org/package/2006/content-types';
+    const overrides=[...contentTypesDoc.getElementsByTagNameNS(ctNs,'Override')];
+    overrides
+      .filter(n=>((n.getAttribute('PartName')||'').toLowerCase()==='/xl/calcchain.xml'))
+      .forEach(n=>n.parentNode&&n.parentNode.removeChild(n));
+    zip.file('[Content_Types].xml',new XMLSerializer().serializeToString(contentTypesDoc));
+  }
+
+  const wbRelsEntry=zip.file('xl/_rels/workbook.xml.rels');
+  if(wbRelsEntry){
+    const wbRelsXml=await wbRelsEntry.async('text');
+    const wbRelsDoc=parseXml(wbRelsXml);
+    const rels=[...wbRelsDoc.getElementsByTagNameNS(XLSX_PKG_REL_NS,'Relationship')];
+    rels
+      .filter(n=>{
+        const type=(n.getAttribute('Type')||'').toLowerCase();
+        const target=(n.getAttribute('Target')||'').toLowerCase();
+        return type.endsWith('/calcchain')||target.includes('calcchain.xml');
+      })
+      .forEach(n=>n.parentNode&&n.parentNode.removeChild(n));
+    zip.file('xl/_rels/workbook.xml.rels',new XMLSerializer().serializeToString(wbRelsDoc));
+  }
+}
+
+async function fillHorarioTemplateArrayBuffer(JSZip,templateAb,model){
+  const zip=await JSZip.loadAsync(templateAb);
+  const sheetPath=await resolveHoja1PathFromZip(zip);
+  const sheetEntry=zip.file(sheetPath);
+  if(!sheetEntry)throw new Error('No se encontró Hoja1 en la plantilla');
+
+  const sheetXml=await sheetEntry.async('text');
+  const sheetDoc=parseXml(sheetXml);
+  const cellMap=buildSheetCellMap(sheetDoc);
+  const values=buildHorarioTemplateCellMap(model);
+  for(const [ref,val] of Object.entries(values))setSheetCellValue(sheetDoc,cellMap,ref,val);
+
+  const newSheetXml=new XMLSerializer().serializeToString(sheetDoc);
+  zip.file(sheetPath,newSheetXml);
+  await stripCalcChainArtifacts(zip);
+  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+
+function downloadBlob(blob,fileName){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=fileName;
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);if(a.parentNode)a.parentNode.removeChild(a);},1200);
+}
+
+async function exportHorarioMaestroExcel(){
+  const tid=document.getElementById('hm-teacher').value;
+  if(!tid){toast('Selecciona un maestro primero','warn');return;}
+  showLoading('Rellenando template Excel…');
+  try{
+    const JSZip=await ensureJSZip();
+    const rows=await fetchHorarioMaestroRows(tid);
+    const model=buildHorarioMaestroExcelModel(tid,rows);
+    const templateAb=await loadHorarioTemplateArrayBuffer();
+    const blob=await fillHorarioTemplateArrayBuffer(JSZip,templateAb,model);
+    const name=excelSafePart((model.teacher?.name||'MAESTRO')+'_'+(model.ciclo?.nombre||CYCLE_LBL[cycle]||'CICLO'))+'.xlsx';
+    downloadBlob(blob,name);
+    toast('Excel generado desde template ✓');
+  }catch(e){
+    console.error('exportHorarioMaestroExcel',e);
+    toast('Error al rellenar template Excel','err');
+  }
+  hideLoading();
+}
 
 // All unique subject names across current cycle groups
 function allSubjectNames(){
@@ -1198,6 +1561,7 @@ function renderGrupoDetail(gid){
     ensureAsignacionesGrupo(currentCicloId,g.id).then(()=>renderGrupoDetail(gid));
   }
   const totalHrs=subjs.reduce((a,s)=>a+(s.hrs+(s.lab||0)),0);
+  const assignedBlocks=Math.min(Object.keys((schedule[currentCicloId]||{})[gid]||{}).length,totalHrs);
   document.getElementById('g-detail').innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
       <div>
@@ -1211,7 +1575,7 @@ function renderGrupoDetail(gid){
     <div class="stats">
       <div class="stat"><div class="sv c-blue">${subjs.length}</div><div class="sl">Materias</div></div>
       <div class="stat"><div class="sv c-blue">${totalHrs}</div><div class="sl">Horas/semana</div></div>
-      <div class="stat"><div class="sv c-green">${Object.keys((schedule[currentCicloId]||{})[gid]||{}).length}</div><div class="sl">Bloques asignados</div></div>
+      <div class="stat"><div class="sv c-green">${assignedBlocks}</div><div class="sl">Bloques asignados</div></div>
     </div>
     ${subjs.length?`<div class="card">
       ${subjs.map(s=>{
@@ -1731,14 +2095,28 @@ async function renderMaestroDetail(tid){
     return s+(Number(m?.hrs)||0)+(Number(m?.hrs_lab)||0);
   },0);
 
-  // Build assignment rows for this cycle
-  const asgRows=Object.entries(schedule[currentCicloId]||{}).flatMap(([gid,cells])=>
-    Object.entries(cells).filter(([,d])=>d.teacherId===tid).map(([key,d])=>{
-      const [sl,dy]=key.split('_');
-      const slot=allSlots().find(s=>s.id===sl);
-      return {gid,subjectName:d.subjectName||'',day:DAYS[parseInt(dy)],lbl:slot?.lbl||sl,status:d.status};
-    })
-  ).sort((a,b)=>a.gid.localeCompare(b.gid));
+  // Build assignment rows for this cycle from DB (stable source, no uuid alias duplication).
+  const asgDbRows=await fetchHorarioMaestroRows(tid);
+  const groupMap=Object.fromEntries((groups[currentCicloId]||[]).map(g=>[g.id,g]));
+  const seenAsgKeys=new Set();
+  const asgRows=(asgDbRows||[]).map(r=>{
+    const sem=groupMap[r.grupo_id]?.sem;
+    const slotId=normalizeSlotForSem(r.slot_id,sem);
+    const slot=allSlots().find(s=>s.id===slotId);
+    return {
+      gid:groupMap[r.grupo_id]?.clave||r.grupo_id,
+      subjectName:r.materia_nombre||'',
+      day:DAYS[parseInt(r.dia)],
+      dayIdx:parseInt(r.dia),
+      lbl:slot?.lbl||slotId,
+      status:r.status||'ok',
+      key:[r.grupo_id,slotId,r.dia,r.materia_nombre||''].join('|')
+    };
+  }).filter(r=>{
+    if(seenAsgKeys.has(r.key))return false;
+    seenAsgKeys.add(r.key);
+    return true;
+  }).sort((a,b)=>a.gid.localeCompare(b.gid,'es')||a.dayIdx-b.dayIdx||a.lbl.localeCompare(b.lbl,'es'));
 
   document.getElementById('maest-detail').innerHTML=`
     <!-- ── HEADER ── -->
@@ -3062,15 +3440,17 @@ async function renderHorario(){
         ${uniqueSubjs.map(s=>{
           const approved=approvedMap[s.name]||0;
           const pending=pendingMap[s.name]||0;
-          const used=approved+pending;
+          const approvedDisplay=Math.min(approved,s.totalHrs);
+          const pendingDisplay=Math.max(0,Math.min(pending,s.totalHrs-approvedDisplay));
+          const used=approvedDisplay+pendingDisplay;
           const pct=Math.min(100,Math.round(used/s.totalHrs*100));
-          const col=approved>=s.totalHrs?'var(--green)':used>=s.totalHrs?'#f59e0b':used>0?'var(--amber)':'var(--bdr2)';
+          const col=approvedDisplay>=s.totalHrs?'var(--green)':used>=s.totalHrs?'#f59e0b':used>0?'var(--amber)':'var(--bdr2)';
           const teacherIds=[...new Set(Object.values(approvedCells).filter(c=>c.subjectName===s.name&&c.teacherId).map(c=>c.teacherId))];
           const pendingTeachers=[...new Set(pendingSugs.filter(p=>p.subjectName===s.name&&p.teacherId).map(p=>p.teacherId))];
           const allTeachers=[...new Set([...teacherIds,...pendingTeachers])];
           return `<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:.5rem .75rem;min-width:150px">
             <div style="font-family:var(--fh);font-weight:700;font-size:.75rem">${s.name}</div>
-            <div style="font-size:.6rem;color:var(--ink2);margin-top:2px">${approved}/${s.totalHrs}h aprobadas${pending?` · ${pending}h ⏳`:''}  · ${allTeachers.map(id=>{const t=T(id);return t?t.name.split(' ')[0]:'?';}).join(', ')||'sin maestro'}</div>
+            <div style="font-size:.6rem;color:var(--ink2);margin-top:2px">${approvedDisplay}/${s.totalHrs}h aprobadas${pendingDisplay?` · ${pendingDisplay}h ⏳`:''}  · ${allTeachers.map(id=>{const t=T(id);return t?t.name.split(' ')[0]:'?';}).join(', ')||'sin maestro'}</div>
             <div style="height:3px;background:var(--bdr);border-radius:2px;margin-top:4px;overflow:hidden">
               <div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div>
             </div>
@@ -3312,8 +3692,9 @@ async function renderHorarioMaestro(){
   for(const r of rows||[]){
     const g=G(r.grupo_id);
     const tur=g?.turno||'M';
-    const slot=allSlots().find(s=>s.id===r.slot_id);
-    const slotId=slot?.id||r.slot_id;
+    const sem=g?.sem||null;
+    const slotId=normalizeSlotForSem(r.slot_id,sem);
+    const slot=allSlots().find(s=>s.id===slotId);
     if(!grid[tur][slotId])grid[tur][slotId]={};
     if(!grid[tur][slotId][parseInt(r.dia)])grid[tur][slotId][parseInt(r.dia)]=[];
     grid[tur][slotId][parseInt(r.dia)].push({subjectName:r.materia_nombre,gClave:g?.clave||r.grupo_id,isLab:r.is_lab,pending:false});
