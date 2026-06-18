@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.623</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.624</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -2080,18 +2080,44 @@ async function saveMateriasCatalogo(){
       await dbPatch('materias_catalogo',`id=eq.${editMateriaId}`,{nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo});
       if(idx>=0)arr[idx]={...arr[idx],nombre,plantilla_id:pid,semestre,tipo,especialidad,hrs,hrs_lab,permite_multi_grupo};
 
-      // Keep denormalized horario rows in sync when a catalog subject is renamed.
-      if(prevNombre&&prevNombre!==nombre){
-        await dbPatch('horario',`ciclo_id=eq.${currentCicloId}&materia_nombre=eq.${encodeURIComponent(prevNombre)}`,{materia_nombre:nombre});
-        for(const cells of Object.values(schedule[currentCicloId]||{})){
-          for(const key of Object.keys(cells||{})){
-            const c=cells[key];
-            if(c?.subjectName===prevNombre)c.subjectName=nombre;
-          }
+      // Keep denormalized horario rows in sync (also repairs stale rows on save-without-change).
+      const targetKey=materiaClave(nombre||'');
+      const asgRows=await dbGet('asignaciones',`materia_id=eq.${editMateriaId}&select=grupo_id,maestro_id,maestro_lab_id`);
+      const grupoMaestros={};
+      for(const a of asgRows||[]){
+        const gid=a?.grupo_id;
+        if(!gid)continue;
+        if(!grupoMaestros[gid])grupoMaestros[gid]=new Set();
+        if(a?.maestro_id)grupoMaestros[gid].add(a.maestro_id);
+        if(a?.maestro_lab_id)grupoMaestros[gid].add(a.maestro_lab_id);
+      }
+      const hRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&select=id,grupo_id,maestro_id,materia_nombre`);
+      for(const r of hRows||[]){
+        const nombreActual=String(r?.materia_nombre||'');
+        if(!nombreActual||nombreActual===nombre)continue;
+        const maestros=grupoMaestros[r.grupo_id];
+        const byGrupoMaestro=maestros&&maestros.size?maestros.has(r.maestro_id):false;
+        const byExactPrev=prevNombre&&nombreActual===prevNombre;
+        const byKey=(targetKey&&materiaClave(nombreActual)===targetKey);
+        if(byExactPrev||(byGrupoMaestro&&byKey)){
+          await dbPatch('horario',`id=eq.${r.id}`,{materia_nombre:nombre});
         }
-        for(const s of suggestions||[]){
-          if(s?.subjectName===prevNombre)s.subjectName=nombre;
+      }
+
+      for(const cells of Object.values(schedule[currentCicloId]||{})){
+        for(const key of Object.keys(cells||{})){
+          const c=cells[key];
+          if(!c?.subjectName)continue;
+          const byExactPrev=prevNombre&&c.subjectName===prevNombre;
+          const byKey=(targetKey&&materiaClave(c.subjectName)===targetKey);
+          if(byExactPrev||byKey)c.subjectName=nombre;
         }
+      }
+      for(const s of suggestions||[]){
+        if(!s?.subjectName)continue;
+        const byExactPrev=prevNombre&&s.subjectName===prevNombre;
+        const byKey=(targetKey&&materiaClave(s.subjectName)===targetKey);
+        if(byExactPrev||byKey)s.subjectName=nombre;
       }
 
       multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
