@@ -1123,8 +1123,20 @@ function buildHorarioTemplateCellMap(model){
   const map={};
   const setCell=(addr,val)=>{map[addr]=(val===undefined||val===null)?'':val;};
   const clearRange=(col,rowStart,rowEnd)=>{for(let r=rowStart;r<=rowEnd;r++)setCell(col+r,'');};
+  const toMins=t=>{
+    const m=/^(\d{1,2}):(\d{2})$/.exec(String(t||''));
+    if(!m)return null;
+    return (parseInt(m[1],10)*60)+parseInt(m[2],10);
+  };
+  const slotRange=slotId=>{
+    const lbl=allSlots().find(s=>s.id===slotId)?.lbl||'';
+    const m=String(lbl).match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/);
+    if(!m)return null;
+    return {start:m[1],end:m[2],startMin:toMins(m[1]),endMin:toMins(m[2])};
+  };
   const t=model.teacher||{};
   // Keep institutional fixed fields from the template (plantel, ubicacion, nivel, etc.).
+  setCell('O10',model.ciclo?.nombre||CYCLE_LBL[cycle]||'');
   setCell('C12',t.name||'');
   setCell('K12',t.rfc||'');
   setCell('C13',t.grado||'');
@@ -1179,6 +1191,24 @@ function buildHorarioTemplateCellMap(model){
   };
   writeTurno('M');
   writeTurno('V');
+
+  // Observaciones: hora de entrada/salida por día (LUN-VIE).
+  for(let d=0;d<5;d++){
+    let start=null,end=null;
+    for(const turno of ['M','V']){
+      for(const slotId of Object.keys(model.cells[turno]||{})){
+        const entries=model.cells[turno]?.[slotId]?.[d]||[];
+        if(!entries.length)continue;
+        const rg=slotRange(slotId);
+        if(!rg||rg.startMin===null||rg.endMin===null)continue;
+        if(!start||rg.startMin<start.min)start={txt:rg.start,min:rg.startMin};
+        if(!end||rg.endMin>end.max)end={txt:rg.end,max:rg.endMin};
+      }
+    }
+    const row=28+d;
+    setCell('P'+row,start?start.txt:'');
+    setCell('Q'+row,end?end.txt:'');
+  }
 
   const now=new Date();
   setCell('O50',now.getDate());
@@ -3684,8 +3714,6 @@ async function renderHorarioMaestro(){
     console.warn('No se pudo cargar horario del maestro:',e);
   }
 
-  const sched=schedule[currentCicloId]||{};
-
   // Build lookup: {turno:{slotId:{dayIdx:[{subjectName,gClave,isLab,pending}, ...]}}}
   const grid={M:{},V:{}};
   // Approved assignments
@@ -4815,14 +4843,26 @@ cellSave=async function(){
       if(old?.horarioId)await dbDel('horario',`id=eq.${old.horarioId}`);
       delete schedule[currentCicloId][g.id][oldKey];
     }
-    // Upsert new
-    const [row]=await fetch(SUPA_URL+'/rest/v1/horario',{
-      method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
-        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:teacherId,slot_id:slotId,dia:dayIdx,status})
-    }).then(r=>r.json());
-    schedule[currentCicloId][g.id][newKey]={subjectName,teacherId,status,horarioId:row.id};
+    // Persist: update existing row when editing same cell; insert when it's new/moved.
+    let savedRow=null;
+    const existing=(oldKey===newKey)?schedule[currentCicloId][g.id][newKey]:null;
+    if(existing?.horarioId){
+      const patched=await dbPatch(
+        'horario',
+        `id=eq.${existing.horarioId}`,
+        {materia_nombre:subjectName,maestro_id:teacherId,status}
+      );
+      savedRow=Array.isArray(patched)?patched[0]:null;
+    }else{
+      const inserted=await fetch(SUPA_URL+'/rest/v1/horario',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify({ciclo_id:currentCicloId,grupo_id:g.id,materia_nombre:subjectName,maestro_id:teacherId,slot_id:slotId,dia:dayIdx,status})
+      }).then(r=>r.json());
+      savedRow=Array.isArray(inserted)?inserted[0]:inserted;
+    }
+    schedule[currentCicloId][g.id][newKey]={subjectName,teacherId,status,horarioId:savedRow?.id||existing?.horarioId};
     closeM('modal-cell');renderHorario();updConflict();
     toast('Guardado ✓');
   }catch(e){toast('Error: '+e.message,'err');}
