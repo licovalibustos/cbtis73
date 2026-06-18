@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.621</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.622</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1190,8 +1190,9 @@ function buildHorarioTemplateCellMap(model){
 
   clearRange('B',28,36); clearRange('C',28,36); clearRange('D',28,36); clearRange('F',28,36);
   const normMateria=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
-  const isRse=item=>normMateria(item?.materia)==='RECURSOS SOCIOEMOCIONALES';
+  const isRse=item=>normMateria(item?.materia).startsWith('RECURSOS SOCIOEMOCIONALES');
   const cargaData=(model.carga||[]);
+  const rseItem=cargaData.find(isRse)||null;
   const hasRse=cargaData.some(isRse);
   let cargaTotal=0;
   const cargaRows=cargaData.filter(item=>!isRse(item)).slice(0,9);
@@ -1214,7 +1215,7 @@ function buildHorarioTemplateCellMap(model){
   if(hasRse){
     setCell('B41','5.2');
     setCell('C41',1);
-    setCell('D41','RECURSOS SOCIOEMOCIONALES');
+    setCell('D41',rseItem?.materia||'RECURSOS SOCIOEMOCIONALES');
   }
   setCell('C48',actTotal);
   setCell('C49',cargaTotal+actTotal);
