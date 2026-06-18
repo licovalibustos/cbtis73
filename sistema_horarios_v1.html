@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.629</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.630</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1212,11 +1212,16 @@ function buildHorarioTemplateCellMap(model){
   // Actividades complementarias (excepcion):
   // "Recursos Socioemocionales" se reporta aqui como clave 5.2 y 1 hora.
   clearRange('B',42,47); clearRange('C',42,47); clearRange('D',42,47);
-  const actTotal=hasRse?1:0;
-  if(hasRse){
-    setCell('B42','5.2');
-    setCell('C42',1);
-    setCell('D42',rseItem?.materia||'RECURSOS SOCIOEMOCIONALES');
+  const rseRows=cargaData.filter(isRse).slice(0,6);
+  let actTotal=0;
+  for(let i=0;i<rseRows.length;i++){
+    const row=42+i;
+    const item=rseRows[i]||{};
+    const h=Number(item.horas)||1;
+    setCell('B'+row,'5.2');
+    setCell('C'+row,h);
+    setCell('D'+row,item.materia||'RECURSOS SOCIOEMOCIONALES');
+    actTotal+=h;
   }
   setCell('C48',actTotal);
   setCell('C49',cargaTotal+actTotal);
@@ -1233,7 +1238,7 @@ function buildHorarioTemplateCellMap(model){
         const claves=[...new Set(dayEntries.map(e=>{
           const g=e.grupoClave||'';
           const c=isRseMateria(e.subjectName)?'5.2':materiaClave(e.subjectName||'');
-          return c?`${g} (${c})`:g;
+          return c?`${g}\n${c}`:g;
         }).filter(Boolean))];
         setCell(dayCols[d]+row,claves.join('\n'));
       }
