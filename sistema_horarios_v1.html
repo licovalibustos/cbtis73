@@ -3281,7 +3281,7 @@ function cellRemove(){
 // ═══════════════════════════════════════════
 //  7. IMPRESIÓN
 // ═══════════════════════════════════════════
-function renderHorarioMaestro(){
+async function renderHorarioMaestro(){
   // Populate combo
   const sel=document.getElementById('hm-teacher');
   const prev=sel.value;
@@ -3295,20 +3295,42 @@ function renderHorarioMaestro(){
   if(!tid){body.innerHTML='<div class="empty"><div class="ico">👨‍🏫</div><div>Selecciona un maestro</div></div>';return;}
 
   const t=T(tid);
+  await ensureGroups();
+
+  let rows=[];
+  try{
+    rows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${tid}&order=dia.asc,slot_id.asc`);
+  }catch(e){
+    console.warn('No se pudo cargar horario del maestro:',e);
+  }
+
   const sched=schedule[currentCicloId]||{};
 
   // Build lookup: {turno:{slotId:{dayIdx:[{subjectName,gClave,isLab,pending}, ...]}}}
   const grid={M:{},V:{}};
   // Approved assignments
-  for(const [gid,cells] of Object.entries(sched)){
-    const g=G(gid);if(!g)continue;
-    const tur=g.turno||'M';
-    for(const [key,d] of Object.entries(cells)){
-      if(d.teacherId!==tid)continue;
-      const [sl,dy]=key.split('_');
-      if(!grid[tur][sl])grid[tur][sl]={};
-      if(!grid[tur][sl][parseInt(dy)])grid[tur][sl][parseInt(dy)]=[];
-      grid[tur][sl][parseInt(dy)].push({subjectName:d.subjectName,gClave:g.clave||gid,isLab:d.isLab,pending:false});
+  for(const r of rows||[]){
+    const g=G(r.grupo_id);
+    const tur=g?.turno||'M';
+    const slot=allSlots().find(s=>s.id===r.slot_id);
+    const slotId=slot?.id||r.slot_id;
+    if(!grid[tur][slotId])grid[tur][slotId]={};
+    if(!grid[tur][slotId][parseInt(r.dia)])grid[tur][slotId][parseInt(r.dia)]=[];
+    grid[tur][slotId][parseInt(r.dia)].push({subjectName:r.materia_nombre,gClave:g?.clave||r.grupo_id,isLab:r.is_lab,pending:false});
+
+    // Seed cache so subsequent views can reuse the same row data without a round-trip.
+    if(!schedule[currentCicloId])schedule[currentCicloId]={};
+    if(!schedule[currentCicloId][r.grupo_id])schedule[currentCicloId][r.grupo_id]={};
+    schedule[currentCicloId][r.grupo_id][slotId+'_'+r.dia]={
+      subjectName:r.materia_nombre,
+      teacherId:r.maestro_id,
+      status:r.status,
+      isLab:r.is_lab,
+      horarioId:r.id
+    };
+    if(g?.clave){
+      if(!schedule[currentCicloId][g.clave])schedule[currentCicloId][g.clave]={};
+      schedule[currentCicloId][g.clave][slotId+'_'+r.dia]=schedule[currentCicloId][r.grupo_id][slotId+'_'+r.dia];
     }
   }
   // Pending suggestions
