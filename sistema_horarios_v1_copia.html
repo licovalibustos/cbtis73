@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.626</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.627</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1233,7 +1233,7 @@ function buildHorarioTemplateCellMap(model){
         const claves=[...new Set(dayEntries.map(e=>{
           const g=e.grupoClave||'';
           const c=isRseMateria(e.subjectName)?'5.2':materiaClave(e.subjectName||'');
-          return c?`${g} (${c})`:g;
+          return c?`${g}\n${c}`:g;
         }).filter(Boolean))];
         setCell(dayCols[d]+row,claves.join('\n'));
       }
