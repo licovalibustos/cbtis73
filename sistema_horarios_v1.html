@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.617</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.618</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1148,15 +1148,24 @@ function buildHorarioTemplateCellMap(model){
   setCell('D19',Number(t.hrs_nom)||'');
 
   const plazas=t.plazas||[];
-  const plazaPrincipal=plazas[0]||{};
-  setCell('B19',plazaPrincipal.fecha_ingreso_sep||'');
-  setCell('C19',plazaPrincipal.fecha_ingreso_dgeti||'');
-  setCell('E19',plazaPrincipal.plaza||'');
-  setCell('J19',plazaPrincipal.condicion_nom||'');
-  const hasM=plazas.some(p=>p.turno==='M'||p.turno==='A');
-  const hasV=plazas.some(p=>p.turno==='V'||p.turno==='A');
-  setCell('M19',hasM?'X':'');
-  setCell('P19',hasV?'X':'');
+  clearRange('B',19,24);
+  clearRange('C',19,24);
+  clearRange('E',19,24);
+  clearRange('J',19,24);
+  clearRange('M',19,24);
+  clearRange('P',19,24);
+  const plazaRows=(plazas.length?plazas:[{}]).slice(0,6);
+  for(let i=0;i<plazaRows.length;i++){
+    const row=19+i;
+    const p=plazaRows[i]||{};
+    const turno=String(p.turno||'').toUpperCase();
+    setCell('B'+row,p.fecha_ingreso_sep||'');
+    setCell('C'+row,p.fecha_ingreso_dgeti||'');
+    setCell('E'+row,p.plaza||'');
+    setCell('J'+row,p.condicion_nom||'');
+    setCell('M'+row,(turno==='M'||turno==='A')?'X':'');
+    setCell('P'+row,(turno==='V'||turno==='A')?'X':'');
+  }
 
   clearRange('B',28,36); clearRange('C',28,36); clearRange('D',28,36); clearRange('F',28,36);
   let cargaTotal=0;
