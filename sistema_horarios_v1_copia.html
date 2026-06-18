@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.631</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.632</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1411,6 +1411,52 @@ async function stripCalcChainArtifacts(zip){
   }
 }
 
+function buildWrapTextStyleResolver(stylesDoc){
+  const styleSheet=stylesDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'styleSheet')[0]||stylesDoc.documentElement;
+  let cellXfs=stylesDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'cellXfs')[0];
+  if(!cellXfs){
+    cellXfs=stylesDoc.createElementNS(XLSX_MAIN_NS,'cellXfs');
+    cellXfs.setAttribute('count','1');
+    const baseXf=stylesDoc.createElementNS(XLSX_MAIN_NS,'xf');
+    baseXf.setAttribute('numFmtId','0');
+    baseXf.setAttribute('fontId','0');
+    baseXf.setAttribute('fillId','0');
+    baseXf.setAttribute('borderId','0');
+    baseXf.setAttribute('xfId','0');
+    cellXfs.appendChild(baseXf);
+    styleSheet.appendChild(cellXfs);
+  }
+
+  const cache=new Map();
+  return baseStyleId=>{
+    const baseIdx=Number.isFinite(baseStyleId)?baseStyleId:0;
+    if(cache.has(baseIdx))return cache.get(baseIdx);
+
+    const xfs=[...cellXfs.getElementsByTagNameNS(XLSX_MAIN_NS,'xf')];
+    const src=xfs[baseIdx]||xfs[0]||null;
+    const xf=src?src.cloneNode(true):stylesDoc.createElementNS(XLSX_MAIN_NS,'xf');
+    if(!xf.getAttribute('numFmtId'))xf.setAttribute('numFmtId','0');
+    if(!xf.getAttribute('fontId'))xf.setAttribute('fontId','0');
+    if(!xf.getAttribute('fillId'))xf.setAttribute('fillId','0');
+    if(!xf.getAttribute('borderId'))xf.setAttribute('borderId','0');
+    if(!xf.getAttribute('xfId'))xf.setAttribute('xfId','0');
+
+    xf.setAttribute('applyAlignment','1');
+    let align=xf.getElementsByTagNameNS(XLSX_MAIN_NS,'alignment')[0];
+    if(!align){
+      align=stylesDoc.createElementNS(XLSX_MAIN_NS,'alignment');
+      xf.appendChild(align);
+    }
+    align.setAttribute('wrapText','1');
+
+    cellXfs.appendChild(xf);
+    const newId=[...cellXfs.getElementsByTagNameNS(XLSX_MAIN_NS,'xf')].length-1;
+    cellXfs.setAttribute('count',String(newId+1));
+    cache.set(baseIdx,newId);
+    return newId;
+  };
+}
+
 async function fillHorarioTemplateArrayBuffer(JSZip,templateAb,model){
   const zip=await JSZip.loadAsync(templateAb);
   const sheetPath=await resolveHoja1PathFromZip(zip);
@@ -1422,6 +1468,22 @@ async function fillHorarioTemplateArrayBuffer(JSZip,templateAb,model){
   const cellMap=buildSheetCellMap(sheetDoc);
   const values=buildHorarioTemplateCellMap(model);
   for(const [ref,val] of Object.entries(values))setSheetCellValue(sheetDoc,cellMap,ref,val);
+
+  const stylesEntry=zip.file('xl/styles.xml');
+  if(stylesEntry){
+    const stylesXml=await stylesEntry.async('text');
+    const stylesDoc=parseXml(stylesXml);
+    const resolveWrapStyle=buildWrapTextStyleResolver(stylesDoc);
+    for(const [ref,val] of Object.entries(values)){
+      const text=String(val??'');
+      if(!/[\r\n]/.test(text))continue;
+      const cell=findOrCreateCell(sheetDoc,cellMap,ref);
+      const baseStyle=parseInt(cell.getAttribute('s')||'0',10);
+      const wrapStyleId=resolveWrapStyle(Number.isFinite(baseStyle)?baseStyle:0);
+      cell.setAttribute('s',String(wrapStyleId));
+    }
+    zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
+  }
 
   const newSheetXml=new XMLSerializer().serializeToString(sheetDoc);
   zip.file(sheetPath,newSheetXml);
