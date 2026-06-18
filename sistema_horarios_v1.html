@@ -1192,10 +1192,16 @@ function buildHorarioTemplateCellMap(model){
   writeTurno('M');
   writeTurno('V');
 
-  // Observaciones: hora de entrada/salida por día (LUN-VIE).
+  // Observaciones: un renglón por combinación Día + Turno con actividad.
+  // Si hay M y V el mismo día, se generan dos renglones con el mismo día.
+  clearRange('O',28,36);
+  clearRange('P',28,36);
+  clearRange('Q',28,36);
+  const obsDayNames=['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES'];
+  const obsRows=[];
   for(let d=0;d<5;d++){
-    let start=null,end=null;
     for(const turno of ['M','V']){
+      let start=null,end=null;
       for(const slotId of Object.keys(model.cells[turno]||{})){
         const entries=model.cells[turno]?.[slotId]?.[d]||[];
         if(!entries.length)continue;
@@ -1204,17 +1210,25 @@ function buildHorarioTemplateCellMap(model){
         if(!start||rg.startMin<start.min)start={txt:rg.start,min:rg.startMin};
         if(!end||rg.endMin>end.max)end={txt:rg.end,max:rg.endMin};
       }
+      if(start&&end){
+        obsRows.push({day:obsDayNames[d],start:start.txt,end:end.txt});
+      }
     }
-    const row=28+d;
-    setCell('P'+row,start?start.txt:'');
-    setCell('Q'+row,end?end.txt:'');
+  }
+  const obsSlice=obsRows.slice(0,9);
+  for(let i=0;i<obsSlice.length;i++){
+    const row=28+i;
+    const item=obsSlice[i];
+    setCell('O'+row,item.day);
+    setCell('P'+row,item.start);
+    setCell('Q'+row,item.end);
   }
 
   const now=new Date();
-  setCell('O50',now.getDate());
-  setCell('P50',now.getMonth()+1);
-  setCell('Q50',now.getFullYear());
-  setCell('E53',t.name||'');
+  setCell('O49',now.getDate());
+  setCell('P49',now.getMonth()+1);
+  setCell('Q49',now.getFullYear());
+  setCell('B53',t.name||'');
 
   return map;
 }
