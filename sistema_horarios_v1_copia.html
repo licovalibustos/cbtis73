@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.619</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.620</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1003,10 +1003,31 @@ const excelSafePart=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').r
 const materiaClave=s=>{
   const txt=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
   if(!txt)return '';
+  const romanToInt=r=>{
+    const token=String(r||'').trim().toUpperCase();
+    if(!/^[IVXLCDM]+$/.test(token))return null;
+    const map={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+    let total=0;
+    for(let i=0;i<token.length;i++){
+      const cur=map[token[i]]||0;
+      const next=map[token[i+1]]||0;
+      total+=(cur<next)?-cur:cur;
+    }
+    return total>0?total:null;
+  };
   const stop=new Set(['DE','DEL','LA','LAS','EL','LOS','Y','E','EN','A','AL','PARA','POR','CON']);
-  const parts=txt.split(/\s+/).filter(Boolean).filter(p=>!stop.has(p));
-  const safeParts=parts.length?parts:txt.split(/\s+/).filter(Boolean);
-  return safeParts.map(p=>/^[A-Z]/.test(p)?p[0]:(/^\d+$/.test(p)?p:'' )).join('').slice(0,12);
+  const tokens=txt.split(/\s+/).map(p=>p.replace(/[^A-Z0-9]/g,'')).filter(Boolean);
+  const parts=tokens.filter(p=>!stop.has(p));
+  const safeParts=parts.length?parts:tokens;
+  const lastIdx=safeParts.length-1;
+  return safeParts.map((p,idx)=>{
+    if(/^\d+$/.test(p))return p;
+    if(idx===lastIdx){
+      const n=romanToInt(p);
+      if(n!==null)return String(n);
+    }
+    return /^[A-Z]/.test(p)?p[0]:'';
+  }).join('').slice(0,12);
 };
 const TEMPLATE_SLOT_ROWS={
   M:{m1:28,m2:29,m3:30,m4:32,mx:33,m5:35,m6:36,m7:37,m8:38},
