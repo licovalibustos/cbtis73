@@ -59,3 +59,10 @@ rules:
     - Numerar por seccion (1.1, 1.2, 2.1...)
     - Separar tareas de DB, JS, UI y validacion en secciones distintas
     - La ultima seccion siempre es validacion y limpieza con pruebas manuales
+  release:
+    - **IMPORTANTE**: Cada vez que se haga `git push origin master`, incrementar la etiqueta de versión en el HTML
+    - El version tag está en ambos archivos HTML: `sistema_horarios_v1.html` y `sistema_horarios_v1.html_copia`
+    - Ubicación: línea ~251, dentro de `<div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.XXX</span></div>`
+    - Patrón de versión: `v1.NNN` (ej: v1.613 → v1.614 después del push)
+    - Actualizar ANTES de hacer commit final o en el MISMO commit que hace push
+    - Esto permite rastrear qué versión está en BD y identificar cambios rápidamente
