@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.624</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.625</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -2082,11 +2082,17 @@ async function saveMateriasCatalogo(){
 
       // Keep denormalized horario rows in sync (also repairs stale rows on save-without-change).
       const targetKey=materiaClave(nombre||'');
+      const normFix=s=>String(s||'')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .toUpperCase().trim()
+        .replace('SOCIEMOCIONALES','SOCIOEMOCIONALES');
       const asgRows=await dbGet('asignaciones',`materia_id=eq.${editMateriaId}&select=grupo_id,maestro_id,maestro_lab_id`);
       const grupoMaestros={};
+      const grupoIds=new Set();
       for(const a of asgRows||[]){
         const gid=a?.grupo_id;
         if(!gid)continue;
+        grupoIds.add(gid);
         if(!grupoMaestros[gid])grupoMaestros[gid]=new Set();
         if(a?.maestro_id)grupoMaestros[gid].add(a.maestro_id);
         if(a?.maestro_lab_id)grupoMaestros[gid].add(a.maestro_lab_id);
@@ -2097,9 +2103,11 @@ async function saveMateriasCatalogo(){
         if(!nombreActual||nombreActual===nombre)continue;
         const maestros=grupoMaestros[r.grupo_id];
         const byGrupoMaestro=maestros&&maestros.size?maestros.has(r.maestro_id):false;
+        const byGrupo=grupoIds.has(r.grupo_id);
         const byExactPrev=prevNombre&&nombreActual===prevNombre;
         const byKey=(targetKey&&materiaClave(nombreActual)===targetKey);
-        if(byExactPrev||(byGrupoMaestro&&byKey)){
+        const byNormFix=(normFix(nombreActual)===normFix(nombre));
+        if(byExactPrev||(byGrupoMaestro&&byKey)||(byGrupo&&byKey)||(byGrupo&&byNormFix)){
           await dbPatch('horario',`id=eq.${r.id}`,{materia_nombre:nombre});
         }
       }
@@ -2110,14 +2118,16 @@ async function saveMateriasCatalogo(){
           if(!c?.subjectName)continue;
           const byExactPrev=prevNombre&&c.subjectName===prevNombre;
           const byKey=(targetKey&&materiaClave(c.subjectName)===targetKey);
-          if(byExactPrev||byKey)c.subjectName=nombre;
+          const byNormFix=(normFix(c.subjectName)===normFix(nombre));
+          if(byExactPrev||byKey||byNormFix)c.subjectName=nombre;
         }
       }
       for(const s of suggestions||[]){
         if(!s?.subjectName)continue;
         const byExactPrev=prevNombre&&s.subjectName===prevNombre;
         const byKey=(targetKey&&materiaClave(s.subjectName)===targetKey);
-        if(byExactPrev||byKey)s.subjectName=nombre;
+        const byNormFix=(normFix(s.subjectName)===normFix(nombre));
+        if(byExactPrev||byKey||byNormFix)s.subjectName=nombre;
       }
 
       multiGrupoNames[currentCicloId]=new Set((catalogo[currentCicloId]||[]).filter(m=>m.permite_multi_grupo).map(m=>m.nombre));
