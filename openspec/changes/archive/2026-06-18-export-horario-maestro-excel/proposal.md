@@ -25,4 +25,4 @@ Hoy la vista de “Horario Maestro” sólo muestra el horario en pantalla o lo 
 
 ## Impact
 
-Impacta `sistema_horarios_v1.html` y `sistema_horarios_v1_copia.html` en la sección de Horario Maestro. Dependencias nuevas: SheetJS en CDN y la plantilla Excel base. Tablas de Supabase afectadas: ninguna; la exportación sólo lee `maestros`, `grupos`, `horario`, `disponibilidad` y `ciclos`.
+Impacta `sistema_horarios_v1.html` y `sistema_horarios_v1_copia.html` en la sección de Horario Maestro. Dependencias nuevas: JSZip en CDN y la plantilla Excel base. Tablas de Supabase afectadas: ninguna; la exportación sólo lee `maestros`, `grupos`, `horario`, `disponibilidad` y `ciclos`.

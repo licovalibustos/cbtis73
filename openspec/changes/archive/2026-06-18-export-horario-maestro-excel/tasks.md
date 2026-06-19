@@ -1,7 +1,7 @@
 ## 1. Plantilla y dependencias
 
 - [x] 1.1 Definir la plantilla Excel base que se usará para la exportación
-- [x] 1.2 Integrar SheetJS en la SPA sin romper la carga actual
+- [x] 1.2 Integrar JSZip en la SPA sin romper la carga actual
 
 ## 2. Modelo de exportación
 
@@ -16,7 +16,7 @@
 
 ## 4. Validación manual
 
-- [ ] 4.1 Probar exportación con un maestro de turno matutino
-- [ ] 4.2 Probar exportación con un maestro de turno vespertino
-- [ ] 4.3 Verificar que la impresión actual siga funcionando sin cambios
-- [ ] 4.4 Revisar que el archivo conserve el formato institucional y se abra correctamente en Excel
+- [x] 4.1 Probar exportación con un maestro de turno matutino
+- [x] 4.2 Probar exportación con un maestro de turno vespertino
+- [x] 4.3 Verificar que la impresión actual siga funcionando sin cambios
+- [x] 4.4 Revisar que el archivo conserve el formato institucional y se abra correctamente en Excel

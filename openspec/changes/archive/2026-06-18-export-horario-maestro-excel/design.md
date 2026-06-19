@@ -16,7 +16,7 @@ La aplicación es una SPA de un solo archivo con Supabase REST y renderizado en 
 
 ## Decisions
 
-D1. Usar una plantilla `.xlsx` como base y SheetJS para escribir celdas. Alternativa descartada: construir un libro desde cero, porque sería más frágil para conservar merges, estilos y firmas.
+D1. Usar una plantilla `.xlsx` como base y JSZip para editar el contenido OOXML (worksheet/styles) sin reconstruir el libro. Alternativa descartada: construir un libro desde cero, porque sería más frágil para conservar merges, estilos y firmas.
 
 D2. Mapear la salida desde un modelo intermedio en memoria por maestro, ciclo, turno y día. Alternativa descartada: leer directamente del DOM, porque la exportación debe ser independiente del estado visual.
 
@@ -37,7 +37,7 @@ Rollback: remover el botón y la lógica de exportación; no hay cambios de esqu
 
 - [Plantilla desalineada] → El mapeo de celdas puede no coincidir con el formato esperado; mitigación: validar con un ejemplo real antes de cerrar.
 - [Peso del frontend] → Embutir la plantilla aumenta el tamaño del HTML; mitigación: usar sólo el template blanco necesario.
-- [Compatibilidad del navegador] → La descarga de `.xlsx` depende de la compatibilidad de SheetJS y del navegador; mitigación: probar en el entorno objetivo.
+- [Compatibilidad del navegador] → La descarga de `.xlsx` depende de la compatibilidad de JSZip/Blob y del navegador; mitigación: probar en el entorno objetivo.
 
 ## Open Questions
 
