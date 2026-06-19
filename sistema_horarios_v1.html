@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.632</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.633</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -3937,20 +3937,10 @@ async function renderHorarioMaestro(){
     if(!grid[tur][slotId][parseInt(r.dia)])grid[tur][slotId][parseInt(r.dia)]=[];
     grid[tur][slotId][parseInt(r.dia)].push({subjectName:r.materia_nombre,gClave:g?.clave||r.grupo_id,isLab:r.is_lab,pending:false});
 
-    // Seed cache so subsequent views can reuse the same row data without a round-trip.
-    if(!schedule[currentCicloId])schedule[currentCicloId]={};
-    if(!schedule[currentCicloId][r.grupo_id])schedule[currentCicloId][r.grupo_id]={};
-    schedule[currentCicloId][r.grupo_id][slotId+'_'+r.dia]={
-      subjectName:r.materia_nombre,
-      teacherId:r.maestro_id,
-      status:r.status,
-      isLab:r.is_lab,
-      horarioId:r.id
-    };
-    if(g?.clave){
-      if(!schedule[currentCicloId][g.clave])schedule[currentCicloId][g.clave]={};
-      schedule[currentCicloId][g.clave][slotId+'_'+r.dia]=schedule[currentCicloId][r.grupo_id][slotId+'_'+r.dia];
-    }
+    // NOTE: We intentionally do NOT seed the group-level schedule cache here.
+    // Seeding from a per-teacher query (maestro_id=eq.X) would store only that
+    // teacher's rows, causing ensureSchedule to skip the full group DB load and
+    // show an incomplete schedule when the user navigates to the group view.
   }
   // Pending suggestions
   for(const s of suggestions){
@@ -5047,6 +5037,19 @@ cellSave=async function(){
   const status=conflict?'conflict':unavail?'warn':'ok';
   showLoading('Guardando…');
   try{
+    // ── DB-level teacher conflict check (not cache-limited) ──
+    if(teacherId){
+      await ensureCatalogo(currentCicloId);
+      const isMulti=!!(multiGrupoNames[currentCicloId]?.has(subjectName));
+      const conflictRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${teacherId}&slot_id=eq.${slotId}&dia=eq.${dayIdx}&grupo_id=neq.${g.id}`);
+      const realConflict=(conflictRows||[])
+        .filter(r=>!isMulti||r.materia_nombre!==subjectName)
+        .filter(r=>!excludeHId||r.id!==excludeHId);
+      if(realConflict.length>0){
+        const cg=G(realConflict[0].grupo_id);
+        throw new Error(`${T(teacherId)?.name||'Maestro'} ya tiene clase en ${cg?.clave||'otro grupo'} en ese horario. Solo materias de tipo multi-grupo pueden compartir horario.`);
+      }
+    }
     // Delete old if slot changed
     if(!schedule[currentCicloId])schedule[currentCicloId]={};
     if(!schedule[currentCicloId][g.id])schedule[currentCicloId][g.id]={};
