@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.634</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.635</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -3717,6 +3717,16 @@ function sgDrop(e){
   const sched=(schedule[currentCicloId]||{})[gid]||{};
   const fromKey=fromSlot+'_'+fromDay;
   const toKey=toSlot+'_'+toDay;
+
+  // Guardrail: do not overwrite an occupied destination cell in the same group.
+  const occupiedApproved=!!sched[toKey];
+  const occupiedPending=suggestions.some(s=>
+    s.groupId===gid&&s.status==='pending'&&s.dayIdx===toDay&&(s.slotA===toSlot||s.slotB===toSlot)
+  );
+  if(occupiedApproved||occupiedPending){
+    toast('Ese horario ya está ocupado','warn');
+    return;
+  }
 
   // Determine teacherId of the cell being dragged (approved or pending)
   let draggedTeacherId=sched[fromKey]?.teacherId;
