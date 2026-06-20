@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.635</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.636</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -3703,7 +3703,7 @@ function sgDragLeave(e){
   e.currentTarget.classList.remove('drag-over');
 }
 
-function sgDrop(e){
+async function sgDrop(e){
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if(!_sgDrag)return;
@@ -3728,6 +3728,9 @@ function sgDrop(e){
     return;
   }
 
+  const gObj=G(gid);
+  const gidDb=gObj?.id||gid;
+
   // Determine teacherId of the cell being dragged (approved or pending)
   let draggedTeacherId=sched[fromKey]?.teacherId;
   if(!draggedTeacherId){
@@ -3738,6 +3741,27 @@ function sgDrop(e){
   // Validate: check if the teacher is already busy at the destination (excluding this group)
   if(draggedTeacherId){
     const draggedSubjectName=sched[fromKey]?.subjectName||null;
+    // DB validation prevents false negatives when in-memory schedule cache is incomplete.
+    try{
+      await ensureCatalogo(currentCicloId);
+      const isMulti=!!(draggedSubjectName&&multiGrupoNames[currentCicloId]?.has(draggedSubjectName));
+      const draggedHorarioId=sched[fromKey]?.horarioId||null;
+      const dbRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${draggedTeacherId}&slot_id=eq.${toSlot}&dia=eq.${toDay}`);
+      const dbConflict=(dbRows||[])
+        .filter(r=>r.grupo_id!==gidDb)
+        .filter(r=>!draggedHorarioId||r.id!==draggedHorarioId)
+        .filter(r=>!isMulti||r.materia_nombre!==draggedSubjectName);
+      if(dbConflict.length>0){
+        const t=T(draggedTeacherId);
+        const tName=t?t.name.split(' ').slice(0,2).join(' '):'El maestro';
+        toast(`${tName} ya tiene clase en ese horario`,'warn');
+        return;
+      }
+    }catch(err){
+      toast('No se pudo validar conflicto en BD','err');
+      return;
+    }
+
     const schedConflict=isConflict(draggedTeacherId,toSlot,toDay,gid,draggedSubjectName);
     const pendConflict=hasPendingSlotConflict(draggedTeacherId,toSlot,toDay,gid);
     const unavail=isUnavail(draggedTeacherId,toSlot,toDay);
