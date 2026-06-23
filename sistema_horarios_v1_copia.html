@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.636</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.637</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -409,6 +409,7 @@ input::placeholder{color:var(--ink3);}
     <select id="h-sem" onchange="filterHorGrp()"><option value="">— Semestre —</option></select>
     <select id="h-tur" onchange="filterHorGrp()"><option value="">— Turno —</option><option value="M">Matutino</option><option value="V">Vespertino</option></select>
     <select id="h-grp" onchange="renderHorario()"><option value="">— Grupo —</option></select>
+    <button class="btn btn-green btn-sm no-print" onclick="exportHorariosGrupoExcel()">📗 Excel</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="openCellManual()">+ Manual</button>
   </div>
   <div class="vbody" id="h-body">
@@ -891,8 +892,8 @@ const TEACHERS=[];
 // ═══════════════════════════════════════════
 //  SUPABASE CONFIG
 // ═══════════════════════════════════════════
-const SUPA_URL='https://zcvbhagoavbzgwexnmud.supabase.co';
-const SUPA_KEY='sb_publishable_TCy3zDrDHiQf03WPrCo1hQ_b_GHK7Jg';
+const SUPA_URL='https://omhfxwelgtbbkwkfkktl.supabase.co';
+const SUPA_KEY='sb_publishable_WXYXW7jlmrc89TePsudvLg__Mk71If8';
 
 async function sb(path,method='GET',body){
   const r=await fetch(SUPA_URL+'/rest/v1/'+path,{
@@ -1121,9 +1122,9 @@ function pickHorarioTemplateFile(){
   });
 }
 
-async function loadHorarioTemplateArrayBuffer(){
+async function loadTemplateArrayBuffer(templateFileName){
   const readFromSelectedFile=async()=>{
-    toast('Selecciona Template_Horario_Maestro.xlsx','warn');
+    toast('Selecciona '+templateFileName,'warn');
     const file=await pickHorarioTemplateFile();
     return file.arrayBuffer();
   };
@@ -1131,13 +1132,17 @@ async function loadHorarioTemplateArrayBuffer(){
   if(location.protocol==='file:')return readFromSelectedFile();
 
   try{
-    const r=await fetch('Template_Horario_Maestro.xlsx',{cache:'no-store'});
-    if(!r.ok)throw new Error('No se encontró Template_Horario_Maestro.xlsx');
+    const r=await fetch(templateFileName,{cache:'no-store'});
+    if(!r.ok)throw new Error('No se encontró '+templateFileName);
     return r.arrayBuffer();
   }catch(e){
     console.warn('No se pudo cargar template por fetch, se pedirá archivo local:',e);
     return readFromSelectedFile();
   }
+}
+
+async function loadHorarioTemplateArrayBuffer(){
+  return loadTemplateArrayBuffer('Template_Horario_Maestro.xlsx');
 }
 
 function buildHorarioTemplateCellMap(model){
@@ -1458,6 +1463,37 @@ function buildWrapTextStyleResolver(stylesDoc){
   };
 }
 
+function applyWrapTextStylesToSheet(stylesDoc,sheetDoc,cellMap,values){
+  const resolveWrapStyle=buildWrapTextStyleResolver(stylesDoc);
+  for(const [ref,val] of Object.entries(values)){
+    const text=String(val??'');
+    if(!/[\r\n]/.test(text))continue;
+    const cell=findOrCreateCell(sheetDoc,cellMap,ref);
+    const baseStyle=parseInt(cell.getAttribute('s')||'0',10);
+    const wrapStyleId=resolveWrapStyle(Number.isFinite(baseStyle)?baseStyle:0);
+    cell.setAttribute('s',String(wrapStyleId));
+  }
+}
+
+const GROUP_TEMPLATE_DAY_COLS=['C','D','E','F','G'];
+const GROUP_TEMPLATE_SCHED_ROWS=[10,12,14,17,19,21,23,25];
+
+function sanitizeSheetName(name,usedSet){
+  let base=String(name||'GRUPO').replace(/[\\/\*\?:\[\]]/g,' ').trim().replace(/\s+/g,' ');
+  if(!base)base='GRUPO';
+  base=base.slice(0,31);
+  let candidate=base;
+  let n=2;
+  while(usedSet.has(candidate.toLowerCase())){
+    const suffix=' ('+n+')';
+    const maxLen=31-suffix.length;
+    candidate=base.slice(0,Math.max(1,maxLen))+suffix;
+    n++;
+  }
+  usedSet.add(candidate.toLowerCase());
+  return candidate;
+}
+
 async function fillHorarioTemplateArrayBuffer(JSZip,templateAb,model){
   const zip=await JSZip.loadAsync(templateAb);
   const sheetPath=await resolveHoja1PathFromZip(zip);
@@ -1474,15 +1510,7 @@ async function fillHorarioTemplateArrayBuffer(JSZip,templateAb,model){
   if(stylesEntry){
     const stylesXml=await stylesEntry.async('text');
     const stylesDoc=parseXml(stylesXml);
-    const resolveWrapStyle=buildWrapTextStyleResolver(stylesDoc);
-    for(const [ref,val] of Object.entries(values)){
-      const text=String(val??'');
-      if(!/[\r\n]/.test(text))continue;
-      const cell=findOrCreateCell(sheetDoc,cellMap,ref);
-      const baseStyle=parseInt(cell.getAttribute('s')||'0',10);
-      const wrapStyleId=resolveWrapStyle(Number.isFinite(baseStyle)?baseStyle:0);
-      cell.setAttribute('s',String(wrapStyleId));
-    }
+    applyWrapTextStylesToSheet(stylesDoc,sheetDoc,cellMap,values);
     zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
   }
 
@@ -1519,6 +1547,202 @@ async function exportHorarioMaestroExcel(){
   }catch(e){
     console.error('exportHorarioMaestroExcel',e);
     toast('Error al rellenar template Excel','err');
+  }
+  hideLoading();
+}
+
+function buildHorarioGrupoExcelModel(g){
+  const cicloObj=ciclos.find(c=>c.id===currentCicloId)||{};
+  const turnoLbl=g.turno==='M'?'Matutino':'Vespertino';
+  const sched=((schedule[currentCicloId]||{})[g.id]||{});
+  const rowsFromAsig=subjectsFromAsignaciones(g);
+  const rows=rowsFromAsig.slice(0,8).map(r=>({
+    materia:r.name||'',
+    horas:Number(r.hrs)||'',
+    docente:T(r.teacherId)?.name||''
+  }));
+  const slots=(assignable(g.turno,g.sem)||[]).filter(s=>!s.recess&&!s.blocked);
+  return {
+    group:g,
+    cicloNombre:cicloObj.nombre||CYCLE_LBL[cycle]||'',
+    turnoLabel:turnoLbl,
+    slots,
+    sched,
+    rows,
+  };
+}
+
+function buildHorarioGrupoTemplateCellMap(model){
+  const map={};
+  const setCell=(addr,val)=>{map[addr]=(val===undefined||val===null)?'':val;};
+  const clearRange=(col,rowStart,rowEnd)=>{for(let r=rowStart;r<=rowEnd;r++)setCell(col+r,'');};
+  const g=model.group||{};
+
+  setCell('F5','Horario del Grupo: '+(g.clave||g.id||''));
+  setCell('C7','Turno: '+(model.turnoLabel||''));
+  setCell('E7','Semestre: '+(model.cicloNombre||''));
+
+  for(const row of GROUP_TEMPLATE_SCHED_ROWS){
+    for(const col of GROUP_TEMPLATE_DAY_COLS)setCell(col+row,'');
+  }
+
+  const teacherShort=tid=>{
+    const t=T(tid);
+    if(!t?.name)return '';
+    return t.name.toUpperCase().split(/\s+/).slice(0,3).join(' ');
+  };
+
+  model.slots.slice(0,GROUP_TEMPLATE_SCHED_ROWS.length).forEach((slot,idx)=>{
+    const row=GROUP_TEMPLATE_SCHED_ROWS[idx];
+    for(let d=0;d<5;d++){
+      const key=slot.id+'_'+d;
+      const c=model.sched[key];
+      if(!c?.subjectName)continue;
+      const doc=teacherShort(c.teacherId);
+      setCell(GROUP_TEMPLATE_DAY_COLS[d]+row,doc?`${c.subjectName}\r\n${doc}`:c.subjectName);
+    }
+  });
+
+  clearRange('B',29,36); clearRange('C',29,36); clearRange('D',29,36);
+  model.rows.slice(0,8).forEach((item,idx)=>{
+    const row=29+idx;
+    setCell('B'+row,item.materia||'');
+    setCell('C'+row,item.horas||'');
+    setCell('D'+row,item.docente||'');
+  });
+
+  return map;
+}
+
+async function fillHorariosGruposTemplateArrayBuffer(JSZip,templateAb,models){
+  const zip=await JSZip.loadAsync(templateAb);
+  const workbookEntry=zip.file('xl/workbook.xml');
+  const wbRelsEntry=zip.file('xl/_rels/workbook.xml.rels');
+  const contentTypesEntry=zip.file('[Content_Types].xml');
+  if(!workbookEntry||!wbRelsEntry||!contentTypesEntry)throw new Error('Plantilla de grupos inválida');
+
+  const [wbXml,wbRelsXml,contentTypesXml,sheetPath]=await Promise.all([
+    workbookEntry.async('text'),
+    wbRelsEntry.async('text'),
+    contentTypesEntry.async('text'),
+    resolveHoja1PathFromZip(zip),
+  ]);
+
+  const wbDoc=parseXml(wbXml);
+  const wbRelsDoc=parseXml(wbRelsXml);
+  const ctDoc=parseXml(contentTypesXml);
+  const sheetEntry=zip.file(sheetPath);
+  if(!sheetEntry)throw new Error('No se encontró la hoja base en la plantilla de grupos');
+  const baseSheetXml=await sheetEntry.async('text');
+
+  const baseSheetName=sheetPath.split('/').pop();
+  const baseSheetRelsPath=`xl/worksheets/_rels/${baseSheetName}.rels`;
+  const baseSheetRelsXml=await zip.file(baseSheetRelsPath)?.async('text');
+
+  const sheetNodes=[...wbDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'sheet')];
+  const sheetsParent=sheetNodes[0]?.parentNode||wbDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'sheets')[0];
+  if(!sheetsParent)throw new Error('No se encontró sección sheets en plantilla de grupos');
+  sheetNodes.forEach(n=>n.parentNode&&n.parentNode.removeChild(n));
+
+  const relNodes=[...wbRelsDoc.getElementsByTagNameNS(XLSX_PKG_REL_NS,'Relationship')];
+  relNodes
+    .filter(n=>(n.getAttribute('Type')||'').endsWith('/worksheet'))
+    .forEach(n=>n.parentNode&&n.parentNode.removeChild(n));
+
+  const ctNs='http://schemas.openxmlformats.org/package/2006/content-types';
+  const ctOverrides=[...ctDoc.getElementsByTagNameNS(ctNs,'Override')];
+  ctOverrides
+    .filter(n=>/^\/xl\/worksheets\/sheet\d+\.xml$/i.test(n.getAttribute('PartName')||''))
+    .forEach(n=>n.parentNode&&n.parentNode.removeChild(n));
+
+  const definedNames=wbDoc.getElementsByTagNameNS(XLSX_MAIN_NS,'definedNames')[0];
+  if(definedNames&&definedNames.parentNode)definedNames.parentNode.removeChild(definedNames);
+
+  const relIds=[...wbRelsDoc.getElementsByTagNameNS(XLSX_PKG_REL_NS,'Relationship')].map(r=>parseInt((r.getAttribute('Id')||'').replace('rId',''),10)).filter(Number.isFinite);
+  let nextRelId=(relIds.length?Math.max(...relIds):0)+1;
+
+  const stylesEntry=zip.file('xl/styles.xml');
+  let stylesDoc=null;
+  if(stylesEntry){
+    const stylesXml=await stylesEntry.async('text');
+    stylesDoc=parseXml(stylesXml);
+  }
+
+  const usedSheetNames=new Set();
+  models.forEach((model,idx)=>{
+    const sheetNum=idx+1;
+    const sheetName=sanitizeSheetName(model.group?.clave||model.group?.id||('GRUPO_'+sheetNum),usedSheetNames);
+    const newSheetPath=`xl/worksheets/sheet${sheetNum}.xml`;
+    const newSheetRelsPath=`xl/worksheets/_rels/sheet${sheetNum}.xml.rels`;
+    const sheetTarget=`worksheets/sheet${sheetNum}.xml`;
+
+    const sheetDoc=parseXml(baseSheetXml);
+    const cellMap=buildSheetCellMap(sheetDoc);
+    const values=buildHorarioGrupoTemplateCellMap(model);
+    for(const [ref,val] of Object.entries(values))setSheetCellValue(sheetDoc,cellMap,ref,val);
+    if(stylesDoc)applyWrapTextStylesToSheet(stylesDoc,sheetDoc,cellMap,values);
+
+    zip.file(newSheetPath,new XMLSerializer().serializeToString(sheetDoc));
+    if(baseSheetRelsXml)zip.file(newSheetRelsPath,baseSheetRelsXml);
+
+    const relNode=wbRelsDoc.createElementNS(XLSX_PKG_REL_NS,'Relationship');
+    relNode.setAttribute('Id','rId'+nextRelId++);
+    relNode.setAttribute('Type','http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet');
+    relNode.setAttribute('Target',sheetTarget);
+    wbRelsDoc.documentElement.appendChild(relNode);
+
+    const sheetNode=wbDoc.createElementNS(XLSX_MAIN_NS,'sheet');
+    sheetNode.setAttribute('name',sheetName);
+    sheetNode.setAttribute('sheetId',String(sheetNum));
+    sheetNode.setAttributeNS(XLSX_REL_NS,'r:id',relNode.getAttribute('Id'));
+    sheetsParent.appendChild(sheetNode);
+
+    const ov=ctDoc.createElementNS(ctNs,'Override');
+    ov.setAttribute('PartName','/xl/worksheets/sheet'+sheetNum+'.xml');
+    ov.setAttribute('ContentType','application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
+    ctDoc.documentElement.appendChild(ov);
+  });
+
+  if(stylesDoc)zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
+  zip.file('xl/workbook.xml',new XMLSerializer().serializeToString(wbDoc));
+  zip.file('xl/_rels/workbook.xml.rels',new XMLSerializer().serializeToString(wbRelsDoc));
+  zip.file('[Content_Types].xml',new XMLSerializer().serializeToString(ctDoc));
+
+  await stripCalcChainArtifacts(zip);
+  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+
+async function exportHorariosGrupoExcel(){
+  const sem=document.getElementById('h-sem').value;
+  const tur=document.getElementById('h-tur').value;
+  if(!sem||!tur){toast('Selecciona semestre y turno','warn');return;}
+
+  await ensureGroups();
+  await ensureTeachers();
+  const gs=(groups[currentCicloId]||[])
+    .filter(g=>String(g.sem)===String(sem)&&g.turno===tur)
+    .sort((a,b)=>(a.clave||a.id).localeCompare((b.clave||b.id),'es'));
+  if(!gs.length){toast('No hay grupos para ese semestre/turno','warn');return;}
+
+  showLoading('Generando Excel de grupos…');
+  try{
+    const JSZip=await ensureJSZip();
+    await Promise.all(gs.map(g=>Promise.all([
+      ensureSubjects(g.id),
+      ensureSchedule(g.id),
+      ensureAsignacionesGrupo(currentCicloId,g.id),
+    ])));
+
+    const models=gs.map(g=>buildHorarioGrupoExcelModel(g));
+    const templateAb=await loadTemplateArrayBuffer('Template_Horarios_Grupos.xlsx');
+    const blob=await fillHorariosGruposTemplateArrayBuffer(JSZip,templateAb,models);
+    const cicloNom=(ciclos.find(c=>c.id===currentCicloId)?.nombre)||CYCLE_LBL[cycle]||'';
+    const fileName=excelSafePart(`HORARIOS_GRUPOS_${sem}_${tur==='M'?'MATUTINO':'VESPERTINO'}_${cicloNom}`)+'.xlsx';
+    downloadBlob(blob,fileName);
+    toast('Excel de grupos generado ✓');
+  }catch(e){
+    console.error('exportHorariosGrupoExcel',e);
+    toast('Error al generar Excel de grupos','err');
   }
   hideLoading();
 }
