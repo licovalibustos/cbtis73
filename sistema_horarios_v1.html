@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.638</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.639</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1555,11 +1555,20 @@ function buildHorarioGrupoExcelModel(g){
   const cicloObj=ciclos.find(c=>c.id===currentCicloId)||{};
   const turnoLbl=g.turno==='M'?'Matutino':'Vespertino';
   const sched=((schedule[currentCicloId]||{})[g.id]||{});
+
+  // Fallback map: subject -> teacher from approved schedule cells.
+  const teacherBySubject={};
+  for(const cell of Object.values(sched)){
+    if(!cell?.subjectName||!cell.teacherId)continue;
+    if(!teacherBySubject[cell.subjectName])teacherBySubject[cell.subjectName]=cell.teacherId;
+  }
+
   const rowsFromAsig=subjectsFromAsignaciones(g);
   const rows=rowsFromAsig.slice(0,8).map(r=>({
+    _teacherId:r.teacherId||teacherBySubject[r.name]||null,
     materia:r.name||'',
     horas:Number(r.hrs)||'',
-    docente:T(r.teacherId)?.name||''
+    docente:T(r.teacherId||teacherBySubject[r.name])?.name||''
   }));
   const slots=(assignable(g.turno,g.sem)||[]).filter(s=>!s.recess&&!s.blocked);
   return {
