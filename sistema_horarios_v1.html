@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.641</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.642</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1577,8 +1577,8 @@ function buildHorarioGrupoExcelModel(g){
   }
   const rows=Object.values(rowsAgg)
     .sort((a,b)=>a.materia.localeCompare(b.materia,'es')||a.docente.localeCompare(b.docente,'es'))
-    .slice(0,8)
-    .map(x=>({materia:x.materia,horas:x.horas||'',docente:x.docente||''}));
+    .slice(0,9)
+    .map(x=>({materia:x.materia,clave:materiaClave(x.materia),horas:x.horas||'',docente:x.docente||''}));
   const slots=(assignable(g.turno,g.sem)||[]).filter(s=>!s.recess&&!s.blocked);
   return {
     group:g,
@@ -1616,16 +1616,25 @@ function buildHorarioGrupoTemplateCellMap(model){
       const key=slot.id+'_'+d;
       const c=model.sched[key];
       if(!c?.subjectName)continue;
-      setCell(GROUP_TEMPLATE_DAY_COLS[d]+row,c.subjectName);
+      setCell(GROUP_TEMPLATE_DAY_COLS[d]+row,materiaClave(c.subjectName)||c.subjectName);
     }
   });
 
-  clearRange('B',29,36); clearRange('C',29,36); clearRange('D',29,36);
-  model.rows.slice(0,8).forEach((item,idx)=>{
+  clearRange('B',29,37); clearRange('C',29,37); clearRange('D',29,37);
+  model.rows.forEach((item,idx)=>{
     const row=29+idx;
-    setCell('B'+row,item.materia||'');
+    setCell('B'+row,item.clave||item.materia||'');
     setCell('C'+row,item.horas||'');
     setCell('D'+row,item.docente||'');
+  });
+
+  // Abbreviation table starting at row 40 (row 39 = header, already in template)
+  const abvStartRow=40;
+  clearRange('B',abvStartRow,abvStartRow+model.rows.length+1);
+  clearRange('C',abvStartRow,abvStartRow+model.rows.length+1);
+  model.rows.forEach((item,idx)=>{
+    setCell('B'+(abvStartRow+idx),item.clave||'');
+    setCell('C'+(abvStartRow+idx),item.materia||'');
   });
 
   return map;
@@ -1751,7 +1760,8 @@ async function exportHorariosGrupoExcel(){
     ])));
 
     const models=gs.map(g=>buildHorarioGrupoExcelModel(g));
-    const templateAb=await loadTemplateArrayBuffer('Template_Horarios_Grupos.xlsx');
+    const tplName=tur==='M'?'Template_Horarios_Grupos_Matutino.xlsx':'Template_Horarios_Grupos_Vespertino.xlsx';
+    const templateAb=await loadTemplateArrayBuffer(tplName);
     const blob=await fillHorariosGruposTemplateArrayBuffer(JSZip,templateAb,models);
     const cicloNom=(ciclos.find(c=>c.id===currentCicloId)?.nombre)||CYCLE_LBL[cycle]||'';
     const fileName=excelSafePart(`HORARIOS_GRUPOS_${sem}_${tur==='M'?'MATUTINO':'VESPERTINO'}_${cicloNom}`)+'.xlsx';
