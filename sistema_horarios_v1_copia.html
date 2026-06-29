@@ -1477,6 +1477,39 @@ function applyWrapTextStylesToSheet(stylesDoc,sheetDoc,cellMap,values){
 
 const GROUP_TEMPLATE_DAY_COLS=['C','D','E','F','G'];
 const GROUP_TEMPLATE_SCHED_ROWS=[10,12,14,17,19,21,23,25];
+const GROUP_TEMPLATE_SCHED_ROWS_ALTERNATE=[10,12,14,16,19,21,23,25];
+
+function getGroupTemplateSchedRows(turno, sem){
+  return sem>2 ? GROUP_TEMPLATE_SCHED_ROWS_ALTERNATE : GROUP_TEMPLATE_SCHED_ROWS;
+}
+
+function patchGroupTemplateHourLabels(turno, sem, setCell){
+  if(turno==='M'){
+    if(sem>2){
+      setCell('B16','9:30 - 10:20');
+      setCell('C16','');
+      setCell('B17','10:20 - 10:40');
+      setCell('C17','R E C E S O');
+    } else {
+      setCell('B16','9:30 - 9:50');
+      setCell('C16','R E C E S O');
+      setCell('B17','9:50 - 10:40');
+      setCell('C17','');
+    }
+  } else {
+    if(sem>2){
+      setCell('B16','15:55 - 16:40');
+      setCell('C16','');
+      setCell('B17','16:40 - 17:00');
+      setCell('C17','R E C E S O');
+    } else {
+      setCell('B16','15:55 - 16:15');
+      setCell('C16','R E C E S O');
+      setCell('B17','16:15 - 17:00');
+      setCell('C17','');
+    }
+  }
+}
 
 function sanitizeSheetName(name,usedSet){
   let base=String(name||'GRUPO').replace(/[\\/\*\?:\[\]]/g,' ').trim().replace(/\s+/g,' ');
@@ -1600,9 +1633,15 @@ function buildHorarioGrupoTemplateCellMap(model){
   setCell('C7','Turno: '+(model.turnoLabel||''));
   setCell('E7','Semestre: '+(model.cicloNombre||''));
 
-  for(const row of GROUP_TEMPLATE_SCHED_ROWS){
+  const semNum=Number(g.sem)||0;
+  const schedRows=getGroupTemplateSchedRows(g.turno,semNum);
+  for(const row of schedRows){
     for(const col of GROUP_TEMPLATE_DAY_COLS)setCell(col+row,'');
   }
+  if(semNum>2){
+    for(const col of GROUP_TEMPLATE_DAY_COLS)setCell(col+17,'');
+  }
+  patchGroupTemplateHourLabels(g.turno,semNum,setCell);
 
   const teacherShort=tid=>{
     const t=T(tid);
@@ -1610,8 +1649,8 @@ function buildHorarioGrupoTemplateCellMap(model){
     return t.name.toUpperCase().split(/\s+/).slice(0,3).join(' ');
   };
 
-  model.slots.slice(0,GROUP_TEMPLATE_SCHED_ROWS.length).forEach((slot,idx)=>{
-    const row=GROUP_TEMPLATE_SCHED_ROWS[idx];
+  model.slots.slice(0,schedRows.length).forEach((slot,idx)=>{
+    const row=schedRows[idx];
     for(let d=0;d<5;d++){
       const key=slot.id+'_'+d;
       const c=model.sched[key];
