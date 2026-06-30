@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.643</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.644</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1476,39 +1476,19 @@ function applyWrapTextStylesToSheet(stylesDoc,sheetDoc,cellMap,values){
 }
 
 const GROUP_TEMPLATE_DAY_COLS=['C','D','E','F','G'];
-const GROUP_TEMPLATE_SCHED_ROWS=[10,12,14,17,19,21,23,25];
-const GROUP_TEMPLATE_SCHED_ROWS_ALTERNATE=[10,12,14,16,19,21,23,25];
 
-function getGroupTemplateSchedRows(turno, sem){
-  return sem>2 ? GROUP_TEMPLATE_SCHED_ROWS_ALTERNATE : GROUP_TEMPLATE_SCHED_ROWS;
-}
-
-function patchGroupTemplateHourLabels(turno, sem, setCell){
-  if(turno==='M'){
-    if(sem>2){
-      setCell('B16','9:30 - 10:20');
-      setCell('C16','');
-      setCell('B17','10:20 - 10:40');
-      setCell('C17','R E C E S O');
-    } else {
-      setCell('B16','9:30 - 9:50');
-      setCell('C16','R E C E S O');
-      setCell('B17','9:50 - 10:40');
-      setCell('C17','');
-    }
-  } else {
-    if(sem>2){
-      setCell('B16','15:55 - 16:40');
-      setCell('C16','');
-      setCell('B17','16:40 - 17:00');
-      setCell('C17','R E C E S O');
-    } else {
-      setCell('B16','15:55 - 16:15');
-      setCell('C16','R E C E S O');
-      setCell('B17','16:15 - 17:00');
-      setCell('C17','');
-    }
+function getGroupTemplateConfig(turno,sem){
+  const s=Number(sem);
+  const g=s<=2?'1':s<=4?'3':'5';
+  const tplName='Template_Horarios_Grupos_'+(turno==='M'?'Matutino':'Vespertino')+'_'+g+'.xlsx';
+  if(g==='5'){
+    return{tplName,schedRows:turno==='M'?[9,11,13,15,18,20,22,24]:[9,11,13,15,17,19,21,23],
+      cellGrupo:'F4',cellTurno:'C6',cellSemestre:'E6',
+      materiaStartRow:turno==='M'?28:27,abvStartRow:turno==='M'?39:38};
   }
+  return{tplName,
+    schedRows:(g==='3'&&turno==='M')?[10,12,14,16,19,21,23,25]:[10,12,14,17,19,21,23,25],
+    cellGrupo:'F5',cellTurno:'C7',cellSemestre:'E7',materiaStartRow:29,abvStartRow:40};
 }
 
 function sanitizeSheetName(name,usedSet){
@@ -1629,19 +1609,14 @@ function buildHorarioGrupoTemplateCellMap(model){
   const clearRange=(col,rowStart,rowEnd)=>{for(let r=rowStart;r<=rowEnd;r++)setCell(col+r,'');};
   const g=model.group||{};
 
-  setCell('F5','Horario del Grupo: '+(g.clave||g.id||''));
-  setCell('C7','Turno: '+(model.turnoLabel||''));
-  setCell('E7','Semestre: '+(model.cicloNombre||''));
+  const cfg=getGroupTemplateConfig(g.turno,g.sem);
+  setCell(cfg.cellGrupo,'Horario del Grupo: '+(g.clave||g.id||''));
+  setCell(cfg.cellTurno,'Turno: '+(model.turnoLabel||''));
+  setCell(cfg.cellSemestre,'Semestre: '+(model.cicloNombre||''));
 
-  const semNum=Number(g.sem)||0;
-  const schedRows=getGroupTemplateSchedRows(g.turno,semNum);
-  for(const row of schedRows){
+  for(const row of cfg.schedRows){
     for(const col of GROUP_TEMPLATE_DAY_COLS)setCell(col+row,'');
   }
-  if(semNum>2){
-    for(const col of GROUP_TEMPLATE_DAY_COLS)setCell(col+17,'');
-  }
-  patchGroupTemplateHourLabels(g.turno,semNum,setCell);
 
   const teacherShort=tid=>{
     const t=T(tid);
@@ -1649,8 +1624,8 @@ function buildHorarioGrupoTemplateCellMap(model){
     return t.name.toUpperCase().split(/\s+/).slice(0,3).join(' ');
   };
 
-  model.slots.slice(0,schedRows.length).forEach((slot,idx)=>{
-    const row=schedRows[idx];
+  model.slots.slice(0,cfg.schedRows.length).forEach((slot,idx)=>{
+    const row=cfg.schedRows[idx];
     for(let d=0;d<5;d++){
       const key=slot.id+'_'+d;
       const c=model.sched[key];
@@ -1659,21 +1634,21 @@ function buildHorarioGrupoTemplateCellMap(model){
     }
   });
 
-  clearRange('B',29,37); clearRange('C',29,37); clearRange('D',29,37);
+  clearRange('B',cfg.materiaStartRow,cfg.materiaStartRow+9);
+  clearRange('C',cfg.materiaStartRow,cfg.materiaStartRow+9);
+  clearRange('D',cfg.materiaStartRow,cfg.materiaStartRow+9);
   model.rows.forEach((item,idx)=>{
-    const row=29+idx;
+    const row=cfg.materiaStartRow+idx;
     setCell('B'+row,item.clave||item.materia||'');
     setCell('C'+row,item.horas||'');
     setCell('D'+row,item.docente||'');
   });
 
-  // Abbreviation table starting at row 40 (row 39 = header, already in template)
-  const abvStartRow=40;
-  clearRange('B',abvStartRow,abvStartRow+model.rows.length+1);
-  clearRange('C',abvStartRow,abvStartRow+model.rows.length+1);
+  clearRange('B',cfg.abvStartRow,cfg.abvStartRow+9);
+  clearRange('C',cfg.abvStartRow,cfg.abvStartRow+9);
   model.rows.forEach((item,idx)=>{
-    setCell('B'+(abvStartRow+idx),item.clave||'');
-    setCell('C'+(abvStartRow+idx),item.materia||'');
+    setCell('B'+(cfg.abvStartRow+idx),item.clave||'');
+    setCell('C'+(cfg.abvStartRow+idx),item.materia||'');
   });
 
   return map;
@@ -1799,7 +1774,7 @@ async function exportHorariosGrupoExcel(){
     ])));
 
     const models=gs.map(g=>buildHorarioGrupoExcelModel(g));
-    const tplName=tur==='M'?'Template_Horarios_Grupos_Matutino.xlsx':'Template_Horarios_Grupos_Vespertino.xlsx';
+    const tplName=getGroupTemplateConfig(tur,sem).tplName;
     const templateAb=await loadTemplateArrayBuffer(tplName);
     const blob=await fillHorariosGruposTemplateArrayBuffer(JSZip,templateAb,models);
     const cicloNom=(ciclos.find(c=>c.id===currentCicloId)?.nombre)||CYCLE_LBL[cycle]||'';
