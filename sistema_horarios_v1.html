@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.644</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.645</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1481,13 +1481,16 @@ function getGroupTemplateConfig(turno,sem){
   const s=Number(sem);
   const g=s<=2?'1':s<=4?'3':'5';
   const tplName='Template_Horarios_Grupos_'+(turno==='M'?'Matutino':'Vespertino')+'_'+g+'.xlsx';
-  if(g==='5'){
+  // M_5, V_3 y V_5 usan layout nuevo (encabezado desde fila 1)
+  if(g==='5'||(g==='3'&&turno==='V')){
+    const abvStartRow=g==='5'?(turno==='M'?39:38):37;
     return{tplName,schedRows:turno==='M'?[9,11,13,15,18,20,22,24]:[9,11,13,15,17,19,21,23],
       cellGrupo:'F4',cellTurno:'C6',cellSemestre:'E6',
-      materiaStartRow:turno==='M'?28:27,abvStartRow:turno==='M'?39:38};
+      materiaStartRow:turno==='M'?28:27,abvStartRow};
   }
+  // M_1, M_3, V_1: layout original (encabezado desde fila 2)
   return{tplName,
-    schedRows:(g==='3'&&turno==='M')?[10,12,14,16,19,21,23,25]:[10,12,14,17,19,21,23,25],
+    schedRows:(g==='3')?[10,12,14,16,19,21,23,25]:[10,12,14,17,19,21,23,25],
     cellGrupo:'F5',cellTurno:'C7',cellSemestre:'E7',materiaStartRow:29,abvStartRow:40};
 }
 
