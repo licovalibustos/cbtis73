@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.645</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.646</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -4014,7 +4014,11 @@ async function sgDrop(e){
       await ensureCatalogo(currentCicloId);
       const isMulti=!!(draggedSubjectName&&multiGrupoNames[currentCicloId]?.has(draggedSubjectName));
       const draggedHorarioId=sched[fromKey]?.horarioId||null;
-      const dbRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${draggedTeacherId}&slot_id=eq.${toSlot}&dia=eq.${toDay}`);
+      // Check toSlot AND its mutex partner (e.g. v4 overlaps with vx for different semesters)
+      const _mxPairDrop=MUTEX_SLOTS.find(p=>p.includes(toSlot));
+      const _slotsDrop=_mxPairDrop||[toSlot];
+      const _slotFilterDrop=_slotsDrop.length>1?`slot_id=in.(${_slotsDrop.join(',')})`:`slot_id=eq.${toSlot}`;
+      const dbRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${draggedTeacherId}&${_slotFilterDrop}&dia=eq.${toDay}`);
       const dbConflict=(dbRows||[])
         .filter(r=>r.grupo_id!==gidDb)
         .filter(r=>!draggedHorarioId||r.id!==draggedHorarioId)
@@ -4053,6 +4057,7 @@ async function sgDrop(e){
         }
         renderHorario();
         renderHorarioMaestro();
+        updConflict();
         toast('Movido ✓');
       })
       .catch(e=>toast('Error: '+e.message,'err'))
@@ -5344,7 +5349,11 @@ cellSave=async function(){
     if(teacherId){
       await ensureCatalogo(currentCicloId);
       const isMulti=!!(multiGrupoNames[currentCicloId]?.has(subjectName));
-      const conflictRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${teacherId}&slot_id=eq.${slotId}&dia=eq.${dayIdx}&grupo_id=neq.${g.id}`);
+      // Check slotId AND its mutex partner (v4 overlaps with vx for sems 1-2 vs 3-6)
+      const _mxPairSave=MUTEX_SLOTS.find(p=>p.includes(slotId));
+      const _slotsSave=_mxPairSave||[slotId];
+      const _slotFilterSave=_slotsSave.length>1?`slot_id=in.(${_slotsSave.join(',')})`:`slot_id=eq.${slotId}`;
+      const conflictRows=await dbGet('horario',`ciclo_id=eq.${currentCicloId}&maestro_id=eq.${teacherId}&${_slotFilterSave}&dia=eq.${dayIdx}&grupo_id=neq.${g.id}`);
       const realConflict=(conflictRows||[])
         .filter(r=>!isMulti||r.materia_nombre!==subjectName)
         .filter(r=>!excludeHId||r.id!==excludeHId);
