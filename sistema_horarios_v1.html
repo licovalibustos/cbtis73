@@ -248,7 +248,7 @@ input::placeholder{color:var(--ink3);}
     <div class="bmark">73</div>
     <div>
       <div class="btxt">CBTIS</div>
-      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.646</span></div>
+      <div class="bsub">Sistema de Horarios &nbsp;·&nbsp; <span style="color:rgba(255,255,255,.6)">v1.647</span></div>
       <a href="https://solutions.licovali.cloud" target="_blank" rel="noopener" style="font-size:.5rem;color:rgba(255,255,255,.22);text-decoration:none;font-family:var(--fm);letter-spacing:.03em;margin-top:1px;display:block" title="Licovali Solutions">Licovali Solutions</a>
     </div>
   </div>
@@ -1483,15 +1483,15 @@ function getGroupTemplateConfig(turno,sem){
   const tplName='Template_Horarios_Grupos_'+(turno==='M'?'Matutino':'Vespertino')+'_'+g+'.xlsx';
   // M_5, V_3 y V_5 usan layout nuevo (encabezado desde fila 1)
   if(g==='5'||(g==='3'&&turno==='V')){
-    const abvStartRow=g==='5'?(turno==='M'?39:38):37;
+    const abvStartRow=g==='5'?(turno==='M'?40:39):37;
     return{tplName,schedRows:turno==='M'?[9,11,13,15,18,20,22,24]:[9,11,13,15,17,19,21,23],
       cellGrupo:'F4',cellTurno:'C6',cellSemestre:'E6',
-      materiaStartRow:turno==='M'?28:27,abvStartRow};
+      materiaStartRow:turno==='M'?28:27,abvStartRow,materiaRows:g==='5'?10:9};
   }
   // M_1, M_3, V_1: layout original (encabezado desde fila 2)
   return{tplName,
     schedRows:(g==='3')?[10,12,14,16,19,21,23,25]:[10,12,14,17,19,21,23,25],
-    cellGrupo:'F5',cellTurno:'C7',cellSemestre:'E7',materiaStartRow:29,abvStartRow:40};
+    cellGrupo:'F5',cellTurno:'C7',cellSemestre:'E7',materiaStartRow:29,abvStartRow:40,materiaRows:9};
 }
 
 function sanitizeSheetName(name,usedSet){
@@ -1591,9 +1591,10 @@ function buildHorarioGrupoExcelModel(g){
     rowsAgg[key].horas+=(Number(r.hrs)||0);
     if(!rowsAgg[key].docente&&docente)rowsAgg[key].docente=docente;
   }
+  const cfg=getGroupTemplateConfig(g.turno,g.sem);
   const rows=Object.values(rowsAgg)
     .sort((a,b)=>a.materia.localeCompare(b.materia,'es')||a.docente.localeCompare(b.docente,'es'))
-    .slice(0,9)
+    .slice(0,cfg.materiaRows)
     .map(x=>({materia:x.materia,clave:materiaClave(x.materia),horas:x.horas||'',docente:x.docente||''}));
   const slots=(assignable(g.turno,g.sem)||[]).filter(s=>!s.recess&&!s.blocked);
   return {
@@ -1637,9 +1638,9 @@ function buildHorarioGrupoTemplateCellMap(model){
     }
   });
 
-  clearRange('B',cfg.materiaStartRow,cfg.materiaStartRow+9);
-  clearRange('C',cfg.materiaStartRow,cfg.materiaStartRow+9);
-  clearRange('D',cfg.materiaStartRow,cfg.materiaStartRow+9);
+  clearRange('B',cfg.materiaStartRow,cfg.materiaStartRow+cfg.materiaRows-1);
+  clearRange('C',cfg.materiaStartRow,cfg.materiaStartRow+cfg.materiaRows-1);
+  clearRange('D',cfg.materiaStartRow,cfg.materiaStartRow+cfg.materiaRows-1);
   model.rows.forEach((item,idx)=>{
     const row=cfg.materiaStartRow+idx;
     setCell('B'+row,item.clave||item.materia||'');
@@ -1647,8 +1648,8 @@ function buildHorarioGrupoTemplateCellMap(model){
     setCell('D'+row,item.docente||'');
   });
 
-  clearRange('B',cfg.abvStartRow,cfg.abvStartRow+9);
-  clearRange('C',cfg.abvStartRow,cfg.abvStartRow+9);
+  clearRange('B',cfg.abvStartRow,cfg.abvStartRow+cfg.materiaRows-1);
+  clearRange('C',cfg.abvStartRow,cfg.abvStartRow+cfg.materiaRows-1);
   model.rows.forEach((item,idx)=>{
     setCell('B'+(cfg.abvStartRow+idx),item.clave||'');
     setCell('C'+(cfg.abvStartRow+idx),item.materia||'');
