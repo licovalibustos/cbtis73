@@ -13,6 +13,6 @@
 
 ## 4. Verificación
 
-- [ ] 4.1 Exportar horarios de 5° semestre (matutino y vespertino) con un grupo de 10 materias y confirmar que las 10 aparecen en ambas tablas
-- [ ] 4.2 Verificar visualmente que la tabla de Abreviaturas queda alineada con los bordes del template (sin filas desfasadas ni merges rotos)
-- [ ] 4.3 Exportar un semestre de 9 materias (1° o 3°) y confirmar que no hay regresiones
+- [x] 4.1 Exportar horarios de 5° semestre (matutino y vespertino) con un grupo de 10 materias y confirmar que las 10 aparecen en ambas tablas
+- [x] 4.2 Verificar visualmente que la tabla de Abreviaturas queda alineada con los bordes del template (sin filas desfasadas ni merges rotos)
+- [x] 4.3 Exportar un semestre de 9 materias (1° o 3°) y confirmar que no hay regresiones
